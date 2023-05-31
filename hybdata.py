@@ -155,6 +155,7 @@ for line in lines:
             "min": int(min),
             "max": int(max),
             "isres": int(isres),
+            "dcomp": 0,
         }
 
     if "ncompartments" in line:
@@ -292,22 +293,24 @@ for line in lines:
         if "id" in line:
             id = line[line.find("=")+2:len(line)-1]
 
-        # Get the rate of the reaction
+        # Get the rate of the reactio
         if "rate" in line:
             rate = line[line.find("=")+2:len(line)-1]
 
         # Get the Y of the reaction
         if "Y" in line:
-            y = []
             j = line[line.find("=")+2:len(line)-1]
-            y = j.split(", ")
-            y = [val.replace('"', '') for val in y]
+            y_values = j.split(",")
+            y_values = [int(i.strip().strip('\"')) for i in y_values]
 
-        reaction_dict[i] = {
-            "id": id,
-            "rate": rate,
-            "Y": y,
-        }
+            y_dict = {str(index+1): value for index,
+                      value in enumerate(y_values)}
+
+            reaction_dict[i] = {
+                "id": id,
+                "rate": rate,
+                "Y": y_dict,
+            }
 
     if "nraterules" in line:
         # Get the number of rate rules

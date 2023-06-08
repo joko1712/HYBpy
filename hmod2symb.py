@@ -43,55 +43,58 @@ for i in range(1, data["mlm"]["ny"]+1):
     expr = symbols(data["mlm"]["y"][str(i)]["val"])
     rann.append(expr)
 
-symbols(totalsyms)
-
+# This converts all string identifiers to symbolic ones
+totalsyms = symbols(totalsyms)
 
 # Species data
 Species = []
 
 for i in range(1, data["nspecies"]+1):
-    Species.append(data["species"][str(i)]["id"])
+    Species.append(symbols(data["species"][str(i)]["id"]))
     for m in range(1, data["nraterules"]+1):
         if data["raterules"][str(m)]["id"] == data["species"][str(i)]["compartment"]:
-            data["species"][str(i)]["dcomp"] = data["raterules"][str(m)]["val"]
+            data["species"][str(i)]["dcomp"] = sympify(
+                data["raterules"][str(m)]["val"])
 
 ncompartments = data["ncompartments"]
 Compartments = []
 
 for i in range(1, ncompartments+1):
-    Compartments.append(data["compartment"][str(i)]["id"])
+    Compartments.append(symbols(data["compartment"][str(i)]["id"]))
 
 variables = {}
 for i in range(1, data["mlm"]["nx"]+1):
-    variables[data["mlm"]["x"][str(i)]["id"]] = data["mlm"]["x"][str(i)]["val"]
+    variables[symbols(data["mlm"]["x"][str(i)]["id"])] = sympify(
+        data["mlm"]["x"][str(i)]["val"])
 
 output = {}
 no = data["mlm"]["ny"]
 for i in range(1, data["mlm"]["ny"]+1):
-    output[data["mlm"]["y"][str(i)]["id"]] = data["mlm"]["y"][str(i)]["val"]
+    output[symbols(data["mlm"]["y"][str(i)]["id"])] = sympify(
+        data["mlm"]["y"][str(i)]["val"])
 
 parametersvariables = {}
 for i in range(1, data["nparameters"]+1):
-    parametersvariables[data["parameters"]
-                        [str(i)]["id"]] = data["parameters"][str(i)]["val"]
+    parametersvariables[symbols(data["parameters"][str(i)]["id"])] = sympify(
+        data["parameters"][str(i)]["val"])
 
 ruleassvariables = {}
 for i in range(1, data["nruleAss"]+1):
-    ruleassvariables[data["ruleAss"]
-                     [str(i)]["id"]] = data["ruleAss"][str(i)]["val"]
+    ruleassvariables[symbols(data["ruleAss"][str(i)]["id"])] = sympify(
+        data["ruleAss"][str(i)]["val"])
 
 nraterules = data["nraterules"]
 Raterules = []
 fRaterules = []
 
 for i in range(1, nraterules+1):
-    Raterules.append(data["raterules"][str(i)]["id"])
-    fRaterules.append(data["raterules"][str(i)]["val"])
+    Raterules.append(symbols(data["raterules"][str(i)]["id"]))
+    fRaterules.append(sympify(data["raterules"][str(i)]["val"]))
 
 ncontrol = data["ncontrol"]
 ucontrol = []
 for i in range(1, ncontrol+1):
-    ucontrol.append(data["control"][str(i)]["id"])
+    ucontrol.append(symbols(data["control"][str(i)]["id"]))
 
 stoichm = []
 
@@ -99,7 +102,6 @@ reaction = {}
 
 for i in range(1, data["nreaction"]+1):
     reaction[str(i)] = symbols(data["reaction"][str(i)]["rate"])
-
 
 ratefuns = []
 ratevars = []
@@ -114,24 +116,25 @@ for i in range(1, data['nspecies']+1):
     rates_sum = 0
     for j in range(1, data["nreaction"]+1):
         rates_sum += reaction[str(j)] * \
-            int(data["reaction"][str(j)]["Y"][str(i)])
+            int(sympify(data["reaction"][str(j)]["Y"][str(i)]))
     rates[str(i)] = rates_sum
 
-print("rates", rates)
 fSpecies = []
 
 for i in range(1, data['nspecies']+1):
-    species_value = rates[str(i)] - (float(data['species'][str(i)]['dcomp']) / symbols(
+    species_value = rates[str(i)] - (float(sympify(data['species'][str(i)]['dcomp'])) / symbols(
         data['species'][str(i)]['compartment']) * symbols(data['species'][str(i)]['id']))
     fSpecies.append(species_value)
-
 
 State = Species + Raterules
 fState = fSpecies + fRaterules
 
+# create unified dictionary
+unified_dict = {**variables, **output, **
+                parametersvariables, **ruleassvariables}
 
-# This is so that the id variables from the state are replaced by the actual value
-fState = [simplify(expr) for expr in fState]
+# replace the variables in fState with actual values
+fState = [f.subs(unified_dict) for f in fState]
 
 nstate = data['nspecies'] + data['nraterules']
 

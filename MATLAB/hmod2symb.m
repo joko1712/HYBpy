@@ -111,12 +111,17 @@ function [t, State, fState, rates, anninp, rann, ucontrol,w]=hmod2symb(projhyb)
             stoichm=[stoichm;eval(nval)];
         end
         
+        %-------
+        %IS THIS NECESSARY?
+
         ratefuns=[];
         
         for n=1:projhyb.nraterules
             ratefuns = [ratefuns;eval(projhyb.raterules(n).val)];
             ratevars(n)= str2sym(projhyb.raterules(n).id);
         end
+
+        %-------
         
         for n=1:projhyb.nspecies
             rates(n,1)=sum(reaction.*stoichm(:,n));

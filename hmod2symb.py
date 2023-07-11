@@ -42,10 +42,8 @@ for i in range(1, data["mlm"]["ny"]+1):
     totalsyms.append(data["mlm"]["y"][str(i)]["id"])  # Ann outputs
     totalsyms.append(data["mlm"]["y"][str(i)]["val"])
 
-    expr = symbols(data["mlm"]["y"][str(i)]["val"])
-    rann.append(expr)
+    rann.append(sp.sympify(data["mlm"]["y"][str(i)]["val"]))
 
-# This converts all string identifiers to symbolic ones
 totalsyms = symbols(totalsyms)
 
 Species = []
@@ -65,28 +63,26 @@ Compartments = []
 for i in range(1, data["ncompartments"]+1):
     Compartments.append(sp.sympify(data["compartment"][str(i)]["id"]))
 
+variables = {}
 for i in range(1, data["mlm"]["nx"]+1):
-    var_id = data['mlm']['x'][str(i)]['id']
-    globals()[var_id] = None
-    exec(f"{var_id} = sp.sympify(data['mlm']['x'][str(i)]['val'])")
+    variables[symbols(data["mlm"]["x"][str(i)]["id"])] = sympify(
+        data["mlm"]["x"][str(i)]["val"])
 
-
+output = {}
+no = data["mlm"]["ny"]
 for i in range(1, data["mlm"]["ny"]+1):
-    var_id = data['mlm']['y'][str(i)]['id']
-    globals()[var_id] = None
-    exec(f"{var_id} = sp.sympify(data['mlm']['y'][str(i)]['val'])")
+    output[symbols(data["mlm"]["y"][str(i)]["id"])] = sympify(
+        data["mlm"]["y"][str(i)]["val"])
 
+parametersvariables = {}
 for i in range(1, data["nparameters"]+1):
-    if data["parameters"][str(i)]["reaction"] == "global":
-        var_id = data['parameters'][str(i)]['id']
-        globals()[var_id] = None
-        exec(f"{var_id} = sp.sympify(data['parameters'][str(i)]['val'])")
+    parametersvariables[symbols(data["parameters"][str(i)]["id"])] = sympify(
+        data["parameters"][str(i)]["val"])
 
-
+ruleassvariables = {}
 for i in range(1, data["nruleAss"]+1):
-    var_id = data['ruleAss'][str(i)]['id']
-    globals()[var_id] = None
-    exec(f"{var_id} = sp.sympify(data['ruleAss'][str(i)]['val'])")
+    ruleassvariables[symbols(data["ruleAss"][str(i)]["id"])] = sympify(
+        data["ruleAss"][str(i)]["val"])
 
 
 Raterules = []
@@ -100,36 +96,34 @@ ucontrol = []
 for i in range(1, data["ncontrol"]+1):
     ucontrol.append(symbols(data["control"][str(i)]["id"]))
 
-stoichm = []
-reaction = []
-
-for i in range(1, data["nreaction"]+1):
-    for j in range(1, data["nparameters"]+1):
-        if data["parameters"][str(j)]["reaction"] == data["reaction"][str(i)]["id"]:
-            var_id = data['parameters'][str(j)]['id']
-            globals()[var_id] = None
-            exec(f"{var_id} = sp.sympify(data['parameters'][str(j)]['val'])")
-
-    reaction.append(sympify(data["reaction"][str(i)]["rate"]))
-    nval = sp.sympify(data["reaction"][str(i)]["Y"])
-    stoichm.append(nval)
-
-stoichm = np.array(stoichm)
-
 rates = []
 
+
 for i in range(1, data["nspecies"]+1):
-    rates.append(np.sum([r * s for r, s in zip(reaction, stoichm[:, i-1])]))
+    for j in range(1, data["nreaction"]+1):
+        nvalues = sympify(data["reaction"][str(
+            j)]["rate"]) * data["reaction"][str(j)]["Y"][str(i)]
+        rates.append(sympify(nvalues))
+
 
 fSpecies = []
-
 for i in range(1, data["nspecies"]+1):
-    fSpecies.append(rates[i-1] - (data["species"][str(i)]["dcomp"] / sp.sympify(
-        data["species"][str(i)]["compartment"]) * sp.sympify(data["species"][str(i)]["id"])))
+    rates_sum = sum(rates[(i-1)*data["nreaction"]:i*data["nreaction"]])
+    fSpecies.append(
+        rates_sum - (data["species"][str(i)]["dcomp"]/sympify(data["species"]
+                     [str(i)]["compartment"])) * sympify(data["species"][str(i)]["id"])
+    )
+
 
 State = Species + Raterules
-fState = Matrix(fSpecies + fRaterules)
-fState = fState.subs(list(zip(State, totalsyms)))
+fState = fSpecies + fRaterules
+
+# create unified dictionary
+unified_dict = {**variables, **output, **
+                parametersvariables, **ruleassvariables}
+
+# replace the variables in fState with actual values
+fState = [f.subs(unified_dict) for f in fState]
 
 nspecies = data["nspecies"]
 nraterules = data["nraterules"]
@@ -144,7 +138,6 @@ print("anninp", anninp)
 print("rann", rann)
 print("ucontrol", ucontrol)
 print("w", w)
-print("reaction", reaction)
 
 
 A = Matrix([symbols("a")**2, symbols("b")**3])
@@ -159,21 +152,22 @@ for i in range(1, len(anninp)+1):
 
 print("anninp", anninp)
 DanninpDstate = Matrix([anninp]).jacobian(Matrix([State]))
-
 print("DanninpDstate", DanninpDstate)
 
 DanninpDucontrol = Matrix([anninp]).jacobian(Matrix([ucontrol]))
-
 print("DanninpDucontrol", DanninpDucontrol)
 
 DrDs = Matrix([rates]).jacobian(Matrix([State]))
 print("DrDs", DrDs)
 
-DrDrann = Matrix([rates]).jacobian(Matrix([rann]))
-print("DrDrann", DrDrann)
 
 DfDs = Matrix([fState]).jacobian(Matrix([State]))
 print("DfDs", DfDs)
 
 DfDrann = Matrix([fState]).jacobian(Matrix([rann]))
 print("DfDrann", DfDrann)
+
+rann = ["vm11", "vm2f", "katpase", "vm3f", "vm4f", "knadph", "vm5"]
+
+DrDrann = Matrix([rates]).jacobian(Matrix([rann]))
+print("DrDrann", DrDrann)

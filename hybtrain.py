@@ -67,8 +67,7 @@ def hybtrain(projhyb):
         # Calculate the actual number of bootstrap samples based on the boot rate.
         nboot = max(1, int(projhyb['ntrain'] * projhyb['nbootrate']))
 
-    # FUNCTION IN THE MATLAB CODE
-    # ofun1=@(x1,x2,x3)outFun1(x1,x2,x3,projhyb);
+    ofun1 = lambda x1, x2, x3: outFun1(x1, x2, x3, projhyb)
 
     print("\nTraining method:")
 
@@ -123,6 +122,8 @@ def hybtrain(projhyb):
         options['x_scale'] = ofun1
 
         result = least_squares(fun, x0, **options)
+
+        print(f"   Optimiser:              Levenberg-Marquardt")
 
     elif projhyb['method'] == 2:
         algorithm = 'L-BFGS-B'  # default quasi-Newton method in SciPy
@@ -283,66 +284,40 @@ def hybtrain(projhyb):
         elif method == 4:  # ADAMS
             wfinal, fval = adamunlnew(fobj, weights, ofun1, projhyb, options)
 
-    mlpnetinitw
-
     return projhyb, trainData
 
+def mlpnetinitw(ann):
+    w = []
 
-def resfun_indirect_jac(w, istrain, projhyb, method=1):
-    if not istrain:
-        istrain = projhyb["istrain"]
+    if ann['h'] == 1:
+        ann['layer'][0]['w'] = np.random.randn(ann['nh'], ann['nx']) * np.sqrt(2 / (ann['nx'] + ann['nh']))
+        ann['layer'][0]['b'] = np.zeros((ann['nh'], 1))
+        ann['layer'][1]['w'] = np.random.randn(ann['ny'], ann['nh']) * np.sqrt(2 / (ann['nh'] + ann['ny']))
+        ann['layer'][1]['b'] = np.zeros((ann['ny'], 1))
+        
+        w.extend(ann['layer'][0]['w'].ravel())
+        w.extend(ann['layer'][0]['b'].ravel())
+        w.extend(ann['layer'][1]['w'].ravel())
+        w.extend(ann['layer'][1]['b'].ravel())
 
-    ns = projhyb["nstate"]
-    nw = projhyb["mlm"]["nw"]
-    isres = projhyb["isres"]
-    nres = projhyb["nres"]
-    projhyb["mlm"]["fundata"] = projhyb["mlmsetwfunc"](
-        projhyb["mlm"]["fundata"], w)
-
-    npall = sum(projhyb["batch"][i]["np"]
-                for i in range(projhyb["nbatch"]) if istrain[i] == 1)
-
-    sresall = np.zeros(npall * nres)
-    sjacall = np.zeros((npall * nres, projhyb["mlm"]["nw"]))
-
-    COUNT = 0
-    for l in range(projhyb["nbatch"]):
-        if istrain[l] == 1:
-            tb = projhyb["batch"][l]["t"]
-            Y = projhyb["batch"][l]["state"]
-            batch = projhyb["batch"][l]
-            sY = projhyb["batch"][l]["sc"]
-            state = projhyb["batch"][l]["state"][0, :].T
-            Sw = np.zeros((ns, nw))
-
-            for i in range(1, projhyb["batch"][l]["np"]):
-                _, state, Sw = hybodesolver(projhyb["fun_hybodes_jac"],
-                                            projhyb["fun_control"], projhyb["fun_event"], tb[i-1], tb[i],
-                                            state, Sw, 0, [], batch, projhyb)
-
-                sresall[COUNT:COUNT +
-                        nres] = (Y[i, isres] - state[isres, 0]) / sY[i, isres]
-                sjacall[COUNT:COUNT+nres, :nw] = - Sw[isres, :] / \
-                    np.repeat(sY[i, isres].reshape(-1, 1), nw, axis=1)
-                COUNT += nres
-
-    ind = ~np.isnan(sresall)
-    sresall = sresall[ind]
-    sjacall = sjacall[ind, :]
-    ind = ~np.isinf(sresall)
-    sresall = sresall[ind]
-    sjacall = sjacall[ind, :]
-
-    fobj = np.nan
-    if method == 1 or method == 4:
-        fobj = sresall
-        jac = sjacall
     else:
-        fobj = np.dot(sresall.T, sresall) / len(sresall)
-        jac = np.sum(2 * np.repeat(sresall.reshape(-1, 1), nw,
-                     axis=1) * sjacall, axis=0) / len(sresall)
+        count = 0
+        for i in range(ann['h']):
+            ann['layer'][i]['w'] = np.random.randn(ann['nh'][i], ann['nx'] if i == 0 else ann['nh'][i-1]) * np.sqrt(2 / (ann['nh'][i] + (ann['nx'] if i == 0 else ann['nh'][i-1])))
+            ann['layer'][i]['b'] = np.zeros((ann['nh'][i], 1))
 
-    return fobj, jac
+            w.extend(ann['layer'][i]['w'].ravel())
+            w.extend(ann['layer'][i]['b'].ravel())
+
+        ann['layer'][ann['h']]['w'] = np.random.randn(ann['ny'], ann['nh'][-1]) * np.sqrt(2 / (ann['ny'] + ann['nh'][-1]))
+        ann['layer'][ann['h']]['b'] = np.zeros((ann['ny'], 1))
+        
+        w.extend(ann['layer'][ann['h']]['w'].ravel())
+        w.extend(ann['layer'][ann['h']]['b'].ravel())
+
+    w = np.array(w).reshape(-1, 1)
+    ann['w'] = w
+    return w, ann
 
 
 def outFun1(witer, optimValues, optstate, projhyb):
@@ -408,3 +383,174 @@ def derivative_check(fun, jac, x0, tol=1e-6):
             return False
     print("Derivative check passed.")
     return True
+
+
+####
+#   INDIRECT
+####
+
+
+
+def resfun_indirect_jac(w, istrain, projhyb, method=1):
+    if not istrain:
+        istrain = projhyb["istrain"]
+
+    ns = projhyb["nstate"]
+    nw = projhyb["mlm"]["nw"]
+    isres = projhyb["isres"]
+    nres = projhyb["nres"]
+    projhyb["mlm"]["fundata"] = projhyb["mlmsetwfunc"](
+        projhyb["mlm"]["fundata"], w)
+
+    npall = sum(projhyb["batch"][i]["np"]
+                for i in range(projhyb["nbatch"]) if istrain[i] == 1)
+
+    sresall = np.zeros(npall * nres)
+    sjacall = np.zeros((npall * nres, projhyb["mlm"]["nw"]))
+
+    COUNT = 0
+    for l in range(projhyb["nbatch"]):
+        if istrain[l] == 1:
+            tb = projhyb["batch"][l]["t"]
+            Y = projhyb["batch"][l]["state"]
+            batch = projhyb["batch"][l]
+            sY = projhyb["batch"][l]["sc"]
+            state = projhyb["batch"][l]["state"][0, :].T
+            Sw = np.zeros((ns, nw))
+
+            for i in range(1, projhyb["batch"][l]["np"]):
+                _, state, Sw = hybodesolver(projhyb["fun_hybodes_jac"],
+                                            projhyb["fun_control"], projhyb["fun_event"], tb[i-1], tb[i],
+                                            state, Sw, 0, [], batch, projhyb)
+
+                sresall[COUNT:COUNT +
+                        nres] = (Y[i, isres] - state[isres, 0]) / sY[i, isres]
+                sjacall[COUNT:COUNT+nres, :nw] = - Sw[isres, :] / \
+                    np.repeat(sY[i, isres].reshape(-1, 1), nw, axis=1)
+                COUNT += nres
+
+    ind = ~np.isnan(sresall)
+    sresall = sresall[ind]
+    sjacall = sjacall[ind, :]
+    ind = ~np.isinf(sresall)
+    sresall = sresall[ind]
+    sjacall = sjacall[ind, :]
+
+    fobj = np.nan
+    if method == 1 or method == 4:
+        fobj = sresall
+        jac = sjacall
+    else:
+        fobj = np.dot(sresall.T, sresall) / len(sresall)
+        jac = np.sum(2 * np.repeat(sresall.reshape(-1, 1), nw,
+                     axis=1) * sjacall, axis=0) / len(sresall)
+
+    return fobj, jac
+
+def resfun_indirect_fminunc(w, istrain, projhyb):
+    ns = projhyb['nstate']
+    nw = projhyb['mlm']['nw']
+    isres = projhyb['isres']
+    nres = projhyb['nres']
+
+    if 'mlmsetwfunc' in projhyb and projhyb['mlmsetwfunc'] is not None:
+        # Assuming `projhyb['mlmsetwfunc']` is a callable function
+        projhyb['mlm']['fundata'] = projhyb['mlmsetwfunc'](projhyb['mlm']['fundata'], w)  # set weights
+
+    sres = 0
+    sjac = np.zeros(nw)
+
+    COUNT = 0
+    for l in range(projhyb['nbatch']):
+        if istrain[l] == 1:
+            tb = projhyb['batch'][l]['t']
+            Y = projhyb['batch'][l]['state']
+            upars = projhyb['batch'][l]['u']
+            sY = projhyb['batch'][l]['sc']
+            np = len(tb)
+
+            state = np.array(projhyb['batch'][l]['state'][0]).reshape(-1, 1)  # Convert the row into a column vector
+            Sw = np.zeros((ns, nw))
+
+            for i in range(1, np):
+                # Assuming `hybodesolver` is a previously defined function
+                _, state, Sw = hybodesolver(projhyb['fun_hybodes_jac'],
+                                            projhyb['fun_control'],
+                                            projhyb['fun_event'],
+                                            tb[i-1], tb[i], state, Sw, 0, w, upars, projhyb)
+                for j in range(nres):
+                    k1 = isres[j]
+                    if not np.isnan(Y[i][k1]):
+                        res = (Y[i][k1] - state[k1][0]) / sY[i][k1]
+                        sres = sres + res**2
+                        sjac = sjac + (-2 * res / sY[i][k1]) * Sw[k1, :]
+                        COUNT += 1
+
+    sres = sres / COUNT
+    sjac = sjac / COUNT
+    return sres, sjac
+
+def resfun_indirect_jac(w, istrain, projhyb, method=1):
+    if not istrain:
+        istrain = projhyb['istrain']
+
+    ns = projhyb['nstate']
+    nw = projhyb['mlm']['nw']
+    isres = projhyb['isres']
+    nres = projhyb['nres']
+
+    projhyb['mlm']['fundata'] = projhyb['mlmsetwfunc'](projhyb['mlm']['fundata'], w)  # set weights
+
+    npall = 0
+    for l in range(projhyb['nbatch']):
+        if istrain[l] == 1:
+            npall += projhyb['batch'][l]['np']
+
+    sresall = np.zeros(npall * nres)
+    sjacall = np.zeros((npall * nres, nw))
+
+    COUNT = 0
+    for l in range(projhyb['nbatch']):
+        if istrain[l] == 1:
+            tb = projhyb['batch'][l]['t']
+            Y = projhyb['batch'][l]['state']
+            batch = projhyb['batch'][l]
+            sY = projhyb['batch'][l]['sc']
+            state = np.array(projhyb['batch'][l]['state'][0]).reshape(-1, 1)
+            Sw = np.zeros((ns, nw))
+
+            for i in range(1, projhyb['batch'][l]['np']):
+                # Assuming hybodesolver is a pre-defined function
+                _, state, Sw = hybodesolver(projhyb['fun_hybodes_jac'],
+                                            projhyb['fun_control'],
+                                            projhyb['fun_event'],
+                                            tb[i-1], tb[i], state, Sw, 0, None, batch, projhyb)
+
+                sresall[COUNT:COUNT+nres] = (Y[i, isres] - state[isres, 0]) / sY[i, isres]
+                sjacall[COUNT:COUNT+nres, :] = -Sw[isres, :] / np.repeat(sY[i, isres].reshape(-1, 1), nw, axis=1)
+                COUNT += nres
+
+    # Remove missing values from residuals
+    ind = ~np.isnan(sresall)
+    sresall = sresall[ind]
+    sjacall = sjacall[ind, :]
+
+    ind = ~np.isinf(sresall)  # Remove infinity values from residuals
+    sresall = sresall[ind]
+    sjacall = sjacall[ind, :]
+
+    fobj = float('nan')
+    if method == 1 or method == 4:
+        fobj = sresall
+        jac = sjacall
+    else:
+        fobj = np.dot(sresall.T, sresall) / len(sresall)
+        jac = np.sum(2 * np.repeat(sresall.reshape(-1, 1), nw, axis=1) * sjacall, axis=0) / len(sresall)
+
+    return fobj, jac
+
+
+
+
+
+

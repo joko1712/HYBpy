@@ -1,0 +1,36 @@
+
+
+Scikit-Learn is very easy to use, yet it implements many machine learning 
+algorithms efficiently, so it makes for a great entry point to learning 
+machine learning. It was created by David Cournapeau in 2007, and is now 
+led by a team of researchers at the French Institute for Research in Computer 
+Science and Automation (Inria).
+
+TensorFlow is a more complex library for distributed numerical computation. 
+It makes it possible to train and run very large neural networks efficiently 
+by distributing the computations across potentially hundreds of multi-GPU 
+(graphics processing unit) servers. TensorFlow (TF) was created at Google and 
+supports many of its large-scale machine learning applications. It was open 
+sourced in November 2015, and version 2.0 was released in September 2019.
+
+Keras is a high-level deep learning API that makes it very simple to train and 
+run neural networks. Keras comes bundled with TensorFlow, and it relies on 
+TensorFlow for all the intensive computations.
+
+
+Machine learning is the science (and art) of programming computers so they can learn from data.
+
+Here is a slightly more general definition:
+
+    [Machine learning is the] field of study that gives computers the ability to learn without 
+    being explicitly programmed.
+
+    Arthur Samuel, 1959
+
+And a more engineering-oriented one:
+
+    A computer program is said to learn from experience E with respect to some task T and 
+    some performance measure P, if its performance on T, as measured by P, improves with 
+    experience E.
+
+    Tom Mitchell, 1997

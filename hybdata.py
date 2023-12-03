@@ -67,8 +67,6 @@ for line in lines:
     line = line.replace(";", "")
     line = line.replace(" ", "")
 
-    # TODO: ALL val are int/float
-
     # Check if line is last line
     if line == 'end':
         break
@@ -115,37 +113,29 @@ for line in lines:
         # Get the species id
         if "id" in line:
             id = line[line.find("=")+2:len(line)-1]
-            print(id)
 
         # Get the species value
         if "val" in line:
             val = line[line.find("=")+1:len(line)+1]
-            print(val)
 
         # Get the species compartment
         if "compartment" in line:
             compartment = line[line.find("=")+2:len(line)-1]
-            print(compartment)
 
         # Get see if the species is fixed
         if "fixed" in line:
             fixed = line[line.find("=")+1:len(line)+1]
-            print(fixed)
 
         # Get the species min value
         if "min" in line:
             min = line[line.find("=")+1:len(line)+1]
-            print(min)
 
         # Get the species max value
         if "max" in line:
             max = line[line.find("=")+1:len(line)+1]
-            print(max)
 
-        # Get the ???????
         if "isres" in line:
             isres = line[line.find("=")+1:len(line)+1]
-            print(isres)
 
         species_dict[i] = {
             "id": id,
@@ -168,27 +158,22 @@ for line in lines:
         # Get the compartments id
         if "id" in line:
             id = line[line.find("=")+2:len(line)-1]
-            print(id)
 
         # Get the compartments value
         if "val" in line:
             val = line[line.find("=")+1:len(line)+1]
-            print(val)
 
         # Get the compartments min value
         if "min" in line:
             min = line[line.find("=")+1:len(line)+1]
-            print(min)
 
         # Get the compartments max value
         if "max" in line:
             max = line[line.find("=")+1:len(line)+1]
-            print(max)
 
         # Get the ???????
         if "isres" in line:
             isres = line[line.find("=")+1:len(line)+1]
-            print(isres)
 
         compartment_dict[i] = {
             "id": id,
@@ -208,17 +193,14 @@ for line in lines:
         # Get the parameters id
         if "id" in line:
             id = line[line.find("=")+2:len(line)-1]
-            print(id)
 
         # Get the parameters value
         if "val" in line:
             val = line[line.find("=")+2:len(line)-1]
-            print(val)
 
         # Get the parameters min value
         if "reaction" in line:
             reaction = line[line.find("=")+2:len(line)-1]
-            print(reaction)
 
         parameters_dict[i] = {
             "id": id,
@@ -264,7 +246,6 @@ for line in lines:
 
         if ".v" in line:
             line = line[line.find(".v"):len(line)]
-            print(line)
             j = line[line.find("(")+1:line.find(")")]
             if "r" in line:
                 var = line[line.find(f"r({j})=")+6:len(line)-1]
@@ -415,7 +396,13 @@ for line in lines:
             id = line[line.find("=")+2:len(line)-1]
 
         if "options" in line:
-            options = line[line.find("=")+2:len(line)-1]
+            start = line.find('[')
+            end = line.find(']') + 1
+            text = line[start:end]
+            spaced_text = ' '.join(text.strip('[]'))
+            numbers = spaced_text.split()
+            numbers = [int(num) for num in numbers]
+            options = numbers
 
         if "layer" in line:
             layer = line[line.find("=")+1:len(line)+1]
@@ -524,8 +511,8 @@ for line in lines:
     if "display" in line:
         display = line[line.find("=")+2:len(line)-1]
 
-    if "boostrap" in line:
-        boostrap = int(line[line.find("=")+1:len(line)])
+    if "bootstrap" in line:
+        bootstrap = int(line[line.find("=")+1:len(line)])
 
     if "nensemble" in line:
         nensemble = int(line[line.find("=")+1:len(line)])
@@ -577,7 +564,7 @@ dict = {
     "niteroptim": niteroptim,
     "nstep": nstep,
     "display": display,
-    "boostrap": boostrap,
+    "bootstrap": bootstrap,
     "nensemble": nensemble,
     "crossval": crossval,
     "adalfa": adalfa,

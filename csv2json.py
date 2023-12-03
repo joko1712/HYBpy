@@ -3,6 +3,9 @@ import pandas as pd
 import json
 import random
 
+with open("sample.json", "r") as f:
+    projhyb = json.load(f)
+
 with open('chassbatch1 copy.csv', 'r') as f:
     reader = csv.reader(f)
     headers = next(reader)
@@ -40,7 +43,7 @@ def label_batches(data):
         print("Invalid mode. Exiting...")
         exit()
 
-    return data
+    return data, projhyb
 
 
 def manual_label(data):
@@ -62,7 +65,10 @@ def manual_label(data):
         if batch in data:
             data[batch]["istrain"] = 3
 
-    return data
+    projhyb["train_batches"] = train_batches
+    projhyb["test_batches"] = test_batches
+
+    return data, projhyb
 
 
 def random_label(data):
@@ -79,7 +85,10 @@ def random_label(data):
         if batch in data:
             data[batch]["istrain"] = 3
 
-    return data
+    projhyb["train_batches"] = train_batches
+    projhyb["test_batches"] = test_batches
+
+    return data, projhyb
 
 
 def add_cnoise_to_data(data):
@@ -87,14 +96,20 @@ def add_cnoise_to_data(data):
         for time_key, time_data in batch_data.items():
             if isinstance(time_data, dict):  # Check if time_data is a dictionary
                 cnoise = [float(val) for key, val in time_data.items()
-                          if key.startswith("sd")]
+                          if not key.startswith("sd")]
                 data[batch_key][time_key]['cnoise'] = cnoise
     return data
 
 
-data = label_batches(data)
+data, projhyb = label_batches(data)
 data = add_cnoise_to_data(data)
+count = len(data)
+data["nbatch"] = count
+
 
 # insert number os batches at the end nbatch
 with open('file.json', 'w') as f:
     json.dump(data, f, indent=4)
+
+with open('sample.json', 'w') as f:
+    json.dump(projhyb, f, indent=4)

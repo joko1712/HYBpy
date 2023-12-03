@@ -140,16 +140,10 @@ print("ucontrol", ucontrol)
 print("w", w)
 
 
-A = Matrix([symbols("a")**2, symbols("b")**3])
-
-B = Matrix(["a", "b"])
-
-F = A.jacobian(B)
-
 for i in range(1, len(anninp)+1):
     anninp.append(anninp[i-1]/data["mlm"]["x"][str(i)]["max"])
 
-
+# CALLED FROM METGHODS
 print("anninp", anninp)
 DanninpDstate = Matrix([anninp]).jacobian(Matrix([State]))
 print("DanninpDstate", DanninpDstate)

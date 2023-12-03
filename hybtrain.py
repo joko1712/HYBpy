@@ -3,13 +3,31 @@ from scipy.optimize import least_squares
 from scipy.optimize import minimize
 import scipy.io
 import json
-
+import time
+import matplotlib.pyplot as plt
+from mlpnetinit import mlpnetinitw
+from mlpnetcreate import mlpnetcreate
+import torch
+from mlpnetsetw import mlpnetsetw
 
 with open("sample.json", "r") as read_file:
     projhyb = json.load(read_file)
 
+with open("file.json", "r") as read_file:
+    file = json.load(read_file)
 
-def hybtrain(projhyb):
+
+def default_fobj(w):
+    raise NotImplementedError(
+        "Objective function fobj is not properly defined.")
+
+
+def hybtrain(projhyb, file):
+
+    fobj = default_fobj
+
+    print(projhyb)
+    print("Mode:", projhyb['mode'])
 
     if projhyb is None:
         raise ValueError("at least 1 input required for HYBTRAIN( projhyb)")
@@ -26,37 +44,31 @@ def hybtrain(projhyb):
     if projhyb['nstep'] <= 0:
         raise ValueError("nstep must be >= 1")
 
-    projhyb = {}
     projhyb['ntrain'] = 0
-    # CALLL FILE:json to decide what is train waht test
-    projhyb['istrain'] = [0] * projhyb['nbatch']
-    istrainSAVE = [0] * projhyb['nbatch']
 
     projhyb['itr'] = []  # List to keep track of training indices.
     cnt_jctrain = 0  # Counter for the number of training noise samples.
     cnt_jcval = 0    # Counter for the number of validation noise samples.
     cnt_jctest = 0   # Counter for the number of test noise samples.
 
-    # Loop through each batch in projhyb.
-    for i in range(projhyb['nbatch']):
-        # Copy the 'istrain' value from the current batch to the 'istrain' list.
-        # batch info from file.json
-        projhyb['istrain'][i] = projhyb['batch'][i]['istrain']
+    for key, batch_data in file.items():
+        if not isinstance(batch_data, dict):
+            continue
 
-        # If the current batch is a training batch:
-        if projhyb['batch'][i]['istrain'] == 1:
-           # Increment the training batch counter.
-            projhyb['ntrain'] += 1
-            # Append the current index to the training indices list.
-            projhyb['itr'].append(i)
-            # Count the noise samples in the current training batch.
-            cnt_jctrain += len(projhyb['batch'][i]['cnoise'])
+        # Extract all the iteration keys within the batch
+        iteration_keys = [int(k) for k in batch_data.keys() if k.isdigit()]
 
-        # If the current batch is a test batch:
-        elif projhyb['batch'][i]['istrain'] == 3:
-            # Count the noise samples in the current test batch.
-            # ADD cnoise to file.json
-            cnt_jctest += len(projhyb['batch'][i]['cnoise'])
+        if not iteration_keys:
+            continue
+
+        last_iteration_key = str(max(iteration_keys))
+
+        cnoise_array = batch_data[last_iteration_key].get("cnoise", [])
+
+        if "train_batches" in projhyb and str(key) in projhyb["train_batches"]:
+            cnt_jctrain += len(cnoise_array)
+        elif "test_batches" in projhyb and str(key) in projhyb["test_batches"]:
+            cnt_jctest += len(cnoise_array)
 
     if projhyb.get('bootstrap', None) == 1:
         if 'nbootstrap' not in projhyb:
@@ -65,38 +77,38 @@ def hybtrain(projhyb):
         else:
             projhyb['nstep'] = projhyb['nbootstrap']
 
-        # If 'nbootrate' key is not present in the dictionary:
         if 'nbootrate' not in projhyb:
-            projhyb['nbootrate'] = 2/3  # Set a default boot rate of 2/3.
+            projhyb['nbootrate'] = 2/3
 
-        # Calculate the actual number of bootstrap samples based on the boot rate.
         nboot = max(1, int(projhyb['ntrain'] * projhyb['nbootrate']))
-
-    def ofun1(x1, x2, x3): return outFun1(x1, x2, x3, projhyb)
 
     print("\nTraining method:")
 
+    mode = projhyb['mode']
     # Check training mode
-    if projhyb['mode'] == 1:
+    if mode == 1:
         print("   Mode:                   Indirect")
-    elif projhyb['mode'] == 2:
+    elif mode == 2:
         print("   Mode:                   Direct")
-    elif projhyb['mode'] == 3:
+    elif mode == 3:
         print("   Mode:                   Semidirect")
 
+    jacobianNumber = projhyb.get('jacobian', [])
     # Check Jacobian mode
     jacobian = 'off'
-    if projhyb['jacobian'] == 0:
+    if jacobianNumber == 0:
         print("   Jacobian:               OFF")
-    elif projhyb['jacobian'] == 1:
+    elif jacobianNumber == 1:
         print("   Jacobian:               ON")
         jacobian = 'on'
 
+    hessianNumber = projhyb.get('hessian', [])
+
     # Check Hessian mode
     hessian = 'off'
-    if projhyb['hessian'] == 0:
+    if hessianNumber == 0:
         print("   Hessian:               OFF")
-    elif projhyb['hessian'] == 1:
+    elif hessianNumber == 1:
         print("   Hessian:               ON")
         hessian = 'on'
 
@@ -105,78 +117,80 @@ def hybtrain(projhyb):
     print(
         f"   Total iterations:       {projhyb['niter'] * projhyb['niteroptim']}")
 
-    if projhyb['bootstrap'] == 1:
+    if projhyb.get("bootstrap", 0) == 1:
         print("   Bootstrap:              ON")
         print(f"   Bootstrap repetitions:    {projhyb['nbootstrap']}")
         print(f"   Bootstrap permutations: {nboot}/{projhyb['ntrain']}")
     else:
         print("   Bootstrap:              OFF")
 
+#######################################################################################################################
+
+    options = {}
+
     if projhyb['method'] == 1:
+        print("   Optimiser:              Levenberg-Marquardt")
         options = {
             'method': 'lm',
             'jac': jacobian,
-            'max_nfev': 100000,
             'xtol': 1e-9,
             'ftol': 1e-12,
-            'verbose': projhyb['display'],
+            'verbose': projhyb['display']
         }
 
-        options['max_nfev'] = projhyb['niter'] * projhyb['niteroptim']
-
-        options['x_scale'] = ofun1
-
-        result = least_squares(fun, x0, **options)
-
-        print(f"   Optimiser:              Levenberg-Marquardt")
-
     elif projhyb['method'] == 2:
-        algorithm = 'L-BFGS-B'  # default quasi-Newton method in SciPy
-
-        if projhyb['jacobian'] == 1:
-            algorithm = 'trust-constr'
-
+        algorithm = 'L-BFGS-B' if projhyb['jacobian'] != 1 else 'trust-constr'
         print(f"   Optimiser:              {algorithm}")
-
         options = {
             'method': algorithm,
             'jac': jacobian,
             'hess': hessian,
             'options': {
                 'disp': projhyb['display'],
-                'maxiter': projhyb['niter'] * projhyb['niteroptim'],
+                'maxiter': projhyb['niter'] * projhyb['niteroptim']
             },
-            'callback': ofun1,
+            'callback': lambda xk: outFun1(xk, state)
         }
 
-        if projhyb['derivativecheck']:
-            if not derivative_check(fun, jacobian, x0):
-                print("Stopping optimization due to derivative check failure.")
-                exit()
-
-        result = minimize(fun, x0, **options)
-
-    elif projhyb['method'] == 3:  # Not needed
+    elif projhyb['method'] == 3:
         print("   Optimiser:              Simulated Annealing")
-
+        bounds = [(-20, 20)] * projhyb['mlm']['nw']
         options = {
-            'display': projhyb['display'],
             'maxiter': projhyb['niter'] * projhyb['niteroptim'],
-            'outputfcn': ofun1
+            'disp': projhyb['display'],
+            'callback': lambda xk: outFun1(xk, state)
         }
-        ParsLB = -20 * np.ones(projhyb['mlm']['nw'])
-        ParsUB = 20 * np.ones(projhyb['mlm']['nw'])
 
     elif projhyb['method'] == 4:
         print("   Optimiser:              Adam")
-        npall = 0
-        for l in range(projhyb['nbatch']):
-            if projhyb['istrain'][l] == 1:
-                npall += len(projhyb['batch'][l]['t'])
-
-    options['niter'] = projhyb['niter'] * projhyb['niteroptim']
+        npall = sum(len(projhyb['batch'][l]['t']) for l in range(
+            projhyb['nbatch']) if projhyb['istrain'][l] == 1)
+        options['niter'] = projhyb['niter'] * projhyb['niteroptim']
 
     print("\n\n")
+
+    NH = projhyb['mlm']['options']
+    H = len(NH)
+    projhyb["mlm"]['h'] = H
+    projhyb["mlm"]['nl'] = 2 + H
+    projhyb["mlm"]['nh'] = NH[:H]
+    projhyb["mlm"]['nw'] = (projhyb["mlm"]['nx'] + 1) * projhyb["mlm"]['nh'][0]
+    projhyb["mlm"]["ninp"] = projhyb["mlm"]["nx"]
+    projhyb["mlm"]["nout"] = projhyb["mlm"]["ny"]
+
+    for i in range(1, H):
+        projhyb["mlm"]['nw'] += (projhyb["mlm"]['nh']
+                                 [i - 1] + 1) * projhyb["mlm"]['nh'][i]
+    projhyb["mlm"]['nw'] += (projhyb["mlm"]['nh']
+                             [H - 1] + 1) * projhyb["mlm"]['ny']
+
+    projhyb["mlm"]['w'] = np.random.randn(projhyb["mlm"]['nw'], 1) * 0.001
+
+    print("Number of weights: ", projhyb["mlm"]['nw'])
+    print("Number of inputs: ", projhyb["mlm"]['nx'])
+    print("Number of outputs: ", projhyb["mlm"]['ny'])
+    print("Number of hidden layers: ", projhyb["mlm"]['h'])
+    print("Number of neurons in each hidden layer: ", projhyb["mlm"]['nh'])
 
     TrainRes = {
         'witer': [[0] * projhyb['mlm']['nw'] for _ in range(projhyb['nstep'] * projhyb['niter'] * 2)],
@@ -196,25 +210,27 @@ def hybtrain(projhyb):
         't0': time.time()
     }
 
-    if 'initweights' not in projhyb:
-        projhyb['initweights'] = 1
-
-    if projhyb['initweights'] == 1:
+    if 'fundata' not in projhyb['mlm'] or projhyb['initweights'] == 1:
         print('Weights initialization...')
-        weights, ann = mlpnetinitw(projhyb['mlm']['fundata'])
+        ann = mlpnetcreate(projhyb, projhyb['mlm']['neuron'])
         projhyb['mlm']['fundata'] = ann
+        weights, ann = mlpnetinitw(projhyb['mlm']['fundata'])
 
     elif projhyb['initweights'] == 2:
         print('Read weights from file...')
         weights_data = load(projhyb['weightsfile'])
         weights = np.reshape(weights_data['wPHB0'], (-1, 1))
-        projhyb['mlm']['fundata'] = feval(
-            projhyb['mlmsetwfunc'], projhyb['mlm']['fundata'], weights)
+        projhyb['mlm']['fundata'].set_weights(weights)
+
+    weights = weights.ravel()
 
     for istep in range(1, projhyb['nstep'] + 1):
 
-        for i in range(projhyb['nbatch']):
-            projhyb['istrain'][i] = projhyb['batch'][i]['istrain']
+        for i in range(1, file['nbatch'] + 1):
+            istrain = file[str(i)]["istrain"]
+            projhyb['istrain'] = [0] * file['nbatch']
+            projhyb['istrain'][i - 1] = istrain
+            print(projhyb['istrain'])
 
         if projhyb['bootstrap'] == 1:
             ind = sorted(np.random.permutation(projhyb['ntrain'])[:nboot])
@@ -233,7 +249,7 @@ def hybtrain(projhyb):
                     w, projhyb['istrain'], projhyb, projhyb['method'])
             elif projhyb['jacobian'] == 1:
                 def fobj(w): return resfun_indirect_jac(
-                    w, projhyb['istrain'], projhyb, projhyb['method'])
+                    w, projhyb['istrain'], projhyb, projhyb['method'])[0]
             elif projhyb['hessian'] == 1:
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
 
@@ -275,21 +291,29 @@ def hybtrain(projhyb):
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
-        if method == 1:  # LEVENBERG-MARQUARDT
-            result = least_squares(fobj, weights, method='lm', **options)
+        if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
+            if projhyb['jacobian'] == 0:
+                options = {'jac': '2-point'}  # Let scipy estimate the Jacobian
+            elif projhyb['jacobian'] == 1:
+                options = {'jac': jac}
+
+            if fobj is default_fobj:
+                raise ValueError("Objective function fobj was not defined.")
+
+            result = least_squares(fobj, weights, **options)
             wfinal, fval = result.x, result.cost
 
-        elif method == 2:  # QUASI-NEWTON
+        elif projhyb["method"] == 2:  # QUASI-NEWTON
             result = minimize(fobj, weights, method='BFGS', options=options)
             wfinal, fval = result.x, result.fun
 
-        elif method == 3:  # SIMULATED ANNEALING
+        elif projhyb["method"] == 3:  # SIMULATED ANNEALING
             from scipy.optimize import dual_annealing
             result = dual_annealing(fobj, bounds=list(
                 zip(ParsLB, ParsUB)), **optopts)
             wfinal, fval = result.x, result.fun
 
-        elif method == 4:  # ADAMS
+        elif projhyb["method"] == 4:  # ADAMS
             wfinal, fval = adamunlnew(fobj, weights, ofun1, projhyb, options)
 
     # Assuming you're using process time for CPU time
@@ -303,6 +327,8 @@ def hybtrain(projhyb):
 
     trainData = TrainRes
     scipy.io.savemat('hybtrain_results.mat', {"trainData": trainData})
+
+#######################################################################################################################
 
     # Plot training results
     plt.figure()
@@ -507,42 +533,16 @@ def hybtrain(projhyb):
     return projhyb, trainData
 
 
-def mlpnetinitw(ann):
-    w = []
+def fobj(w):
+    residuals, _ = resfun_indirect_jac(
+        w, projhyb['istrain'], projhyb, projhyb['method'])
+    return residuals
 
-    if ann['h'] == 1:
-        ann['layer'][0]['w'] = np.random.randn(
-            ann['nh'], ann['nx']) * np.sqrt(2 / (ann['nx'] + ann['nh']))
-        ann['layer'][0]['b'] = np.zeros((ann['nh'], 1))
-        ann['layer'][1]['w'] = np.random.randn(
-            ann['ny'], ann['nh']) * np.sqrt(2 / (ann['nh'] + ann['ny']))
-        ann['layer'][1]['b'] = np.zeros((ann['ny'], 1))
 
-        w.extend(ann['layer'][0]['w'].ravel())
-        w.extend(ann['layer'][0]['b'].ravel())
-        w.extend(ann['layer'][1]['w'].ravel())
-        w.extend(ann['layer'][1]['b'].ravel())
-
-    else:
-        count = 0
-        for i in range(ann['h']):
-            ann['layer'][i]['w'] = np.random.randn(ann['nh'][i], ann['nx'] if i == 0 else ann['nh'][i-1]) * np.sqrt(
-                2 / (ann['nh'][i] + (ann['nx'] if i == 0 else ann['nh'][i-1])))
-            ann['layer'][i]['b'] = np.zeros((ann['nh'][i], 1))
-
-            w.extend(ann['layer'][i]['w'].ravel())
-            w.extend(ann['layer'][i]['b'].ravel())
-
-        ann['layer'][ann['h']]['w'] = np.random.randn(
-            ann['ny'], ann['nh'][-1]) * np.sqrt(2 / (ann['ny'] + ann['nh'][-1]))
-        ann['layer'][ann['h']]['b'] = np.zeros((ann['ny'], 1))
-
-        w.extend(ann['layer'][ann['h']]['w'].ravel())
-        w.extend(ann['layer'][ann['h']]['b'].ravel())
-
-    w = np.array(w).reshape(-1, 1)
-    ann['w'] = w
-    return w, ann
+def jac(w):
+    _, jacobian = resfun_indirect_jac(
+        w, projhyb['istrain'], projhyb, projhyb['method'])
+    return jacobian
 
 
 def outFun1(witer, optimValues, optstate, projhyb):
@@ -614,17 +614,16 @@ def derivative_check(fun, jac, x0, tol=1e-6):
 #   INDIRECT
 ####
 
-
 def resfun_indirect_jac(w, istrain, projhyb, method=1):
     if not istrain:
         istrain = projhyb["istrain"]
 
-    ns = projhyb["nstate"]
+    ns = projhyb["nspecies"]
     nw = projhyb["mlm"]["nw"]
-    isres = projhyb["isres"]
-    nres = projhyb["nres"]
-    projhyb["mlm"]["fundata"] = projhyb["mlmsetwfunc"](
-        projhyb["mlm"]["fundata"], w)
+    isres = [projhyb["species"][str(i)]["isres"] for i in range(1, ns + 1)]
+    nres = sum(isres)
+
+    projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
 
     npall = sum(projhyb["batch"][i]["np"]
                 for i in range(projhyb["nbatch"]) if istrain[i] == 1)
@@ -633,7 +632,7 @@ def resfun_indirect_jac(w, istrain, projhyb, method=1):
     sjacall = np.zeros((npall * nres, projhyb["mlm"]["nw"]))
 
     COUNT = 0
-    for l in range(projhyb["nbatch"]):
+    for l in range(file["nbatch"]):
         if istrain[l] == 1:
             tb = projhyb["batch"][l]["t"]
             Y = projhyb["batch"][l]["state"]
@@ -769,62 +768,6 @@ def resfun_indirect_fminunc_hess(w, istrain, projhyb):
     return sres, sjac, shess
 
 
-def resfun_semidirect_jac_batch(w, istrain, projhyb, method=1):
-    ns = projhyb['nstate']
-    nw = projhyb['mlm']['nw']
-    isres = projhyb['isres']
-    nres = projhyb['nres']
-
-    projhyb['mlm']['fundata'] = projhyb['mlmsetwfunc'](
-        projhyb['mlm']['fundata'], w)  # set weights
-
-    COUNT = 1
-    mse = 0
-    grads = np.zeros(nw)
-
-    for l in range(projhyb['nbatch']):
-        if istrain[l] == 1:
-            tb = projhyb['batch'][l]['t']
-            Y = projhyb['batch'][l]['state']
-            upars = projhyb['batch'][l]['u']
-            sY = projhyb['batch'][l]['sc']
-            state = projhyb['batch'][l]['state'][0, :].T
-            Sw = np.zeros((ns, nw))
-            DstateDrann = np.zeros((ns, projhyb['mlm']['ny']))
-
-            for i in range(1, projhyb['batch'][l]['np']):
-                _, state, DstateDrann = hybodesolver(
-                    projhyb['fun_hybodes_jac'], projhyb['fun_control'], projhyb['fun_event'], tb[i-1], tb[i],
-                    state, DstateDrann, 0, w, projhyb['batch'][l], projhyb
-                )
-
-                res = np.zeros(ns)
-                res[isres] = (Y[i, isres] - state[isres]).T / sY[i, isres]
-                ind = ~np.isnan(res)  # missing values
-                mse_i = res[ind] @ res[ind].T
-
-                DmseDsate = np.zeros(ns)
-                DmseDsate[isres] = -2 * res / sY[i, isres]
-                DmseDsate[~ind] = 0  # missing values
-
-                DmseDrann = DmseDsate @ DstateDrann
-
-                ucontrol = projhyb['fun_control'](tb[i], projhyb['batch'][l])
-                inp = projhyb['mlm']['xfun'](tb[i], state, ucontrol)
-                _, _, DmseDw = projhyb['mlm']['yfun'](
-                    inp, w, projhyb['mlm']['fundata'], DmseDrann)
-
-                mse += mse_i
-                grads += DmseDw
-
-                COUNT += nres
-
-    mse /= COUNT
-    grads /= COUNT
-
-    return mse, grads
-
-
 def resfun_indirect(w, istrain=None, projhyb=None, method=1):
     if projhyb is None:
         raise ValueError("projhyb argument is required.")
@@ -872,10 +815,10 @@ def resfun_indirect(w, istrain=None, projhyb=None, method=1):
     else:
         return resall.T @ resall / len(resall)
 
-
 ####
 #   DIRECT
 ####
+
 
 def resfun_direct_jac(w, istrain=None, projhyb=None, method=1):
     if projhyb is None:
@@ -938,10 +881,10 @@ def resfun_direct_jac(w, istrain=None, projhyb=None, method=1):
 
     return fobj, jac
 
-
 ####
 #   SEMIDIRECT
 ####
+
 
 def resfun_semidirect(w, istrain=None, projhyb=None, method=1):
     if projhyb is None:
@@ -1065,5 +1008,62 @@ def resfun_semidirect_jac(w, projhyb, istrain=None, method=1):
     return fobj, jac
 
 
-projhyb, trainData = hybtrain(projhyb)
+def resfun_semidirect_jac_batch(w, istrain, projhyb, method=1):
+    ns = projhyb['nstate']
+    nw = projhyb['mlm']['nw']
+    isres = projhyb['isres']
+    nres = projhyb['nres']
+
+    projhyb['mlm']['fundata'] = projhyb['mlmsetwfunc'](
+        projhyb['mlm']['fundata'], w)  # set weights
+
+    COUNT = 1
+    mse = 0
+    grads = np.zeros(nw)
+
+    for l in range(projhyb['nbatch']):
+        if istrain[l] == 1:
+            tb = projhyb['batch'][l]['t']
+            Y = projhyb['batch'][l]['state']
+            upars = projhyb['batch'][l]['u']
+            sY = projhyb['batch'][l]['sc']
+            state = projhyb['batch'][l]['state'][0, :].T
+            Sw = np.zeros((ns, nw))
+            DstateDrann = np.zeros((ns, projhyb['mlm']['ny']))
+
+            for i in range(1, projhyb['batch'][l]['np']):
+                _, state, DstateDrann = hybodesolver(
+                    projhyb['fun_hybodes_jac'], projhyb['fun_control'], projhyb['fun_event'], tb[i-1], tb[i],
+                    state, DstateDrann, 0, w, projhyb['batch'][l], projhyb
+                )
+
+                res = np.zeros(ns)
+                res[isres] = (Y[i, isres] - state[isres]).T / sY[i, isres]
+                ind = ~np.isnan(res)  # missing values
+                mse_i = res[ind] @ res[ind].T
+
+                DmseDsate = np.zeros(ns)
+                DmseDsate[isres] = -2 * res / sY[i, isres]
+                DmseDsate[~ind] = 0  # missing values
+
+                DmseDrann = DmseDsate @ DstateDrann
+
+                ucontrol = projhyb['fun_control'](tb[i], projhyb['batch'][l])
+                inp = projhyb['mlm']['xfun'](tb[i], state, ucontrol)
+                _, _, DmseDw = projhyb['mlm']['yfun'](
+                    inp, w, projhyb['mlm']['fundata'], DmseDrann)
+
+                mse += mse_i
+                grads += DmseDw
+
+                COUNT += nres
+
+    mse /= COUNT
+    grads /= COUNT
+
+    return mse, grads
+
+
+print(projhyb)
+projhyb, trainData = hybtrain(projhyb, file)
 print(projhyb, trainData)

@@ -9,6 +9,8 @@ from mlpnetinit import mlpnetinitw
 from mlpnetcreate import mlpnetcreate
 import torch
 from mlpnetsetw import mlpnetsetw
+import hybodesolver as hybodesolver
+import control_function as control_function
 
 with open("sample.json", "r") as read_file:
     projhyb = json.load(read_file)
@@ -123,6 +125,13 @@ def hybtrain(projhyb, file):
         print(f"   Bootstrap permutations: {nboot}/{projhyb['ntrain']}")
     else:
         print("   Bootstrap:              OFF")
+
+    if projhyb["fun_control"] != 0:
+        print("   Control function:       ON")
+        fun_control = control_function.control_function()
+    else:
+        print("   Control function:       OFF")
+        print("   ASK USER TO DEFINE CONTROL FUNCTION")
 
 #######################################################################################################################
 
@@ -624,24 +633,44 @@ def resfun_indirect_jac(w, istrain, projhyb, method=1):
     nres = sum(isres)
 
     projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
+    npall = 0
 
-    npall = sum(projhyb["batch"][i]["np"]
-                for i in range(projhyb["nbatch"]) if istrain[i] == 1)
+    for i in range(file["nbatch"]):
+        i = i+1
+
+        i = str(i)
+
+        if file[i]["istrain"] == 1:
+            npall = npall + file[i]["np"]
+        else:
+            print("ok")
 
     sresall = np.zeros(npall * nres)
     sjacall = np.zeros((npall * nres, projhyb["mlm"]["nw"]))
 
     COUNT = 0
     for l in range(file["nbatch"]):
-        if istrain[l] == 1:
-            tb = projhyb["batch"][l]["t"]
-            Y = projhyb["batch"][l]["state"]
-            batch = projhyb["batch"][l]
-            sY = projhyb["batch"][l]["sc"]
-            state = projhyb["batch"][l]["state"][0, :].T
+        l = l+1
+        if file[str(l)]["istrain"] == 1:
+            tb = file[str(l)]["time"]
+            Y = file[str(l)]["y"]
+
+            batch = str(l)
+
+            sY = file[str(l)]["sy"]
+
+            first = file[str(l)]["time"][0]
+            print(first)
+            n_columns = len(file[str(l)][str(first)]["state"])
+            print(n_columns)
+            first_row = file[str(l)]["y"][:n_columns]
+            print(first_row)
+            state = first_row
             Sw = np.zeros((ns, nw))
 
-            for i in range(1, projhyb["batch"][l]["np"]):
+            for i in range(1, file[str(l)]["np"]):
+
+                # Discutir o que passar com o nargout do hybodesolver. A minha ideia é passar o mode e o jac e o hybodesolver decide o que fazer
                 _, state, Sw = hybodesolver(projhyb["fun_hybodes_jac"],
                                             projhyb["fun_control"], projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, [], batch, projhyb)
@@ -686,16 +715,33 @@ def resfun_indirect_fminunc(w, istrain, projhyb):
     sjac = np.zeros(nw)
 
     COUNT = 0
-    for l in range(projhyb['nbatch']):
-        if istrain[l] == 1:
-            tb = projhyb['batch'][l]['t']
-            Y = projhyb['batch'][l]['state']
-            upars = projhyb['batch'][l]['u']
-            sY = projhyb['batch'][l]['sc']
-            np = len(tb)
+    print(file["nbatch"])
+    for l in range(file['nbatch']):
+        if file[str(l)]["istrain"] == 1:
+            tb = file[str(l)]["time"]
+            Y = file[str(l)]["y"]
+
+            if 'u' not in file[str(l)]:
+                upars = []
+            else:
+                upars = file[str(l)]["u"]  # VERIFICAR !!!!!!!!!!!!!!!!
+
+            sY = file[str(l)]["sy"]
+
+            np = file[str(l)]["np"]
 
             # Convert the row into a column vector
-            state = np.array(projhyb['batch'][l]['state'][0]).reshape(-1, 1)
+
+            first = file[str(l)]["time"][0]
+            print(first)
+            n_columns = len(file[str(l)][str(first)]["state"])
+            print(n_columns)
+            first_row = file[str(l)]["y"][:n_columns]
+            print(first_row)
+            first_row_column = np.array(first_row).reshape(1, n_columns)
+            print(first_row_column)
+
+            state = np.array(file[str(l)]['y'][0]).reshape(-1, 1)
             Sw = np.zeros((ns, nw))
 
             for i in range(1, np):
@@ -1064,6 +1110,5 @@ def resfun_semidirect_jac_batch(w, istrain, projhyb, method=1):
     return mse, grads
 
 
-print(projhyb)
 projhyb, trainData = hybtrain(projhyb, file)
 print(projhyb, trainData)

@@ -2,11 +2,12 @@ import csv
 import pandas as pd
 import json
 import random
+import numpy as np
 
 with open("sample.json", "r") as f:
     projhyb = json.load(f)
 
-with open('chassbatch1 copy.csv', 'r') as f:
+with open('chassbatch1.csv', 'r') as f:
     reader = csv.reader(f)
     headers = next(reader)
 
@@ -91,18 +92,38 @@ def random_label(data):
     return data, projhyb
 
 
-def add_cnoise_to_data(data):
+def add_state_and_time_to_data(data):
     for batch_key, batch_data in data.items():
+        time_list = []
+        y_matrix = []
+        sc_list = []
+        sy_matrix = []
         for time_key, time_data in batch_data.items():
-            if isinstance(time_data, dict):  # Check if time_data is a dictionary
-                cnoise = [float(val) for key, val in time_data.items()
-                          if not key.startswith("sd")]
-                data[batch_key][time_key]['cnoise'] = cnoise
+            if isinstance(time_data, dict):
+                state = [float(val) for key, val in time_data.items() if not key.startswith("sd")]
+
+                data[batch_key][time_key]['state'] = state
+                y_matrix.extend(state) 
+                
+                sd_values = [float(val) for key, val in time_data.items() if key.startswith("sd")]
+                v_values = [float(time_data[key]) for key in time_data if key.startswith("V")]
+
+                data[batch_key][time_key]['sc'] = sd_values + [np.std(v_values)]
+                sy_matrix.extend(data[batch_key][time_key]['sc'])
+                                
+                time_list.append(int(time_key)) 
+
+        data[batch_key]['time'] = time_list
+        data[batch_key]["np"] = len(time_list)
+        data[batch_key]["y"] = y_matrix 
+        data[batch_key]["sy"] = sy_matrix
+
     return data
 
 
+
 data, projhyb = label_batches(data)
-data = add_cnoise_to_data(data)
+data = add_state_and_time_to_data(data)
 count = len(data)
 data["nbatch"] = count
 

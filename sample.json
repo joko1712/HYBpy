@@ -121,49 +121,217 @@
         }
     },
     "ncompartments": 1,
-    "compartment": { "1": { "id": "compartment", "val": "1", "min": 0, "max": 15, "isres": 0 } },
+    "compartment": {
+        "1": {
+            "id": "compartment",
+            "val": "1",
+            "min": 0,
+            "max": 15,
+            "isres": 0
+        }
+    },
     "nparameters": 40,
     "parameters": {
-        "1": { "id": "keqak", "val": 0.00064, "reaction": "global" },
-        "2": { "id": "k11", "val": 0.97, "reaction": "global" },
-        "3": { "id": "k1thr", "val": 0.167, "reaction": "global" },
-        "4": { "id": "nak1", "val": 4.09, "reaction": "global" },
-        "5": { "id": "alpha1", "val": 2.47, "reaction": "global" },
-        "6": { "id": "k1aspp", "val": 0.017, "reaction": "global" },
-        "7": { "id": "k1atp", "val": 0.98, "reaction": "global" },
-        "8": { "id": "k1adp", "val": 0.25, "reaction": "global" },
-        "9": { "id": "vm13", "val": 0.0722, "reaction": "global" },
-        "10": { "id": "lys", "val": 0.46, "reaction": "global" },
-        "11": { "id": "k1lys", "val": 0.391, "reaction": "global" },
-        "12": { "id": "nak3", "val": 2.8, "reaction": "global" },
-        "13": { "id": "k13", "val": 0.32, "reaction": "global" },
-        "14": { "id": "k13aspp", "val": 0.017, "reaction": "global" },
-        "15": { "id": "k13atp", "val": 0.22, "reaction": "global" },
-        "16": { "id": "k13adp", "val": 0.25, "reaction": "global" },
-        "17": { "id": "k2eq", "val": 56.4150334574039, "reaction": "global" },
-        "18": { "id": "k2aspp", "val": 0.022, "reaction": "global" },
-        "19": { "id": "k2asa", "val": 0.11, "reaction": "global" },
-        "20": { "id": "k2p", "val": 10.0, "reaction": "global" },
-        "21": { "id": "k2nadph", "val": 0.029, "reaction": "global" },
-        "22": { "id": "k2nadp", "val": 0.144, "reaction": "global" },
-        "23": { "id": "prot", "val": 202.0, "reaction": "global" },
-        "24": { "id": "k3eq", "val": 3162.27766016838, "reaction": "global" },
-        "25": { "id": "k3thr", "val": 0.097, "reaction": "global" },
-        "26": { "id": "nhdh1", "val": 1.41, "reaction": "global" },
-        "27": { "id": "alpha3", "val": 3.93, "reaction": "global" },
-        "28": { "id": "k3asa", "val": 0.24, "reaction": "global" },
-        "29": { "id": "k3hs", "val": 3.39, "reaction": "global" },
-        "30": { "id": "k3nadph", "val": 0.037, "reaction": "global" },
-        "31": { "id": "k3nadp", "val": 0.067, "reaction": "global" },
-        "32": { "id": "lys", "val": 0.46, "reaction": "global" },
-        "33": { "id": "k4lys", "val": 9.45, "reaction": "global" },
-        "34": { "id": "k4atp", "val": 0.072, "reaction": "global" },
-        "35": { "id": "k4ihs", "val": 4.7, "reaction": "global" },
-        "36": { "id": "k4hs", "val": 0.11, "reaction": "global" },
-        "37": { "id": "k4thr", "val": 1.09, "reaction": "global" },
-        "38": { "id": "k4iatp", "val": 4.35, "reaction": "global" },
-        "39": { "id": "prot", "val": 202.0, "reaction": "global" },
-        "40": { "id": "k5hsp", "val": 0.31, "reaction": "global" }
+        "1": {
+            "id": "keqak",
+            "val": 0.00064,
+            "reaction": "global"
+        },
+        "2": {
+            "id": "k11",
+            "val": 0.97,
+            "reaction": "global"
+        },
+        "3": {
+            "id": "k1thr",
+            "val": 0.167,
+            "reaction": "global"
+        },
+        "4": {
+            "id": "nak1",
+            "val": 4.09,
+            "reaction": "global"
+        },
+        "5": {
+            "id": "alpha1",
+            "val": 2.47,
+            "reaction": "global"
+        },
+        "6": {
+            "id": "k1aspp",
+            "val": 0.017,
+            "reaction": "global"
+        },
+        "7": {
+            "id": "k1atp",
+            "val": 0.98,
+            "reaction": "global"
+        },
+        "8": {
+            "id": "k1adp",
+            "val": 0.25,
+            "reaction": "global"
+        },
+        "9": {
+            "id": "vm13",
+            "val": 0.0722,
+            "reaction": "global"
+        },
+        "10": {
+            "id": "lys",
+            "val": 0.46,
+            "reaction": "global"
+        },
+        "11": {
+            "id": "k1lys",
+            "val": 0.391,
+            "reaction": "global"
+        },
+        "12": {
+            "id": "nak3",
+            "val": 2.8,
+            "reaction": "global"
+        },
+        "13": {
+            "id": "k13",
+            "val": 0.32,
+            "reaction": "global"
+        },
+        "14": {
+            "id": "k13aspp",
+            "val": 0.017,
+            "reaction": "global"
+        },
+        "15": {
+            "id": "k13atp",
+            "val": 0.22,
+            "reaction": "global"
+        },
+        "16": {
+            "id": "k13adp",
+            "val": 0.25,
+            "reaction": "global"
+        },
+        "17": {
+            "id": "k2eq",
+            "val": 56.4150334574039,
+            "reaction": "global"
+        },
+        "18": {
+            "id": "k2aspp",
+            "val": 0.022,
+            "reaction": "global"
+        },
+        "19": {
+            "id": "k2asa",
+            "val": 0.11,
+            "reaction": "global"
+        },
+        "20": {
+            "id": "k2p",
+            "val": 10.0,
+            "reaction": "global"
+        },
+        "21": {
+            "id": "k2nadph",
+            "val": 0.029,
+            "reaction": "global"
+        },
+        "22": {
+            "id": "k2nadp",
+            "val": 0.144,
+            "reaction": "global"
+        },
+        "23": {
+            "id": "prot",
+            "val": 202.0,
+            "reaction": "global"
+        },
+        "24": {
+            "id": "k3eq",
+            "val": 3162.27766016838,
+            "reaction": "global"
+        },
+        "25": {
+            "id": "k3thr",
+            "val": 0.097,
+            "reaction": "global"
+        },
+        "26": {
+            "id": "nhdh1",
+            "val": 1.41,
+            "reaction": "global"
+        },
+        "27": {
+            "id": "alpha3",
+            "val": 3.93,
+            "reaction": "global"
+        },
+        "28": {
+            "id": "k3asa",
+            "val": 0.24,
+            "reaction": "global"
+        },
+        "29": {
+            "id": "k3hs",
+            "val": 3.39,
+            "reaction": "global"
+        },
+        "30": {
+            "id": "k3nadph",
+            "val": 0.037,
+            "reaction": "global"
+        },
+        "31": {
+            "id": "k3nadp",
+            "val": 0.067,
+            "reaction": "global"
+        },
+        "32": {
+            "id": "lys",
+            "val": 0.46,
+            "reaction": "global"
+        },
+        "33": {
+            "id": "k4lys",
+            "val": 9.45,
+            "reaction": "global"
+        },
+        "34": {
+            "id": "k4atp",
+            "val": 0.072,
+            "reaction": "global"
+        },
+        "35": {
+            "id": "k4ihs",
+            "val": 4.7,
+            "reaction": "global"
+        },
+        "36": {
+            "id": "k4hs",
+            "val": 0.11,
+            "reaction": "global"
+        },
+        "37": {
+            "id": "k4thr",
+            "val": 1.09,
+            "reaction": "global"
+        },
+        "38": {
+            "id": "k4iatp",
+            "val": 4.35,
+            "reaction": "global"
+        },
+        "39": {
+            "id": "prot",
+            "val": 202.0,
+            "reaction": "global"
+        },
+        "40": {
+            "id": "k5hsp",
+            "val": 0.31,
+            "reaction": "global"
+        }
     },
     "nruleAss": 0,
     "ruleAss": {},
@@ -292,7 +460,15 @@
         }
     },
     "nraterules": 1,
-    "raterules": { "1": { "id": "compartment", "min": 0, "max": 10, "val": "0", "isres": 0 } },
+    "raterules": {
+        "1": {
+            "id": "compartment",
+            "min": 0,
+            "max": 10,
+            "val": "0",
+            "isres": 0
+        }
+    },
     "time": {
         "id": "t[h]",
         "min": 0,
@@ -307,7 +483,15 @@
         ]
     },
     "ncontrol": 1,
-    "control": { "1": { "id": "None", "min": 0, "max": 2, "val": "0", "constant": 0 } },
+    "control": {
+        "1": {
+            "id": "None",
+            "min": 0,
+            "max": 2,
+            "val": "0",
+            "constant": 0
+        }
+    },
     "fun_control": "@control_function_chass",
     "fun_event": [],
     "mlm": {
@@ -320,26 +504,116 @@
         "nx": 11,
         "ny": 7,
         "x": {
-            "1": { "id": "anninp1", "min": 0.0, "max": 5.0, "val": "adp" },
-            "2": { "id": "anninp2", "min": 0.0, "max": 0.1, "val": "asa" },
-            "3": { "id": "anninp3", "min": 0.0, "max": 3.0, "val": "asp" },
-            "4": { "id": "anninp4", "min": 0.0, "max": 0.01, "val": "aspp" },
-            "5": { "id": "anninp5", "min": 0.0, "max": 15.0, "val": "atp" },
-            "6": { "id": "anninp6", "min": 0.0, "max": 0.3, "val": "hs" },
-            "7": { "id": "anninp7", "min": 0.0, "max": 0.15, "val": "hsp" },
-            "8": { "id": "anninp8", "min": 0.0, "max": 2.0, "val": "nadp" },
-            "9": { "id": "anninp9", "min": 0.0, "max": 3.0, "val": "nadph" },
-            "10": { "id": "anninp10", "min": 0.0, "max": 5.0, "val": "phos" },
-            "11": { "id": "anninp11", "min": 0.0, "max": 3.0, "val": "thr" }
+            "1": {
+                "id": "anninp1",
+                "min": 0.0,
+                "max": 5.0,
+                "val": "adp"
+            },
+            "2": {
+                "id": "anninp2",
+                "min": 0.0,
+                "max": 0.1,
+                "val": "asa"
+            },
+            "3": {
+                "id": "anninp3",
+                "min": 0.0,
+                "max": 3.0,
+                "val": "asp"
+            },
+            "4": {
+                "id": "anninp4",
+                "min": 0.0,
+                "max": 0.01,
+                "val": "aspp"
+            },
+            "5": {
+                "id": "anninp5",
+                "min": 0.0,
+                "max": 15.0,
+                "val": "atp"
+            },
+            "6": {
+                "id": "anninp6",
+                "min": 0.0,
+                "max": 0.3,
+                "val": "hs"
+            },
+            "7": {
+                "id": "anninp7",
+                "min": 0.0,
+                "max": 0.15,
+                "val": "hsp"
+            },
+            "8": {
+                "id": "anninp8",
+                "min": 0.0,
+                "max": 2.0,
+                "val": "nadp"
+            },
+            "9": {
+                "id": "anninp9",
+                "min": 0.0,
+                "max": 3.0,
+                "val": "nadph"
+            },
+            "10": {
+                "id": "anninp10",
+                "min": 0.0,
+                "max": 5.0,
+                "val": "phos"
+            },
+            "11": {
+                "id": "anninp11",
+                "min": 0.0,
+                "max": 3.0,
+                "val": "thr"
+            }
         },
         "y": {
-            "1": { "id": "vm11", "min": 0.0, "max": 0.5, "val": "rann1" },
-            "2": { "id": "vm2f", "min": 0.0, "max": 0.4, "val": "rann2" },
-            "3": { "id": "katpase", "min": 0.0, "max": 4.0, "val": "rann3" },
-            "4": { "id": "vm3f", "min": 0.0, "max": 4.0, "val": "rann4" },
-            "5": { "id": "vm4f", "min": 0.0, "max": 4.0, "val": "rann5" },
-            "6": { "id": "knadph", "min": 0.0, "max": 4.0, "val": "rann6" },
-            "7": { "id": "vm5", "min": 0.0, "max": 4.0, "val": "rann7" }
+            "1": {
+                "id": "vm11",
+                "min": 0.0,
+                "max": 0.5,
+                "val": "rann1"
+            },
+            "2": {
+                "id": "vm2f",
+                "min": 0.0,
+                "max": 0.4,
+                "val": "rann2"
+            },
+            "3": {
+                "id": "katpase",
+                "min": 0.0,
+                "max": 4.0,
+                "val": "rann3"
+            },
+            "4": {
+                "id": "vm3f",
+                "min": 0.0,
+                "max": 4.0,
+                "val": "rann4"
+            },
+            "5": {
+                "id": "vm4f",
+                "min": 0.0,
+                "max": 4.0,
+                "val": "rann5"
+            },
+            "6": {
+                "id": "knadph",
+                "min": 0.0,
+                "max": 4.0,
+                "val": "rann6"
+            },
+            "7": {
+                "id": "vm5",
+                "min": 0.0,
+                "max": 4.0,
+                "val": "rann7"
+            }
         }
     },
     "symbolic": ["full-symbolic", "semi-symbolic"],
@@ -359,5 +633,7 @@
     "crossval": 0,
     "adalfa": 0,
     "admini": 0,
-    "addrop": 0
+    "addrop": 0,
+    "train_batches": [1],
+    "test_batches": [2]
 }

@@ -232,7 +232,6 @@ for line in lines:
         # Get the number of events
         nevent = int(line[line.find("=")+1:len(line)+1])
 
-    # TODO check val int/float
     if "event(" in line:
         i = line[line.find("(")+1:line.find(")")]
 

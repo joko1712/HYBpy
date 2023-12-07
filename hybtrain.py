@@ -10,7 +10,8 @@ from mlpnetcreate import mlpnetcreate
 import torch
 from mlpnetsetw import mlpnetsetw
 import hybodesolver as hybodesolver
-import control_function as control_function
+from control_functions.control_function_chass import control_function as control_function
+import odesfun as odesfun
 
 with open("sample.json", "r") as read_file:
     projhyb = json.load(read_file)
@@ -27,9 +28,6 @@ def default_fobj(w):
 def hybtrain(projhyb, file):
 
     fobj = default_fobj
-
-    print(projhyb)
-    print("Mode:", projhyb['mode'])
 
     if projhyb is None:
         raise ValueError("at least 1 input required for HYBTRAIN( projhyb)")
@@ -109,9 +107,9 @@ def hybtrain(projhyb, file):
     # Check Hessian mode
     hessian = 'off'
     if hessianNumber == 0:
-        print("   Hessian:               OFF")
+        print("   Hessian:                OFF")
     elif hessianNumber == 1:
-        print("   Hessian:               ON")
+        print("   Hessian:                ON")
         hessian = 'on'
 
     print(f"   Steps:                  {projhyb['nstep']}")
@@ -126,6 +124,7 @@ def hybtrain(projhyb, file):
     else:
         print("   Bootstrap:              OFF")
 
+    # TODO: CONTROL FUNCTION selection from Control_functions folder
     if projhyb["fun_control"] != 0:
         print("   Control function:       ON")
         fun_control = control_function.control_function()
@@ -669,10 +668,9 @@ def resfun_indirect_jac(w, istrain, projhyb, method=1):
             Sw = np.zeros((ns, nw))
 
             for i in range(1, file[str(l)]["np"]):
-
-                # Discutir o que passar com o nargout do hybodesolver. A minha ideia é passar o mode e o jac e o hybodesolver decide o que fazer
-                _, state, Sw = hybodesolver(projhyb["fun_hybodes_jac"],
-                                            projhyb["fun_control"], projhyb["fun_event"], tb[i-1], tb[i],
+                                
+                _, state, Sw = hybodesolver(odesfun,
+                                            control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, [], batch, projhyb)
 
                 sresall[COUNT:COUNT +
@@ -889,9 +887,9 @@ def resfun_direct_jac(w, istrain=None, projhyb=None, method=1):
     for l in range(projhyb['nbatch']):
         if istrain[l] == 1:
             tb = projhyb['batch'][l]['t']
-            r = projhyb['batch'][l]['rnoise']
+            r = projhyb['batch'][l]['rnoise'] # TODO: rnoise calcular no csv2json 
             upars = projhyb['batch'][l]['u']
-            sr = projhyb['batch'][l]['sr']
+            sr = projhyb['batch'][l]['sr'] #TODO: Desvio padrão dos rates-> 2xsc sem volume
             np_ = len(tb)
 
             for i in range(np_):

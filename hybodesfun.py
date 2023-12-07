@@ -4,7 +4,7 @@ from sympy import symbols, sympify, simplify, Matrix, Eq
 import numpy as np
 
 
-def hybodesfun():
+def hybodesfun(mode: int, output: int):
 
     with open("sample.json", "r") as read_file:
         data = json.load(read_file)
@@ -168,28 +168,35 @@ def hybodesfun():
     DrDrann = Matrix([rates]).jacobian(Matrix([rann]))
     print("DrDrann", DrDrann)
 
-    if nargout == 1:
-        fjac = []
-        fhess = []
+    if output == 1:
+        return fState
 
-    elif nargout == 2:
+    elif output == 2:
 
         if mode == 1:
-            # FALTA DrannDanninp, jac, DrannDw
+            # FALTA DrannDanninp, DrannDw
             DrannDs = DrannDanninp * DanninpDstate
             fjac = (DfDs + DfDrann * DrannDs) * jac + DfDrann * DrannDw
-            fhess = []
-        
-        elif mode == 2:
-            # FALTA jac
-            fjac = DfDs * jac + DfDrann
-            fhess = []
+            
+            return fState, fjac
 
-    elif nargout == 3:
-        #FALTA DrannDanninp, jac, DrannDw
+        elif mode == 2:
+            fjac = DfDs * jac + DfDrann
+
+            return fState, fjac
+
+    elif output == 3:
+        #FALTA DrannDanninp, DrannDw
         DrannDs = DrannDanninp * DanninpDstate
         fjac = (DfDs + DfDrann * DrannDs) * jac + DfDrann * DrannDw
         fhess = []
+        #FALTA CALCULO FHESS
+        return fState, fjac, fhess
 
-        
-    return fState, fjac, fhess
+# TODO: 
+# DrannDanninp derivada do output em relação ao input
+# DrannDw derivada do output em relação aos pesos
+# Hybtrain chama o hybodesolver que por sua vez chama o hybodesfun
+# JAC é calculado em Hybodesolver.py 
+
+hybodesfun(1, 2)

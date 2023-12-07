@@ -1,6 +1,8 @@
 from customMLP import CustomMLP
 
 
+#TODO: neuron from projhyb is a matriz like: ["tanh", "relu", "lstm", "tanh", "relu", "lstm"]
+
 def mlpnetcreate(projhyb, neuron):
     ninp = projhyb["mlm"]["nx"]
     nout = projhyb["mlm"]["ny"]

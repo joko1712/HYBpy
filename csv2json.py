@@ -134,3 +134,12 @@ with open('file.json', 'w') as f:
 
 with open('sample.json', 'w') as f:
     json.dump(projhyb, f, indent=4)
+
+
+#TODO: 
+''' for k=1:projhyb.batch(i).np-1
+        projhyb.batch(i).rnoise(k,:)=...
+        (projhyb.batch(i).cnoise(k+1,:)-projhyb.batch(i).cnoise(k,:))...
+            /(projhyb.batch(i).t(k+1)-projhyb.batch(i).t(k));
+    end
+'''

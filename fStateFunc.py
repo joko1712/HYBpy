@@ -1,0 +1,129 @@
+import json
+import sympy as sp
+from sympy import symbols, sympify, simplify, Matrix, Eq
+import numpy as np
+
+
+def fstate_func(projhyb):
+    Species = []
+
+    for i in range(1, projhyb["nspecies"]+1):
+        Species.append(sp.sympify(projhyb["species"][str(i)]["id"]))
+
+        projhyb["species"][str(i)]["dcomp"] = 0
+
+        for m in range(1, projhyb["nraterules"]+1):
+            if projhyb["raterules"][str(m)]["id"] == projhyb["species"][str(i)]["compartment"]:
+                projhyb["species"][str(i)]["dcomp"] = sp.sympify(
+                    projhyb["raterules"][str(m)]["val"])
+
+    Compartments = []
+
+    for i in range(1, projhyb["ncompartments"]+1):
+        Compartments.append(sp.sympify(projhyb["compartment"][str(i)]["id"]))
+
+    variables = {}
+    for i in range(1, projhyb["mlm"]["nx"]+1):
+        variables[symbols(projhyb["mlm"]["x"][str(i)]["id"])] = sympify(
+            projhyb["mlm"]["x"][str(i)]["val"])
+
+    output = {}
+    no = projhyb["mlm"]["ny"]
+    for i in range(1, projhyb["mlm"]["ny"]+1):
+        output[symbols(projhyb["mlm"]["y"][str(i)]["id"])] = sympify(
+            projhyb["mlm"]["y"][str(i)]["val"])
+
+    parametersvariables = {}
+    for i in range(1, projhyb["nparameters"]+1):
+        parametersvariables[symbols(projhyb["parameters"][str(i)]["id"])] = sympify(
+            projhyb["parameters"][str(i)]["val"])
+
+    ruleassvariables = {}
+    for i in range(1, projhyb["nruleAss"]+1):
+        ruleassvariables[symbols(projhyb["ruleAss"][str(i)]["id"])] = sympify(
+            projhyb["ruleAss"][str(i)]["val"])
+
+
+    Raterules = []
+    fRaterules = []
+
+    for i in range(1, projhyb["nraterules"]+1):
+        Raterules.append(symbols(projhyb["raterules"][str(i)]["id"]))
+        fRaterules.append(sympify(projhyb["raterules"][str(i)]["val"]))
+
+    ucontrol = []
+    for i in range(1, projhyb["ncontrol"]+1):
+        ucontrol.append(symbols(projhyb["control"][str(i)]["id"]))
+
+    rates = []
+
+
+    for i in range(1, projhyb["nspecies"]+1):
+        for j in range(1, projhyb["nreaction"]+1):
+            nvalues = sympify(projhyb["reaction"][str(
+                j)]["rate"]) * projhyb["reaction"][str(j)]["Y"][str(i)]
+            rates.append(sympify(nvalues))
+
+
+    fSpecies = []
+    for i in range(1, projhyb["nspecies"]+1):
+        rates_sum = sum(rates[(i-1)*projhyb["nreaction"]:i*projhyb["nreaction"]])
+        fSpecies.append(
+            rates_sum - (projhyb["species"][str(i)]["dcomp"]/sympify(projhyb["species"]
+                        [str(i)]["compartment"])) * sympify(projhyb["species"][str(i)]["id"])
+        )
+
+    State = Species + Raterules
+    fState = fSpecies + fRaterules
+
+    # create unified dictionary
+    unified_dict = {**variables, **output, **
+                    parametersvariables, **ruleassvariables}
+
+    # replace the variables in fState with actual values
+    fState = [f.subs(unified_dict) for f in fState]
+
+    '''
+    nspecies = data["nspecies"]
+    nraterules = data["nraterules"]
+    nstate = nspecies + nraterules
+    w = []
+
+
+    print("State", State)
+    print("fState", fState)
+    print("rates", rates)
+    print("anninp", anninp)
+    print("rann", rann)
+    print("ucontrol", ucontrol)
+    print("w", w)
+
+
+    for i in range(1, len(anninp)+1):
+        anninp.append(anninp[i-1]/data["mlm"]["x"][str(i)]["max"])
+
+    # CALLED FROM METGHODS
+    print("anninp", anninp)
+    DanninpDstate = Matrix([anninp]).jacobian(Matrix([State]))
+    print("DanninpDstate", DanninpDstate)
+
+    DanninpDucontrol = Matrix([anninp]).jacobian(Matrix([ucontrol]))
+    print("DanninpDucontrol", DanninpDucontrol)
+
+    DrDs = Matrix([rates]).jacobian(Matrix([State]))
+    print("DrDs", DrDs)
+
+
+    DfDs = Matrix([fState]).jacobian(Matrix([State]))
+    print("DfDs", DfDs)
+
+    DfDrann = Matrix([fState]).jacobian(Matrix([rann]))
+    print("DfDrann", DfDrann)
+
+    rann = ["vm11", "vm2f", "katpase", "vm3f", "vm4f", "knadph", "vm5"]
+
+    DrDrann = Matrix([rates]).jacobian(Matrix([rann]))
+    print("DrDrann", DrDrann)
+
+    '''
+    return fState

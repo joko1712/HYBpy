@@ -8,17 +8,21 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
         h = min(projhyb['time']['TAU'], tf - t)
         batch['h'] = h
 
-        if eventfun is not []:
+        print(eventfun)
+        if eventfun and callable(eventfun):
             if jac is not 0:
                 batch, state, dstatedstate = eventfun(t, batch, state)
                 jac = dstatedstate * jac
             else:
                 batch, state = eventfun(t, batch, state)
 
-        ucontrol1 = controlfun(t, batch) if controlfun is not None else []
-
+        if controlfun and callable(controlfun):
+            ucontrol1 = controlfun(t, batch)
+        else:
+            ucontrol1 = []
+        
         if jac is not 0:
-            k1_state, k1_jac = odesfun(t, state, jac, None, w, ucontrol1, projhyb)
+            k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb)
         else:
             k1_state = odesfun(ann,t, state, None, None, w, ucontrol1, projhyb)
 

@@ -23,6 +23,29 @@ class CustomMLP(nn.Module):
             x = layer(x)
         return x
 
+    def backpropagate(self, x):
+        activations = [x]
+        for layer in self.layers:
+            x = layer(x)
+            activations.append(x)
+
+        y = activations[-1] 
+
+        DrannDanninp = torch.eye(x.shape[0])  
+        DrannDw = []
+
+        for i in reversed(range(len(self.layers))):
+            h1 = activations[i]  
+            h1l = self.layers[i].derivative(h1)  
+
+            A1 = -(torch.matmul(DrannDanninp, self.layers[i].w.t()) * h1l.repeat(self.layers[-1].output_size, 1))
+            layer_dydw = torch.cat([torch.kron(h1.view(-1, 1).t(), A1), torch.kron(y.view(-1, 1).t(), torch.eye(self.layers[-1].output_size))], dim=1)
+            
+            DrannDanninp = torch.matmul(A1, self.layers[i].w)
+
+            DrannDw.append(layer_dydw)
+
+        return y, DrannDanninp, DrannDw
 
 class TanhLayer(nn.Module):
     def __init__(self, input_size, output_size):
@@ -32,6 +55,9 @@ class TanhLayer(nn.Module):
 
     def forward(self, x):
         return torch.tanh(torch.mm(self.w, x) + self.b)
+
+    def derivative(self, x):
+        return 1 - torch.tanh(torch.mm(self.w, x) + self.b) ** 2
 
 
 class ReLULayer(nn.Module):
@@ -43,6 +69,10 @@ class ReLULayer(nn.Module):
     def forward(self, x):
         xin = torch.mm(self.w, x) + self.b
         return F.leaky_relu(xin, negative_slope=0.003)
+
+    def derivative(self, x):
+        xin = torch.mm(self.w, x) + self.b
+        return torch.where(xin > 0, torch.ones_like(xin), torch.zeros_like(xin))
 
 
 class LSTMLayer(nn.Module):

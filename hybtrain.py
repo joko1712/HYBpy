@@ -669,7 +669,7 @@ def resfun_indirect_jac(w, istrain, projhyb, method=1):
 
             for i in range(1, file[str(l)]["np"]):
                                 
-                _, state, Sw = hybodesolver(odesfun,
+                _, state, Sw = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, [], batch, projhyb)
 
@@ -705,9 +705,8 @@ def resfun_indirect_fminunc(w, istrain, projhyb):
     nres = projhyb['nres']
 
     if 'mlmsetwfunc' in projhyb and projhyb['mlmsetwfunc'] is not None:
-        # Assuming `projhyb['mlmsetwfunc']` is a callable function
         projhyb['mlm']['fundata'] = projhyb['mlmsetwfunc'](
-            projhyb['mlm']['fundata'], w)  # set weights
+            projhyb['mlm']['fundata'], w) 
 
     sres = 0
     sjac = np.zeros(nw)

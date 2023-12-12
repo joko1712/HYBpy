@@ -9,9 +9,9 @@ from mlpnetinit import mlpnetinitw
 from mlpnetcreate import mlpnetcreate
 import torch
 from mlpnetsetw import mlpnetsetw
-import hybodesolver as hybodesolver
-from control_functions.control_function_chass import control_function as control_function
-import odesfun as odesfun
+from hybodesolver import hybodesolver
+from odesfun import odesfun
+from Control_functions import control_function_chass as control_function
 
 with open("sample.json", "r") as read_file:
     projhyb = json.load(read_file)
@@ -256,7 +256,7 @@ def hybtrain(projhyb, file):
                 def fobj(w): return resfun_indirect(
                     w, projhyb['istrain'], projhyb, projhyb['method'])
             elif projhyb['jacobian'] == 1:
-                def fobj(w): return resfun_indirect_jac(
+                def fobj(w): return resfun_indirect_jac(ann,
                     w, projhyb['istrain'], projhyb, projhyb['method'])[0]
             elif projhyb['hessian'] == 1:
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
@@ -622,7 +622,7 @@ def derivative_check(fun, jac, x0, tol=1e-6):
 #   INDIRECT
 ####
 
-def resfun_indirect_jac(w, istrain, projhyb, method=1):
+def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     if not istrain:
         istrain = projhyb["istrain"]
 
@@ -635,21 +635,15 @@ def resfun_indirect_jac(w, istrain, projhyb, method=1):
     npall = 0
 
     for i in range(file["nbatch"]):
-        i = i+1
-
-        i = str(i)
-
-        if file[i]["istrain"] == 1:
-            npall = npall + file[i]["np"]
-        else:
-            print("ok")
+        if file[str(i+1)]["istrain"] == 1:
+            npall += file[str(i+1)]["np"]
 
     sresall = np.zeros(npall * nres)
-    sjacall = np.zeros((npall * nres, projhyb["mlm"]["nw"]))
+    sjacall = np.zeros((npall * nres, nw))
 
     COUNT = 0
     for l in range(file["nbatch"]):
-        l = l+1
+        l = l + 1
         if file[str(l)]["istrain"] == 1:
             tb = file[str(l)]["time"]
             Y = file[str(l)]["y"]
@@ -668,15 +662,15 @@ def resfun_indirect_jac(w, istrain, projhyb, method=1):
             Sw = np.zeros((ns, nw))
 
             for i in range(1, file[str(l)]["np"]):
-                                
+
+                batch_data = file[str(l+1)]
                 _, state, Sw = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
-                                            state, Sw, 0, [], batch, projhyb)
+                                            state, Sw, 0, [], batch_data, projhyb)
 
-                sresall[COUNT:COUNT +
-                        nres] = (Y[i, isres] - state[isres, 0]) / sY[i, isres]
-                sjacall[COUNT:COUNT+nres, :nw] = - Sw[isres, :] / \
-                    np.repeat(sY[i, isres].reshape(-1, 1), nw, axis=1)
+                
+                sresall[COUNT:COUNT + nres] = (Y[i, isres] - state[isres]) / sY[i, isres]
+                sjacall[COUNT:COUNT + nres, :nw] = - Sw[isres, :] / np.tile(sY[i, isres].reshape(-1, 1), nw)
                 COUNT += nres
 
     ind = ~np.isnan(sresall)

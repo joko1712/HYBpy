@@ -31,24 +31,40 @@ class CustomMLP(nn.Module):
 
         y = activations[-1] 
 
-        DrannDanninp = torch.eye(x.shape[0])  
         DrannDw = []
 
         for i in reversed(range(len(self.layers))):
-            h1 = activations[i]  
-            h1l = self.layers[i].derivative(h1)  
+            h1 = activations[i]
+            h1l = self.layers[i].derivative(h1)
 
-            A1 = -(torch.matmul(DrannDanninp, self.layers[i].w.t()) * h1l.repeat(self.layers[-1].output_size, 1))
+            # Correctly calculate output_size for the current layer
+            output_size = self.layers[i].w.shape[0]
+
+            # Resize DrannDanninp for the current layer
+            DrannDanninp = torch.eye(output_size)
+
+            h1l_reshaped = h1l.view(-1, 1)
+
+            print("DrannDanninp:", DrannDanninp.shape)
+            print("self.layers[i].w:", self.layers[i].w.t().shape)
+            print("h1l shape:", h1l.shape)
+            print("h1l_reshaped shape:", h1l_reshaped.shape)
+            print("h1l_reshaped repeated shape:", h1l_reshaped.repeat(1, output_size).shape)
+            print("Matrix multiplication result shape:", torch.matmul(DrannDanninp, self.layers[i].w.t()).shape)
+            print("output_size:", output_size)
+
+            A1 = -(torch.matmul(DrannDanninp, self.layers[i].w.t()) * h1l_reshaped.repeat(1, output_size))
             layer_dydw = torch.cat([torch.kron(h1.view(-1, 1).t(), A1), torch.kron(y.view(-1, 1).t(), torch.eye(self.layers[-1].output_size))], dim=1)
             
             DrannDanninp = torch.matmul(A1, self.layers[i].w)
 
             DrannDw.append(layer_dydw)
-
         return y, DrannDanninp, DrannDw
 
 class TanhLayer(nn.Module):
     def __init__(self, input_size, output_size):
+        self.input_size = input_size
+        self.output_size = output_size
         super(TanhLayer, self).__init__()
         self.w = nn.Parameter(torch.randn(output_size, input_size))
         self.b = nn.Parameter(torch.randn(output_size, 1))

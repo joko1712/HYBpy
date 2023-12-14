@@ -1,10 +1,20 @@
 from fStateFunc import fstate_func 
 import torch
+from sympy import *
 import sympy as sp
-from sympy import symbols, sympify, simplify, Matrix, Eq
 import numpy as np
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
+
+    state_symbols = []
+
+    for i in range(1, projhyb["nspecies"]+1):
+        state_symbols.append(sp.sympify(projhyb["species"][str(i)]["id"]))
+
+    for i in range(1, projhyb["ncompartments"]+1):
+        state_symbols.append(sp.sympify(projhyb["compartment"][str(i)]["id"]))
+
+    print("state_symbols:", state_symbols)
 
     current_state_dict = ann.state_dict()
     print("Current State Dict:", current_state_dict)
@@ -16,13 +26,12 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
         elif "b" in param_tensor:
             new_state_dict[param_tensor] = torch.zeros_like(current_state_dict[param_tensor])
 
-    state_symbols = sp.symbols(['state_{}'.format(i) for i in range(len(state))])
 
     ann.load_state_dict(new_state_dict)
 
     if jac is None and hess is None:
         fstate = fstate_func(projhyb)
-        anninp, rann = anninp_rann_func(projhyb)
+        anninp, rann, _ = anninp_rann_func(projhyb)
 
         return fstate, None, None
 
@@ -31,22 +40,37 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
         if projhyb['mode'] == 1:
             fstate = fstate_func(projhyb)
 
-            anninp, rann = anninp_rann_func(projhyb)
-            
-            DanninpDstate = anninp.jacobian(state_symbols)
+            anninp, rann, anninp_mat = anninp_rann_func(projhyb)
+
+            DanninpDstate = derivativeXY(anninp, state_symbols)
+            #TODO: substituicao dos val das variaveis
+            #TODO: Calcular as derivadas antes e qui so substituir 
+
             print("DanninpDstate:", DanninpDstate)
 
-            anninp_numerical = [expr.evalf() if isinstance(expr, sp.Expr) else float(expr) for expr in anninp]
-            anninp_tensor = torch.tensor(anninp_numerical, dtype=torch.float32)
-
+            anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float32)
             anninp_tensor = anninp_tensor.view(-1, 1)            
+            print("anninp_tensor:", anninp_tensor)
             _, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
 
             #TODO: FIX THIS ANNINP NOT BEEING WELL CALCULATED
 
 
-            DfDs = Matrix([fstate]).jacobian(Matrix([state]))
-            DfDrann = Matrix([fstate]).jacobian(Matrix([rann]))
+            DfDs = derivativeXY(fstate, state_symbols)
+            
+            '''
+            val = []
+
+            adp, asa, asp, aspp, atp, compartment, hs, hsp, nadp, nadph, phos, rann1, rann2, rann3, rann4, rann5, rann6, rann7, thr = symbols("adp asa asp aspp atp compartment hs hsp nadp nadph phos rann1 rann2 rann3 rann4 rann5 rann6 rann7 thr")
+            for i in range(0, len(DfDs)):
+                calc = DfDs[i].subs([(adp,1), (asa, 1), (asp, 1), (aspp, 1), (atp,1), (compartment, 1), (hs,1 ), (hsp,1 ), (nadp, 1), (nadph, 1), (phos, 1), (rann1, 1), (rann2, 1), (rann3, 1), (rann4, 1), (rann5, 1), (rann6, 1), (rann7, 1) , (thr, 1)])
+                val = val + [calc]
+            print("val:", val)
+            '''
+
+            DfDrann = derivativeXY(fstate, rann)
+
+            print("DfDrann:", DfDrann)
 
             DrannDs = DrannDanninp * DanninpDstate
 
@@ -55,7 +79,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
             return fstate, fjac, None
 
         elif projhyb['mode'] == 3:
-            anninp, rann = anninp_rann_func(projhyb)
+            anninp, rann, _ = anninp_rann_func(projhyb)
 
             fstate = fstate_func(projhyb)
 
@@ -70,7 +94,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
 
      
 def anninp_rann_func(projhyb):
-
     species_values = extract_species_values(projhyb)
 
     totalsyms = ["t", "dummyarg1", "dummyarg2", "w"]
@@ -94,6 +117,7 @@ def anninp_rann_func(projhyb):
         totalsyms.append(projhyb["control"][str(i)]["id"])  # Control
 
     anninp = []
+    anninp_mat = []    
     rann = []
 
     for i in range(1,  projhyb["mlm"]["nx"]+1):
@@ -102,11 +126,16 @@ def anninp_rann_func(projhyb):
         val_expr = sp.sympify(projhyb["mlm"]["x"][str(i)]["val"])
         max_expr = sp.sympify(projhyb["mlm"]["x"][str(i)]["max"])
 
-        val = val_expr.evalf(subs=species_values)
-        max_val = max_expr.evalf(subs=species_values)
+        anninp.append(val_expr/max_expr)
 
 
-        anninp.append(val/max_val)
+        val_mat = val_expr.evalf(subs=species_values)
+        max_mat = max_expr.evalf(subs=species_values)
+
+
+        anninp.append(val_expr/max_expr)
+
+        anninp_mat.append(val_mat/max_mat)
 
     for i in range(1, projhyb["mlm"]["ny"]+1):
         totalsyms.append(projhyb["mlm"]["y"][str(i)]["id"])  # Ann outputs
@@ -116,14 +145,11 @@ def anninp_rann_func(projhyb):
 
     totalsyms = symbols(totalsyms)
 
-
-    for i in range(1, len(anninp)+1):
-        anninp.append(anninp[i-1]/projhyb["mlm"]["x"][str(i)]["max"])
-
     print("anninp:", anninp)
-    anninp_matrix = sp.Matrix(anninp)
 
-    return anninp_matrix, rann
+    anninp_symbol = sp.sympify(anninp)
+
+    return anninp_symbol, rann, anninp_mat
 
 
 def extract_species_values(projhyb):
@@ -132,4 +158,29 @@ def extract_species_values(projhyb):
         species_id = species['id']
         species_val = species['val']
         species_values[species_id] = species_val
+        
     return species_values
+
+
+def derivativeXY(X,Y):
+    z = []
+    print("X:", X)
+    print("Y:", Y)
+    print("len(X):", len(X))
+    print("len(Y):", len(Y))
+
+    for i in range(0, len(Y)):
+        for j in range(0, len(X)):
+
+            print("X[i]:", X[j])
+            print("Y[j]:", Y[i])
+
+            cal = diff(X[j], Y[i])
+            print("cal:", cal)
+
+            z = z + [cal]
+
+    print("z:", z)
+    print("len(z):", len(z))
+
+    return z

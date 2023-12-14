@@ -83,6 +83,8 @@ def fstate_func(projhyb):
     # replace the variables in fState with actual values
     fState = [f.subs(unified_dict) for f in fState]
 
+    print("Fstate", fState)
+
     '''
     nspecies = data["nspecies"]
     nraterules = data["nraterules"]

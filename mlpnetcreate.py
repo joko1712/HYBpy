@@ -13,6 +13,8 @@ def mlpnetcreate(projhyb, neuron):
 
     layer_sizes = [ninp] + NH + [nout]
 
+    print ("layer_sizes:", layer_sizes)
+
     if neuron == 1:
         layer_types = ['tanh'] * H
     elif neuron == 2:

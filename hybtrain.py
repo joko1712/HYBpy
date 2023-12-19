@@ -12,6 +12,7 @@ from mlpnetsetw import mlpnetsetw
 from hybodesolver import hybodesolver
 from odesfun import odesfun
 from Control_functions import control_function_chass as control_function
+import customMLP as mlp
 
 with open("sample.json", "r") as read_file:
     projhyb = json.load(read_file)
@@ -222,7 +223,7 @@ def hybtrain(projhyb, file):
         print('Weights initialization...')
         ann = mlpnetcreate(projhyb, projhyb['mlm']['neuron'])
         projhyb['mlm']['fundata'] = ann
-        weights, ann = mlpnetinitw(projhyb['mlm']['fundata'])
+        weights, ann = mlp.CustomMLP.get_weights(ann)
 
     elif projhyb['initweights'] == 2:
         print('Read weights from file...')

@@ -72,7 +72,13 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
 
             print("DfDrann:", DfDrann)
 
+            print("DrannDanninp:", DrannDanninp)
+            print("DanndinpDstate:", DanninpDstate)
+
             DrannDs = DrannDanninp * DanninpDstate
+
+            print("DrannDs:", DrannDs)
+            print("",what)
 
             fjac = (DfDs + DfDrann * DrannDs) * jac + DfDrann * DrannDw
 
@@ -133,8 +139,6 @@ def anninp_rann_func(projhyb):
         max_mat = max_expr.evalf(subs=species_values)
 
 
-        anninp.append(val_expr/max_expr)
-
         anninp_mat.append(val_mat/max_mat)
 
     for i in range(1, projhyb["mlm"]["ny"]+1):
@@ -164,23 +168,10 @@ def extract_species_values(projhyb):
 
 def derivativeXY(X,Y):
     z = []
-    print("X:", X)
-    print("Y:", Y)
-    print("len(X):", len(X))
-    print("len(Y):", len(Y))
 
     for i in range(0, len(Y)):
         for j in range(0, len(X)):
-
-            print("X[i]:", X[j])
-            print("Y[j]:", Y[i])
-
             cal = diff(X[j], Y[i])
-            print("cal:", cal)
 
             z = z + [cal]
-
-    print("z:", z)
-    print("len(z):", len(z))
-
     return z

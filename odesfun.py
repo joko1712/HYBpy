@@ -42,15 +42,19 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
 
             anninp, rann, anninp_mat = anninp_rann_func(projhyb)
 
+
             DanninpDstate = derivativeXY(anninp, state_symbols)
+            DanninpDstate = np.array(DanninpDstate)
+            DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
+            DanninpDstate = DanninpDstate.astype(np.float32)
+            DanninpDstate = torch.from_numpy(DanninpDstate)
+
             #TODO: substituicao dos val das variaveis
             #TODO: Calcular as derivadas antes e qui so substituir 
 
-            print("DanninpDstate:", DanninpDstate)
 
             anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float32)
             anninp_tensor = anninp_tensor.view(-1, 1)            
-            print("anninp_tensor:", anninp_tensor)
             _, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
 
             #TODO: FIX THIS ANNINP NOT BEEING WELL CALCULATED
@@ -70,17 +74,21 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
 
             DfDrann = derivativeXY(fstate, rann)
 
-            print("DfDrann:", DfDrann)
-
-            print("DrannDanninp:", DrannDanninp)
-            print("DanndinpDstate:", DanninpDstate)
-
-            DrannDs = DrannDanninp * DanninpDstate
-
+            DrannDs = torch.mm(DrannDanninp, DanninpDstate.t())
             print("DrannDs:", DrannDs)
+
+            print("DfDs:", DfDs)
+            print("DfDrann:", DfDrann)
+            print("DrannDs:", DrannDs)
+            print("jac:", jac)
+            print("DfDrann:", DfDrann)
+            print("DrannDw:", DrannDw)
+            
+
+            fjac = (DfDs + torch.mm(DfDrann,DrannDs)) * jac + DfDrann * DrannDw
+
             print("",what)
 
-            fjac = (DfDs + DfDrann * DrannDs) * jac + DfDrann * DrannDw
 
             return fstate, fjac, None
 
@@ -101,6 +109,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
      
 def anninp_rann_func(projhyb):
     species_values = extract_species_values(projhyb)
+    print("species_values:", species_values)
 
     totalsyms = ["t", "dummyarg1", "dummyarg2", "w"]
 
@@ -162,13 +171,13 @@ def extract_species_values(projhyb):
         species_id = species['id']
         species_val = species['val']
         species_values[species_id] = species_val
-        
+
+    print("species_values:", species_values)
     return species_values
 
 
 def derivativeXY(X,Y):
     z = []
-
     for i in range(0, len(Y)):
         for j in range(0, len(X)):
             cal = diff(X[j], Y[i])

@@ -57,64 +57,36 @@ class CustomMLP(nn.Module):
         tensorList = []
         DrannDw = []
         print("activations:", activations)
+        output_size = self.layers[-1].w.shape[0]
+        DrannDanninp = torch.eye(output_size)
 
         for i in reversed(range(len(self.layers))):
-            print("----------------------------START OF FOR LOOP-----------------------------")
-            print("activations[i]:", activations[i])
+            if i == 0:
+                break
+
             h1 = activations[i]
             h1l = h1
-            print("h1:", h1)
-            print("h1l:", h1l)
 
-            # Correctly calculate output_size for the current layer
-            print(self.layers)
-            print(self.layers[i].w.shape)
-
-            output_size = self.layers[i].w.shape[0]
             # 7 > 5
 
             # Resize DrannDanninp for the current layer
-            DrannDanninp = torch.eye(output_size)
 
             h1l_reshaped = h1l.t()
-
-            print("DrannDanninp:", DrannDanninp.shape)
-            print("self.layers[i].w:", self.layers[i].w)
-            print("h1l shape:", h1l.shape)
-            print("h1l_reshaped shape:", h1l_reshaped.shape)
-            print("output_size:", output_size)
-            print("h1l_reshaped repeated shape:", h1l_reshaped.repeat(output_size,1).shape)
-            print("Matrix multiplication result shape:", torch.mm(DrannDanninp,self.layers[i].w))
-            print("Matrix multiplication result shape:", torch.mm(DrannDanninp,self.layers[i].w).shape)
-            print("output_size:", output_size)
-
+            
+            
             A1 = -(torch.mm(DrannDanninp,self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
 
-            print("A1:", A1)
-            print("A1 shape:", A1.shape)
+            DrannDanninp = A1
 
             h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]])), dim=1)
 
             layer_dydw = torch.kron(h1l_reshaped, A1)
-
-            print("layer_dydw:", layer_dydw)
-            print("layer_dydw shape:", layer_dydw.shape)
-
-            print("self.layers[i].w:", self.layers[i].w)
-            DrannDanninp = torch.mm(self.layers[i].w, A1.t())
-
-            print("DrannDanninp:", DrannDanninp)
-            print("DrannDanninp shape:", DrannDanninp.shape)
-
             tensorList.append(layer_dydw)
 
-        print("tensorList:", tensorList)
         DrannDw = tensorList
-        print("DrannDw:", DrannDw)
-        print("DrannDanninp:", DrannDanninp)
-        print("DrannDanninp shape:", DrannDanninp.shape)
-        print("y:", y)
-        print("y shape:", y.shape)
+
+        DrannDanninp = torch.mm(A1,self.layers[0].w)
+
 
         return y, DrannDanninp, DrannDw
 
@@ -195,4 +167,4 @@ class Linear(nn.Module):
         return torch.mm(self.w, x) + self.b
 
     def derivative(self, x):
-        return torch.ones_like(x)
+        return torch.ones_like(x) 

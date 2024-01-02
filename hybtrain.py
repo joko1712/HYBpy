@@ -14,12 +14,8 @@ from odesfun import odesfun
 from Control_functions import control_function_chass as control_function
 import customMLP as mlp
 
-with open("sample.json", "r") as read_file:
-    projhyb = json.load(read_file)
-
-with open("file.json", "r") as read_file:
-    file = json.load(read_file)
-
+with open("sample.json", "r") as f:
+    projhyb = json.load(f)
 
 def default_fobj(w):
     raise NotImplementedError(
@@ -624,6 +620,8 @@ def derivative_check(fun, jac, x0, tol=1e-6):
 ####
 
 def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
+    with open("file.json", "r") as read_file:
+        file = json.load(read_file)
     if not istrain:
         istrain = projhyb["istrain"]
 
@@ -1101,6 +1099,3 @@ def resfun_semidirect_jac_batch(w, istrain, projhyb, method=1):
 
     return mse, grads
 
-
-projhyb, trainData = hybtrain(projhyb, file)
-print(projhyb, trainData)

@@ -73,9 +73,23 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
             '''
 
             DfDrann = derivativeXY(fstate, rann)
+            values = extract_species_values(projhyb)
+            values["compartment"] = int(projhyb["compartment"]["1"]["val"])
+            print("values:", values)
+            DfDrann =[expr.evalf(subs=values) for expr in DfDrann]
+            DfDrann = np.array(DfDrann)
+            DfDrann = DfDrann.reshape(len(fstate), len(rann))
+            DfDrann = DfDrann.astype(np.float32)
+            DfDrann = torch.from_numpy(DfDrann)
+
+            DfDs = [expr.evalf(subs=values) for expr in DfDs]
+            DfDs = np.array(DfDs)
+            DfDs = DfDs.reshape(len(fstate), len(state_symbols))
+            DfDs = DfDs.astype(np.float32)
+            DfDs = torch.from_numpy(DfDs)
+
 
             DrannDs = torch.mm(DrannDanninp, DanninpDstate.t())
-            print("DrannDs:", DrannDs)
 
             print("DfDs:", DfDs)
             print("DfDrann:", DfDrann)
@@ -83,9 +97,14 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
             print("jac:", jac)
             print("DfDrann:", DfDrann)
             print("DrannDw:", DrannDw)
+
+            print("DfDrann.shape:", DfDrann.shape)
+
+            DfDrannDrannDw = torch.mm(DfDrann, DrannDw)
+            print("DfDrannDrannDw:", DfDrannDrannDw)
             
 
-            fjac = (DfDs + torch.mm(DfDrann,DrannDs)) * jac + DfDrann * DrannDw
+            fjac = (DfDs + torch.mm(DfDrann,DrannDs)) * jac + DfDrannDrannDw
 
             print("",what)
 

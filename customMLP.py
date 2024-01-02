@@ -59,6 +59,7 @@ class CustomMLP(nn.Module):
         print("activations:", activations)
         output_size = self.layers[-1].w.shape[0]
         DrannDanninp = torch.eye(output_size)
+        tensor_size = 0
 
         for i in reversed(range(len(self.layers))):
             if i == 0:
@@ -75,18 +76,29 @@ class CustomMLP(nn.Module):
             
             
             A1 = -(torch.mm(DrannDanninp,self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
+            print("A1:", A1)
+            print("A1.shape:", A1.shape)
 
             DrannDanninp = A1
 
             h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]])), dim=1)
 
-            layer_dydw = torch.kron(h1l_reshaped, A1)
+            layer_dydw = torch.kron(A1,h1l_reshaped)
+            print("layer_dydw.shape:", layer_dydw.shape)
+            tensor_size = tensor_size + layer_dydw.shape[1] 
             tensorList.append(layer_dydw)
-
-        DrannDw = tensorList
 
         DrannDanninp = torch.mm(A1,self.layers[0].w)
 
+        print(tensor_size)
+
+        DrannDw = tensorList
+
+        DrannDw = torch.cat(DrannDw, dim=1)
+        DrannDw = DrannDw.view(7, tensor_size)
+
+        print("DrannDw:", DrannDw)
+        print("DrannDw.len:", len(DrannDw))
 
         return y, DrannDanninp, DrannDw
 

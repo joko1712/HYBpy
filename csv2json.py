@@ -4,6 +4,7 @@ import json
 import random
 import numpy as np
 
+'''
 with open("sample.json", "r") as f:
     projhyb = json.load(f)
 
@@ -28,18 +29,17 @@ with open('chassbatch1.csv', 'r') as f:
             data[current_time_group][current_time] = {}
         for h, value in zip(headers[1:], row[1:]):
             data[current_time_group][current_time][h] = value
+'''
 
-
-def label_batches(data):
+def label_batches(data, projhyb, mode):
     print(f"Choose batches selection mode:")
     print(f"1. Manual")
     print(f"2. Random")
 
-    mode = input("Enter mode: ")
     if mode == "1":
-        return manual_label(data)
+        return manual_label(data, projhyb)
     elif mode == "2":
-        return random_label(data)
+        return random_label(data, projhyb)
     else:
         print("Invalid mode. Exiting...")
         exit()
@@ -47,7 +47,7 @@ def label_batches(data):
     return data, projhyb
 
 
-def manual_label(data):
+def manual_label(data, projhyb):
     all_batches = list(data.keys())
     print(f"Available batches: {all_batches}")
     train_batches = input(
@@ -72,7 +72,7 @@ def manual_label(data):
     return data, projhyb
 
 
-def random_label(data):
+def random_label(data, projhyb):
     all_batches = list(data.keys())
     random.shuffle(all_batches)
     split_idx = int(len(all_batches) * 2 / 3)
@@ -92,7 +92,7 @@ def random_label(data):
     return data, projhyb
 
 
-def add_state_and_time_to_data(data):
+def add_state_and_time_to_data(data, projhyb):
     for batch_key, batch_data in data.items():
         time_list = []
         y_matrix = []
@@ -121,7 +121,7 @@ def add_state_and_time_to_data(data):
     return data
 
 
-
+'''
 data, projhyb = label_batches(data)
 data = add_state_and_time_to_data(data)
 count = len(data)
@@ -134,7 +134,7 @@ with open('file.json', 'w') as f:
 
 with open('sample.json', 'w') as f:
     json.dump(projhyb, f, indent=4)
-
+'''
 
 #TODO: 
 ''' for k=1:projhyb.batch(i).np-1

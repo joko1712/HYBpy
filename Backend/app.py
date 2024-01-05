@@ -8,21 +8,39 @@ import pandas as pd
 import json
 import random
 import numpy as np
-
+ 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, manual_label, random_label, add_state_and_time_to_data
 
 
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
 app = Flask(__name__)
 
 # This is the request http://localhost:5000/upload
 @app.route('/upload', methods=['POST'])
 def upload_file():
+
+    while os.path.exists("file.json"):
+        print("file.json exists")
+        os.remove("file.json")
+
+    while os.path.exists("sample.json"):
+        print("sample.json exists")
+        os.remove("sample.json")
+
     file1 = request.files.get('file1')
     file2 = request.files.get('file2')
     mode = request.form.get('mode')
+    user_id = request.form.get('userId')
     if not file1 or not file2:
         return {"error": "Both files are required"}, 400
     if file1 and file2:
@@ -58,7 +76,6 @@ def upload_file():
                 for h, value in zip(headers[1:], row[1:]):
                     data[current_time_group][current_time][h] = value
 
-        
         data, projhyb = label_batches(data, projhyb, mode)
         data = add_state_and_time_to_data(data, projhyb)
         count = len(data)
@@ -81,6 +98,7 @@ def upload_file():
             "projhyb": projhyb,  # Assuming this is serializable to JSON
             "trainData": trainData  # Assuming this is serializable to JSON
         }
+        add_run(file1, file2, response_data, user_id)
         return json.dumps(response_data), 200
 
         if trainData is None:
@@ -89,6 +107,19 @@ def upload_file():
 
     else:
         return {"message": "File not found"}, 400
+
+
+@app.route('/add-run', methods=['POST'])
+def add_run(file1, file2, response_data, user_id):
+    run_data = {
+        "userId": user_id,
+        "file1": file1,
+        "file2": file2,
+        "response_data": response_data
+    }
+    db.collection('runs').add(run_data)
+    return json.dumps(response_data), 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)

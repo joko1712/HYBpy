@@ -55,7 +55,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
 
             anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float32)
             anninp_tensor = anninp_tensor.view(-1, 1)            
-            _, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
+            y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
 
             #TODO: FIX THIS ANNINP NOT BEEING WELL CALCULATED
 
@@ -75,6 +75,9 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
             DfDrann = derivativeXY(fstate, rann)
             values = extract_species_values(projhyb)
             values["compartment"] = int(projhyb["compartment"]["1"]["val"])
+            print("y", len(y))
+            for range_y in range(0, len(y)):
+                values["rann"+str(range_y+1)] = y[range_y].item()
             print("values:", values)
             DfDrann =[expr.evalf(subs=values) for expr in DfDrann]
             DfDrann = np.array(DfDrann)
@@ -85,9 +88,14 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
             DfDs = [expr.evalf(subs=values) for expr in DfDs]
             DfDs = np.array(DfDs)
             DfDs = DfDs.reshape(len(fstate), len(state_symbols))
+            #RANN = y
+            #Read y add rann(len(y)) to add numeric values to rann
             DfDs = DfDs.astype(np.float32)
             DfDs = torch.from_numpy(DfDs)
 
+            jac = np.array(jac)
+            jac = jac.astype(np.float32)
+            jac = torch.from_numpy(jac)
 
             DrannDs = torch.mm(DrannDanninp, DanninpDstate.t())
 
@@ -103,6 +111,8 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
             DfDrannDrannDw = torch.mm(DfDrann, DrannDw)
             print("DfDrannDrannDw:", DfDrannDrannDw)
             
+            print("(DfDs + torch.mm(DfDrann,DrannDs))", (DfDs + torch.mm(DfDrann,DrannDs)))
+            print("shape:", (DfDs + torch.mm(DfDrann,DrannDs)).shape)
 
             fjac = (DfDs + torch.mm(DfDrann,DrannDs)) * jac + DfDrannDrannDw
 

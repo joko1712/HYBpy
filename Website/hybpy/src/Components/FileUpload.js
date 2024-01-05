@@ -1,10 +1,11 @@
 import React, { useState } from "react";
+import { auth } from "../firebase-config";
 
 function FileUpload() {
     const [selectedFile1, setSelectedFile1] = useState(null);
     const [selectedFile2, setSelectedFile2] = useState(null);
-    const [mode, setMode] = useState(""); // State to store the user's mode choice
-    const [backendResponse, setBackendResponse] = useState(""); // State to store the backend response
+    const [mode, setMode] = useState("");
+    const [backendResponse, setBackendResponse] = useState("");
 
     const handleFileChange1 = (event) => {
         setSelectedFile1(event.target.files[0]);
@@ -32,7 +33,8 @@ function FileUpload() {
         const formData = new FormData();
         formData.append("file1", selectedFile1);
         formData.append("file2", selectedFile2);
-        formData.append("mode", mode); // Append mode to the form data
+        formData.append("mode", mode);
+        formData.append("userId", auth.currentUser.uid);
 
         try {
             const response = await fetch("http://localhost:5000/upload", {

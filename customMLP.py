@@ -51,30 +51,38 @@ class CustomMLP(nn.Module):
             print("x:", x)
 
             activations.append(x)
-
-        y = activations[-1] 
+            
+        print("activations:", activations)
+        # y = output
+        y = activations[-1]
         print("y:", y)
         tensorList = []
         DrannDw = []
         print("activations:", activations)
         output_size = self.layers[-1].w.shape[0]
         DrannDanninp = torch.eye(output_size)
+        A1 = DrannDanninp
         tensor_size = 0
 
         for i in reversed(range(len(self.layers))):
-            if i == 0:
-                break
-
             h1 = activations[i]
-            h1l = h1
-
-            # 7 > 5
-
-            # Resize DrannDanninp for the current layer
+            print("h1:", h1)
+            h1l = self.layers[i].derivative(h1)
+            print("h1l:", h1l)
 
             h1l_reshaped = h1l.t()
             
+            h1_reshaped = torch.cat((h1.t(), torch.tensor([[1]])), dim=1)
             
+            layer_dydw = torch.kron(h1_reshaped,A1)
+
+            print("layer_dydw.shape:", layer_dydw.shape)
+            tensor_size = tensor_size + layer_dydw.shape[1] 
+            tensorList.append(layer_dydw)
+
+            if i == 0:
+                break
+
             A1 = -(torch.mm(DrannDanninp,self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
             print("A1:", A1)
             print("A1.shape:", A1.shape)
@@ -83,12 +91,9 @@ class CustomMLP(nn.Module):
 
             h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]])), dim=1)
 
-            layer_dydw = torch.kron(A1,h1l_reshaped)
-            print("layer_dydw.shape:", layer_dydw.shape)
-            tensor_size = tensor_size + layer_dydw.shape[1] 
-            tensorList.append(layer_dydw)
-
         DrannDanninp = torch.mm(A1,self.layers[0].w)
+        print("DrannDanninp:", DrannDanninp)
+        print("DrannDanninp.shape:", DrannDanninp.shape)
 
         print(tensor_size)
 
@@ -116,7 +121,8 @@ class TanhLayer(nn.Module):
         return torch.tanh(torch.mm(self.w, x) + self.b)
 
     def derivative(self, x):
-        return 1 - torch.tanh(torch.mm(self.w, x) + self.b) ** 2
+        
+        return 1 - x ** 2
 
 
 class ReLULayer(nn.Module):

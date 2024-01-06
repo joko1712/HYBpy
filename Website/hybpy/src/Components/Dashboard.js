@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { auth } from "../firebase-config";
+import * as React from "react";
 import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import MuiDrawer from "@mui/material/Drawer";
@@ -10,11 +9,13 @@ import List from "@mui/material/List";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
+import Container from "@mui/material/Container";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
 import { useNavigate } from "react-router-dom";
-
 const drawerWidth = 200;
 
 const AppBar = styled(MuiAppBar, {
@@ -60,9 +61,10 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
         },
     })
 );
+
 const defaultTheme = createTheme();
 
-function FileUpload() {
+export default function Dashboard() {
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
@@ -71,52 +73,6 @@ function FileUpload() {
     const [open, setOpen] = React.useState(true);
     const toggleDrawer = () => {
         setOpen(!open);
-    };
-    const [selectedFile1, setSelectedFile1] = useState(null);
-    const [selectedFile2, setSelectedFile2] = useState(null);
-    const [mode, setMode] = useState("");
-    const [backendResponse, setBackendResponse] = useState("");
-
-    const handleFileChange1 = (event) => {
-        setSelectedFile1(event.target.files[0]);
-    };
-
-    const handleFileChange2 = (event) => {
-        setSelectedFile2(event.target.files[0]);
-    };
-
-    const handleModeChange = (event) => {
-        setMode(event.target.value);
-    };
-
-    const handleUpload = async () => {
-        if (!selectedFile1 || !selectedFile2) {
-            alert("Please select both files!");
-            return;
-        }
-
-        if (mode !== "1" && mode !== "2") {
-            alert("Please select a mode (1 or 2)!");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append("file1", selectedFile1);
-        formData.append("file2", selectedFile2);
-        formData.append("mode", mode);
-        formData.append("userId", auth.currentUser.uid);
-
-        try {
-            const response = await fetch("http://localhost:5000/upload", {
-                method: "POST",
-                body: formData,
-            });
-            const data = await response.json();
-            setBackendResponse(JSON.stringify(data, null, 2)); // Store the response data in state
-        } catch (error) {
-            console.error("Error uploading file:", error);
-            setBackendResponse(`Error: ${error.message}`); // Store error message in state
-        }
     };
 
     return (
@@ -173,9 +129,52 @@ function FileUpload() {
                         {secondaryListItems(navigate)}
                     </List>
                 </Drawer>
+                <Box
+                    component='main'
+                    sx={{
+                        backgroundColor: (theme) =>
+                            theme.palette.mode === "light"
+                                ? theme.palette.grey[100]
+                                : theme.palette.grey[900],
+                        flexGrow: 1,
+                        height: "100vh",
+                        overflow: "auto",
+                    }}>
+                    <Toolbar />
+                    <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
+                        <h2>Previous Run</h2>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={8} lg={9}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        height: 240,
+                                    }}>
+                                    <p>Results</p>
+                                </Paper>
+                            </Grid>
+                            <Grid item xs={12} md={4} lg={3}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        height: 240,
+                                    }}>
+                                    <p>Settings</p>
+                                </Paper>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                    <p>Description</p>
+                                </Paper>
+                            </Grid>
+                        </Grid>
+                    </Container>
+                </Box>
             </Box>
         </ThemeProvider>
     );
 }
-
-export default FileUpload;

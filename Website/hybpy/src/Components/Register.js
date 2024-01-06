@@ -12,7 +12,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-
+import { BrowserRouter as Router } from "react-router-dom";
 const defaultTheme = createTheme();
 
 function Register() {
@@ -20,26 +20,48 @@ function Register() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
+    const [emailError, setEmailError] = useState("");
+
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
+    const handleEmailChange = (e) => {
+        const emailValue = e.target.value;
+        setEmail(e.target.value);
+        if (!validateEmail(emailValue) && emailValue) {
+            setEmailError("Invalid email format.");
+        } else {
+            setEmailError("");
+        }
+    };
 
     const registerUser = (e) => {
         e.preventDefault();
         setError("");
 
-        // Check if passwords match and have at least 10 characters
         if (password !== confirmPassword) {
             setError("Passwords do not match.");
+            window.alert("Passwords do not match.");
             return;
         }
 
         if (password.length < 10) {
             setError("Password must be at least 10 characters long.");
+            window.alert("Password must be at least 10 characters long.");
             return;
         }
 
-        // Create a new user with email and password using firebase
+        if (!validateEmail(email)) {
+            window.alert("Invalid email format. Please enter a valid email address.");
+            return;
+        }
+
         createUserWithEmailAndPassword(auth, email, password)
             .then((res) => {
                 console.log(res.user);
+                Router.push("/");
             })
             .catch((err) => setError(err.message));
 
@@ -69,6 +91,7 @@ function Register() {
                         <Grid container spacing={2}>
                             <Grid item xs={12}>
                                 <TextField
+                                    error={!!emailError}
                                     required
                                     fullWidth
                                     id='email'
@@ -76,7 +99,7 @@ function Register() {
                                     name='email'
                                     autoComplete='email'
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={handleEmailChange}
                                 />
                             </Grid>
                             <Grid item xs={12}>
@@ -112,7 +135,7 @@ function Register() {
                         </Button>
                         <Grid container justifyContent='flex-end'>
                             <Grid item>
-                                <Link href='/login' variant='body2'>
+                                <Link href='/' variant='body2'>
                                     Already have an account? Sign in
                                 </Link>
                             </Grid>

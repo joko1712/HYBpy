@@ -11,7 +11,7 @@ import torch
 from mlpnetsetw import mlpnetsetw
 from hybodesolver import hybodesolver
 from odesfun import odesfun
-from Control_functions import control_function_chass as control_function
+from Control_functions.control_function_chass import control_function
 import customMLP as mlp
 
 with open("sample.json", "r") as f:
@@ -124,7 +124,7 @@ def hybtrain(projhyb, file):
     # TODO: CONTROL FUNCTION selection from Control_functions folder
     if projhyb["fun_control"] != 0:
         print("   Control function:       ON")
-        fun_control = control_function.control_function()
+        fun_control = control_function()
     else:
         print("   Control function:       OFF")
         print("   ASK USER TO DEFINE CONTROL FUNCTION")
@@ -626,6 +626,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
         istrain = projhyb["istrain"]
 
     ns = projhyb["nspecies"]
+    nt = ns + projhyb["ncompartments"]
     nw = projhyb["mlm"]["nw"]
     isres = [projhyb["species"][str(i)]["isres"] for i in range(1, ns + 1)]
     nres = sum(isres)
@@ -658,7 +659,8 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             first_row = file[str(l)]["y"][:n_columns]
             print(first_row)
             state = first_row
-            Sw = np.zeros((ns, nw))
+            Sw = np.zeros((nt, nw))
+            print("control function", control_function)
 
             for i in range(1, file[str(l)]["np"]):
 

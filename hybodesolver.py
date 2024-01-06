@@ -17,7 +17,8 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
                 batch, state = eventfun(t, batch, state)
 
         if controlfun and callable(controlfun):
-            ucontrol1 = controlfun(t, batch)
+            #ucontrol1 = controlfun(t, batch)
+            ucontrol1 = controlfun()
         else:
             ucontrol1 = []
         
@@ -26,8 +27,15 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
         else:
             k1_state = odesfun(ann,t, state, None, None, w, ucontrol1, projhyb)
 
-        ucontrol2 = controlfun(t + h / 2, batch) if controlfun is not None else []
+        # FIX THIS 
+        print("CONTROLFUN:", controlfun)
+        print("Control", type(controlfun))
+        control = None
+        #ucontrol2 = controlfun(t + h / 2, batch) if controlfun is not None else []
+        ucontrol2 = controlfun() if control is not None else []
 
+        print("k1_state:", k1_state)
+        print("k1_jac:", k1_jac)
         if jac is not 0:
             k2_state, k2_jac = odesfun(ann,t + h / 2, state + h / 2 * k1_state, jac + h / 2 * k1_jac, None, w, ucontrol2, projhyb)
             k3_state, k3_jac = odesfun(ann,t + h / 2, state + h / 2 * k2_state, jac + h / 2 * k2_jac, None, w, ucontrol2, projhyb)

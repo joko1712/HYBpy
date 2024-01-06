@@ -99,27 +99,31 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
 
             DrannDs = torch.mm(DrannDanninp, DanninpDstate.t())
 
-            print("DfDs:", DfDs)
-            print("DfDrann:", DfDrann)
-            print("DrannDs:", DrannDs)
-            print("jac:", jac)
-            print("DfDrann:", DfDrann)
-            print("DrannDw:", DrannDw)
+            print("DfDrann.shape:", DfDrann.shape) 
+            print("DrannDw.shape:", DrannDw.shape)
+            print("DrannDs.shape:", DrannDs.shape)
+            print("DfDs.shape:", DfDs.shape)
+            print("jac.shape:", jac.shape)
 
-            print("DfDrann.shape:", DfDrann.shape)
 
             DfDrannDrannDw = torch.mm(DfDrann, DrannDw)
-            print("DfDrannDrannDw:", DfDrannDrannDw)
+
             
-            print("(DfDs + torch.mm(DfDrann,DrannDs))", (DfDs + torch.mm(DfDrann,DrannDs)))
             print("shape:", (DfDs + torch.mm(DfDrann,DrannDs)).shape)
 
-            fjac = (DfDs + torch.mm(DfDrann,DrannDs)) * jac + DfDrannDrannDw
+            # fjac [12x119]
+            # DfDrann [12x7]
+            # DrannDw [7x119]
+            # DrannDs [7x12]
+            # DfDs [12x12]
+            # jac [12x119]
 
-            print("",what)
+            DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann,DrannDs)
+            fjac = torch.mm(DfDsDfDrannDrannDs,jac) + DfDrannDrannDw
+            print("fjac:", fjac)
+            print("fjac.shape:", fjac.shape)
 
-
-            return fstate, fjac, None
+            return fstate, fjac
 
         elif projhyb['mode'] == 3:
             anninp, rann, _ = anninp_rann_func(projhyb)

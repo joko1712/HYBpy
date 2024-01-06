@@ -3,8 +3,6 @@ import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
 import Link from "@mui/material/Link";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
@@ -23,7 +21,7 @@ function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
-    const loginUser = (e) => {
+    const loginUser = async (e) => {
         e.preventDefault();
         setError("");
 
@@ -33,12 +31,16 @@ function Login() {
             })
             .catch((err) => setError(err.message));
 
+        if (error !== null) {
+            window.alert("Invalid email or password.");
+            return;
+        }
+
         setEmail("");
         setPassword("");
     };
 
-    const loginWithGoogle = (e) => {
-        e.preventDefault();
+    const loginWithGoogle = () => {
         setError("");
 
         signInWithGoogle(auth)
@@ -74,6 +76,8 @@ function Login() {
                             label='Email Address'
                             name='email'
                             autoComplete='email'
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             autoFocus
                         />
                         <TextField
@@ -84,11 +88,9 @@ function Login() {
                             label='Password'
                             type='password'
                             id='password'
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             autoComplete='current-password'
-                        />
-                        <FormControlLabel
-                            control={<Checkbox value='remember' color='primary' />}
-                            label='Remember me'
                         />
                         <Button type='submit' fullWidth variant='contained' sx={{ mt: 3, mb: 2 }}>
                             Sign In
@@ -105,6 +107,7 @@ function Login() {
                                 Login with Google
                             </Button>
                         </Grid>
+                        {error && <p>{error}</p>}
                         <Grid container>
                             <Grid item>
                                 <Link href='/register' variant='body2'>

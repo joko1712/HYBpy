@@ -23,6 +23,7 @@ import { Input, Select } from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { useEffect } from "react";
 
 const drawerWidth = 200;
 
@@ -147,6 +148,9 @@ function FileUpload() {
         formData.append("file2", selectedFile2);
         formData.append("mode", mode);
         formData.append("userId", auth.currentUser.uid);
+        formData.append("description", description);
+        formData.append("train_batches", Array.from(train_batches).join(","));
+        formData.append("test_batches", Array.from(test_batches).join(","));
 
         try {
             const response = await fetch("http://localhost:5000/upload", {
@@ -154,11 +158,64 @@ function FileUpload() {
                 body: formData,
             });
             const data = await response.json();
-            setBackendResponse(JSON.stringify(data, null, 2)); // Store the response data in state
+            setBackendResponse(JSON.stringify(data, null, 2));
         } catch (error) {
             console.error("Error uploading file:", error);
-            setBackendResponse(`Error: ${error.message}`); // Store error message in state
+            setBackendResponse(`Error: ${error.message}`);
         }
+    };
+
+    const [availableBatches, setAvailableBatches] = useState([]);
+    const [train_batches, setTrainBatches] = useState(new Set());
+    const [test_batches, setTestBatches] = useState(new Set());
+
+    useEffect(() => {
+        const fetchAvailableBatches = async () => {
+            if (selectedFile2 && mode === "1") {
+                try {
+                    const formData = new FormData();
+                    formData.append("file2", selectedFile2);
+
+                    console.log("Making fetch call to get-available-batches");
+                    const response = await fetch("http://localhost:5000/get-available-batches", {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    const data = await response.json();
+                    console.log("Received data:", data);
+                    setAvailableBatches(data);
+                } catch (error) {
+                    console.error("Error fetching batches:", error);
+                }
+            }
+        };
+
+        fetchAvailableBatches();
+    }, [selectedFile2, mode]);
+
+    const handleTrainBatchSelection = (batch) => {
+        setTrainBatches((prevSelectedBatches) => {
+            const newSelection = new Set(prevSelectedBatches);
+            if (newSelection.has(batch)) {
+                newSelection.delete(batch);
+            } else if (!test_batches.has(batch)) {
+                newSelection.add(batch);
+            }
+            return newSelection;
+        });
+    };
+
+    const handleTestBatchSelection = (batch) => {
+        setTestBatches((prevSelectedBatches) => {
+            const newSelection = new Set(prevSelectedBatches);
+            if (newSelection.has(batch)) {
+                newSelection.delete(batch);
+            } else if (!train_batches.has(batch)) {
+                newSelection.add(batch);
+            }
+            return newSelection;
+        });
     };
 
     return (
@@ -230,16 +287,16 @@ function FileUpload() {
                     <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
                         <h2>Create Run</h2>
                         <Grid container spacing={3} columns={20}>
-                            <Grid item xs={10} columns={10}>
+                            <Grid item xs={20} columns={20}>
                                 <Paper
                                     sx={{
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 240,
+                                        height: 300,
                                         overflow: "auto",
                                     }}>
-                                    <p>Hmod</p>
+                                    <Typography level='h1'>HMOD</Typography>
                                     <p>{selectedFile1 ? selectedFile1.name : "No file selected"}</p>
                                     <pre>{file1Content}</pre>{" "}
                                 </Paper>
@@ -261,20 +318,20 @@ function FileUpload() {
                                     </Grid>
                                 </label>
                             </Grid>
-                            <Grid item xs={10} columns={10}>
+                            <Grid item xs={20} columns={20}>
                                 <Paper
                                     sx={{
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 240,
+                                        height: 300,
                                         overflow: "auto",
                                     }}>
-                                    <p>CSV</p>
+                                    <Typography level='h1'>CSV</Typography>
                                     <p>{selectedFile2 ? selectedFile2.name : "No file selected"}</p>
                                     <TableContainer
                                         component={Paper}
-                                        sx={{ maxHeight: 240, overflow: "auto" }}>
+                                        sx={{ maxHeight: 240, overflow: "auto", fontSize: 1 }}>
                                         <Table size='small' aria-label='a dense table'>
                                             <TableHead>
                                                 <TableRow>
@@ -306,7 +363,7 @@ function FileUpload() {
                                             variant='contained'
                                             sx={{ height: "100%" }}>
                                             <PublishIcon fontSize='large' />
-                                            Upload Hmod
+                                            Upload CSV
                                         </Button>
                                         <VisuallyHiddenInput
                                             type='file'
@@ -322,7 +379,7 @@ function FileUpload() {
                                     <Input onChange={(e) => setDescription(e.target.value)}></Input>
                                 </Paper>
                             </Grid>
-                            <Grid item xs={13}>
+                            <Grid item xs={7}>
                                 <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
                                     <p>Mode:</p>
                                     <Select
@@ -336,16 +393,70 @@ function FileUpload() {
                                     </Select>
                                 </Paper>
                             </Grid>
-                            <Grid item xs={7}>
-                                <Button
-                                    onClick={() => handleUpload()}
-                                    fullWidth
-                                    variant='contained'
-                                    sx={{ height: "100%" }}>
-                                    <PublishIcon fontSize='large' />
-                                    Upload Imformation
-                                </Button>
-                            </Grid>
+                            {(mode === "1" && (
+                                <>
+                                    <Grid item xs={3}>
+                                        <h3>Available Batches: {availableBatches.join(", ")}</h3>
+                                    </Grid>
+                                    <Grid item xs={3}>
+                                        <h3>Select Train Batches: </h3>
+                                        {availableBatches.map((batch) => (
+                                            <div key={batch}>
+                                                <input
+                                                    type='checkbox'
+                                                    checked={Array.from(train_batches).includes(
+                                                        batch
+                                                    )}
+                                                    onChange={() =>
+                                                        handleTrainBatchSelection(batch)
+                                                    }
+                                                />
+                                                {batch}
+                                            </div>
+                                        ))}
+                                    </Grid>
+                                    <Grid item xs={3}>
+                                        <h3>Select Test Batches: </h3>
+                                        {availableBatches.map((batch) => (
+                                            <div key={batch}>
+                                                <input
+                                                    type='checkbox'
+                                                    checked={Array.from(test_batches).includes(
+                                                        batch
+                                                    )}
+                                                    onChange={() => handleTestBatchSelection(batch)}
+                                                />
+                                                {batch}
+                                            </div>
+                                        ))}
+                                    </Grid>
+                                    <Grid item xs={4}>
+                                        <Button
+                                            onClick={() => handleUpload()}
+                                            fullWidth
+                                            variant='contained'
+                                            sx={{ height: "100%" }}>
+                                            <PublishIcon fontSize='large' />
+                                            Upload Imformation
+                                        </Button>
+                                    </Grid>
+                                </>
+                            )) ||
+                                (mode === "2" && (
+                                    <>
+                                        <Grid item xs={4}></Grid>
+                                        <Grid item xs={6}>
+                                            <Button
+                                                onClick={() => handleUpload()}
+                                                fullWidth
+                                                variant='contained'
+                                                sx={{ height: "100%" }}>
+                                                <PublishIcon fontSize='large' />
+                                                Upload Imformation
+                                            </Button>
+                                        </Grid>
+                                    </>
+                                ))}
                         </Grid>
                     </Container>
                 </Box>

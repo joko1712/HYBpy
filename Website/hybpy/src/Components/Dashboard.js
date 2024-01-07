@@ -16,6 +16,11 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase-config";
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { db } from "../firebase-config";
+import { useEffect } from "react";
+
 const drawerWidth = 200;
 
 const AppBar = styled(MuiAppBar, {
@@ -74,6 +79,29 @@ export default function Dashboard() {
     const toggleDrawer = () => {
         setOpen(!open);
     };
+
+    const [runs, setRuns] = React.useState([]);
+    const userId = auth.currentUser.uid;
+
+    useEffect(() => {
+        const fetchLatestRun = async () => {
+            const runsCollectionRef = collection(db, "users", userId, "runs");
+            const q = query(
+                runsCollectionRef,
+                where("userId", "==", userId),
+                orderBy("createdAt", "desc"),
+                limit(1)
+            );
+            const querySnapshot = await getDocs(q);
+            const latestRun = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setRuns(latestRun);
+        };
+
+        fetchLatestRun();
+    }, [userId]);
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -150,25 +178,46 @@ export default function Dashboard() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 240,
+                                        height: 350,
                                     }}>
-                                    <p>Results</p>
+                                    {runs.length > 0 ? (
+                                        <p>{runs[0].response_data.message}</p>
+                                    ) : (
+                                        <p>No runs yet</p>
+                                    )}
                                 </Paper>
                             </Grid>
                             <Grid item xs={12} md={4} lg={3}>
                                 <Paper
                                     sx={{
-                                        p: 2,
+                                        pl: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 240,
+                                        height: 350,
+                                        overflow: "auto",
                                     }}>
-                                    <p>Settings</p>
+                                    {runs.length > 0 ? (
+                                        <div>
+                                            <h2>Run Details:</h2>
+                                            <h3>HMOD:</h3>
+                                            <p>{runs[0].file1_name}</p>
+                                            <h3>CSV:</h3>
+                                            <p>{runs[0].file2_name}</p>
+                                            <h3>Mode:</h3>
+                                            <p>{runs[0].mode}</p>
+                                        </div>
+                                    ) : (
+                                        <p>No runs yet</p>
+                                    )}
                                 </Paper>
                             </Grid>
                             <Grid item xs={12}>
                                 <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                                    <p>Description</p>
+                                    {runs.length > 0 ? (
+                                        <p>{runs[0].description}</p>
+                                    ) : (
+                                        <p>No runs yet</p>
+                                    )}
                                 </Paper>
                             </Grid>
                         </Grid>

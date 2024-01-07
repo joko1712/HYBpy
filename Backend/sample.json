@@ -834,9 +834,9 @@
     "admini": 0,
     "addrop": 0,
     "train_batches": [
-        1
+        2
     ],
     "test_batches": [
-        2
+        1
     ]
 }

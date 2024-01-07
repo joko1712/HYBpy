@@ -8,6 +8,10 @@ import FaceIcon from "@mui/icons-material/Face";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import { auth } from "../firebase-config";
 
+const logout = (navigate) => {
+    auth.signOut();
+    navigate("/");
+};
 export const mainListItems = (navigate) => (
     <React.Fragment>
         <ListItemButton>
@@ -33,7 +37,7 @@ export const mainListItems = (navigate) => (
 
 export const secondaryListItems = (navigate) => (
     <React.Fragment>
-        <ListItemButton onClick={() => auth.signOut()}>
+        <ListItemButton onClick={() => logout(navigate)}>
             <ListItemIcon>
                 <LogoutIcon />
             </ListItemIcon>

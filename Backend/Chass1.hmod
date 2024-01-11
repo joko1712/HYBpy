@@ -361,7 +361,7 @@ chass.id='chass';
 chass.time.min=0;
 chass.time.max=100;
 chass.time.id='t[h]';
-chass.time.TAU=0.1;
+chass.time.TAU=0.5;
 chass.time.tspan=0:1:100;
 
 chass.datasource=3; %1 - text file; 2- excel file; 3-userdefined function

@@ -93,9 +93,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
             DfDs = DfDs.astype(np.float32)
             DfDs = torch.from_numpy(DfDs)
 
-            jac = np.array(jac)
-            jac = jac.astype(np.float32)
-            jac = torch.from_numpy(jac)
+
 
             DrannDs = torch.mm(DrannDanninp, DanninpDstate.t())
 
@@ -119,9 +117,15 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb):
             # jac [12x119]
 
             DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann,DrannDs)
+
+            print("DfDsDfDrannDrannDs.type:", DfDsDfDrannDrannDs.type())
+            print("jac.type:", jac.type())
+
             fjac = torch.mm(DfDsDfDrannDrannDs,jac) + DfDrannDrannDw
             print("fjac:", fjac)
             print("fjac.shape:", fjac.shape)
+            fstate = [expr.evalf(subs=values) for expr in fstate]
+            print("fstate", fstate)
 
             return fstate, fjac
 

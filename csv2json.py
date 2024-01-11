@@ -103,13 +103,13 @@ def add_state_and_time_to_data(data, projhyb):
                 state = [float(val) for key, val in time_data.items() if not key.startswith("sd")]
 
                 data[batch_key][time_key]['state'] = state
-                y_matrix.extend(state) 
+                y_matrix.append(state) 
                 
                 sd_values = [float(val) for key, val in time_data.items() if key.startswith("sd")]
                 v_values = [float(time_data[key]) for key in time_data if key.startswith("V")]
 
                 data[batch_key][time_key]['sc'] = sd_values + [np.std(v_values)]
-                sy_matrix.extend(data[batch_key][time_key]['sc'])
+                sy_matrix.append(data[batch_key][time_key]['sc'])
                                 
                 time_list.append(int(time_key)) 
 

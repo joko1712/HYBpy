@@ -13,7 +13,6 @@ from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, manual_label, random_label, add_state_and_time_to_data
 
-
 with open("sample.json", "r") as f:
     projhyb = json.load(f)
 

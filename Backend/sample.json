@@ -687,11 +687,11 @@
     "fun_control": "@control_function_chass",
     "fun_event": [],
     "mlm": {
-        "id": "vm5",
         "neuron": 1,
+        "id": "vm5",
         "options": [
-            5,
-            5,
+            3,
+            4,
             5
         ],
         "layer": "1",
@@ -833,9 +833,7 @@
     "adalfa": 0,
     "admini": 0,
     "addrop": 0,
-    "train_batches": [
-        2
-    ],
+    "train_batches": [],
     "test_batches": [
         1
     ]

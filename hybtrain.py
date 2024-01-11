@@ -124,7 +124,9 @@ def hybtrain(projhyb, file):
     # TODO: CONTROL FUNCTION selection from Control_functions folder
     if projhyb["fun_control"] != 0:
         print("   Control function:       ON")
-        fun_control = control_function()
+        t = 0
+        batch = 0
+        fun_control = control_function(t, batch)
     else:
         print("   Control function:       OFF")
         print("   ASK USER TO DEFINE CONTROL FUNCTION")
@@ -628,8 +630,17 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     ns = projhyb["nspecies"]
     nt = ns + projhyb["ncompartments"]
     nw = projhyb["mlm"]["nw"]
-    isres = [projhyb["species"][str(i)]["isres"] for i in range(1, ns + 1)]
-    nres = sum(isres)
+    isres = []
+    for i in range(1, ns + 1):
+        if projhyb["species"][str(i)]["isres"] == 1: 
+            isres = isres + [i-1]
+
+
+    isres = isres + [ns]
+    
+    print("ires", isres)
+        
+    nres = len(isres)
 
     projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
     npall = 0
@@ -647,10 +658,20 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
         if file[str(l)]["istrain"] == 1:
             tb = file[str(l)]["time"]
             Y = file[str(l)]["y"]
+            Y = np.array(Y)
+            Y = Y.astype(np.float64)
+            Y = torch.from_numpy(Y)
+            print("Y.size", Y.size())
+            
 
             batch = str(l)
 
             sY = file[str(l)]["sy"]
+            sY = np.array(sY)
+            sY = sY.astype(np.float64)
+            sY = torch.from_numpy(sY)
+            print("sY", sY.size())
+            
 
             first = file[str(l)]["time"][0]
             print(first)
@@ -662,16 +683,29 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             Sw = np.zeros((nt, nw))
             print("control function", control_function)
 
+
             for i in range(1, file[str(l)]["np"]):
 
                 batch_data = file[str(l+1)]
-                _, state, Sw = hybodesolver(ann,odesfun,
+                _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, [], batch_data, projhyb)
 
+                print("state", state)
+                print("Y", Y[l, isres])
+                print("state", state[isres])
+                print("sY", sY[l, isres])
+                print("sresall", sresall)
+
+                #TODO: 
+                #Perguntar se devia comecar com 1 ou 0
+                #Perguntar se state e supposto ser 2D ou 1D
+                #Perguntar se srecall[COUNT:COUNT + nres] e supposto ser 2D ou 1D
+
+                Ystate = Y[l, isres] - state[isres].t()
                 
-                sresall[COUNT:COUNT + nres] = (Y[i, isres] - state[isres]) / sY[i, isres]
-                sjacall[COUNT:COUNT + nres, :nw] = - Sw[isres, :] / np.tile(sY[i, isres].reshape(-1, 1), nw)
+                sresall[COUNT:COUNT + nres] = Ystate / sY[l, isres].reshape(-1, 1)
+                sjacall[COUNT:COUNT + nres, :nw] = - Sw[isres, :] / np.tile(sY[l, isres].reshape(-1, 1), nw)
                 COUNT += nres
 
     ind = ~np.isnan(sresall)

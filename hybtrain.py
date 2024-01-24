@@ -648,13 +648,11 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     for i in range(file["nbatch"]):
         if file[str(i+1)]["istrain"] == 1:
             npall += file[str(i+1)]["np"]
-            print("npall", npall)
 
 
     sresall = np.zeros(npall * nres)
     sjacall = np.zeros((npall * nres, nw))
-    print("sjacall", sjacall)
-    print("sjacall", sjacall.shape)
+
     COUNT = 0
     for l in range(file["nbatch"]):
         l = l + 1
@@ -664,7 +662,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             Y = np.array(Y)
             Y = Y.astype(np.float64)
             Y = torch.from_numpy(Y)
-            print("Y.size", Y.size())
             
 
             batch = str(l)
@@ -673,16 +670,13 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             sY = np.array(sY)
             sY = sY.astype(np.float64)
             sY = torch.from_numpy(sY)
-            print("sY", sY.size())
             
             state = np.array(file[str(l)]["y"][0])
             Sw = np.zeros((nt, nw))
-            print("control function", control_function)
 
 
             for i in range(1, file[str(l)]["np"]):
 
-                print("state", state)
                 batch_data = file[str(l+1)]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
@@ -690,28 +684,17 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
 
                 Ystate = Y[l, isres] - state[isres].t()
 
-                print("Ystate", Ystate)
-                print("sY[l, isres]", sY[l, isres])
                 sresall[COUNT:COUNT + nres] = Ystate / sY[l, isres]
-                print(" Ystate / sY[l, isres]",  Ystate / sY[l, isres])
-
-                print("Sw[isres, :]", Sw[isres, :])
-                print("SW[ires, :].size", Sw[isres, :])
-                print("np.tile(sY[l, isres].reshape(-1, 1), nw)", np.tile(sY[l, isres], nw))
-                print("nw", nw)
-
-                print("sY[l, isres]", sY[l, isres])
-                print("sY[l, isres].t().size", sY[l, isres].reshape(-1, 1))
-
+                
                 SYrepeat = sY[l, isres].reshape(-1, 1).repeat(1, nw)
-                print("SYrepeat", SYrepeat)
 
-                print("TESTE",  - Sw[isres, :] / SYrepeat)
                 result = (- Sw[isres, :].detach().numpy()) / SYrepeat.detach().numpy()
-                print("result.shape", result.shape)
                 
                 sjacall[COUNT:COUNT + nres, 0:nw] = result
                 COUNT = COUNT + nres
+                print("#################################################")
+                print("------------------LOOP", i, "------------------")
+                print("#################################################")
 
     sresall = sresall.reshape(-1, 1)
     ind = ~np.isnan(sresall)

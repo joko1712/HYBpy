@@ -6,7 +6,6 @@ import numpy as np
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols):
 
-
     current_state_dict = ann.state_dict()
     print("Current State Dict:", current_state_dict)
 
@@ -21,7 +20,9 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstat
     ann.load_state_dict(new_state_dict)
 
     if jac is None and hess is None:
+
         fstate = fstate_func(projhyb)
+
         anninp, rann, _ = anninp_rann_func(projhyb)
 
         return fstate, None, None
@@ -36,30 +37,16 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstat
             DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
             DanninpDstate = DanninpDstate.astype(np.float32)
             DanninpDstate = torch.from_numpy(DanninpDstate)
-
-                   
+   
             y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
 
             DrannDs = torch.mm(DrannDanninp, DanninpDstate.t())
 
-
-
             DfDrannDrannDw = torch.mm(DfDrann, DrannDw)
-
-            
-
-            # fjac [12x119]
-            # DfDrann [12x7]
-            # DrannDw [7x119]
-            # DrannDs [7x12]
-            # DfDs [12x12]
-            # jac [12x119]
 
             DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann,DrannDs)
 
-            
             fjac = torch.mm(DfDsDfDrannDrannDs,jac) + DfDrannDrannDw
-
 
             return fstate, fjac
 
@@ -69,6 +56,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstat
             fstate = fstate_func(projhyb)
 
             DfDs = Matrix([fstate]).jacobian(Matrix([state]))
+            
             DfDrann = Matrix([fstate]).jacobian(Matrix([rann]))
 
             fjac = DfDs * jac + DfDrann

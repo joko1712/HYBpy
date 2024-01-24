@@ -656,7 +656,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     print("sjacall", sjacall)
     print("sjacall", sjacall.shape)
     COUNT = 0
-    print(sad)
     for l in range(file["nbatch"]):
         l = l + 1
         if file[str(l)]["istrain"] == 1:
@@ -706,8 +705,12 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
 
                 SYrepeat = sY[l, isres].reshape(-1, 1).repeat(1, nw)
                 print("SYrepeat", SYrepeat)
+
+                print("TESTE",  - Sw[isres, :] / SYrepeat)
+                result = (- Sw[isres, :].detach().numpy()) / SYrepeat.detach().numpy()
+                print("result.shape", result.shape)
                 
-                sjacall[COUNT:COUNT + nres, 0:nw-1] = - Sw[isres, :] / SYrepeat
+                sjacall[COUNT:COUNT + nres, 0:nw] = result
                 COUNT = COUNT + nres
 
     sresall = sresall.reshape(-1, 1)

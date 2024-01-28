@@ -19,7 +19,6 @@ class CustomMLP(nn.Module):
                     LSTMLayer(layer_sizes[i], layer_sizes[i + 1]))
 
         self.layers.append(Linear(layer_sizes[-2], layer_sizes[-1]))
-        print("self.layers:", self.layers)
 
 
     def forward(self, x):
@@ -45,20 +44,15 @@ class CustomMLP(nn.Module):
         activations = [x]
 
         for layer in self.layers:
-            print("layer:", layer)
-            print("x:", x)
+
             x = layer(x)
-            print("x:", x)
 
             activations.append(x)
             
-        print("activations:", activations)
         # y = output
         y = activations[-1]
-        print("y:", y)
         tensorList = []
         DrannDw = []
-        print("activations:", activations)
         output_size = self.layers[-1].w.shape[0]
         DrannDanninp = torch.eye(output_size)
         A1 = DrannDanninp
@@ -66,9 +60,7 @@ class CustomMLP(nn.Module):
 
         for i in reversed(range(len(self.layers))):
             h1 = activations[i]
-            print("h1:", h1)
             h1l = self.layers[i].derivative(h1)
-            print("h1l:", h1l)
 
             h1l_reshaped = h1l.t()
             
@@ -76,7 +68,6 @@ class CustomMLP(nn.Module):
             
             layer_dydw = torch.kron(h1_reshaped,A1)
 
-            print("layer_dydw.shape:", layer_dydw.shape)
             tensor_size = tensor_size + layer_dydw.shape[1] 
             tensorList.append(layer_dydw)
 
@@ -84,26 +75,19 @@ class CustomMLP(nn.Module):
                 break
 
             A1 = -(torch.mm(DrannDanninp,self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
-            print("A1:", A1)
-            print("A1.shape:", A1.shape)
+
 
             DrannDanninp = A1
 
             h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]])), dim=1)
 
         DrannDanninp = torch.mm(A1,self.layers[0].w)
-        print("DrannDanninp:", DrannDanninp)
-        print("DrannDanninp.shape:", DrannDanninp.shape)
 
-        print(tensor_size)
 
         DrannDw = tensorList
 
         DrannDw = torch.cat(DrannDw, dim=1)
         DrannDw = DrannDw.view(7, tensor_size)
-
-        print("DrannDw:", DrannDw)
-        print("DrannDw.len:", len(DrannDw))
 
         return y, DrannDanninp, DrannDw
 
@@ -116,8 +100,7 @@ class TanhLayer(nn.Module):
         self.b = nn.Parameter(torch.randn(output_size, 1))
 
     def forward(self, x):
-        print("self.w:", self.w)
-        print("x:", x)        
+
         return torch.tanh(torch.mm(self.w, x) + self.b)
 
     def derivative(self, x):

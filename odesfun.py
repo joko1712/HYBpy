@@ -7,7 +7,6 @@ import numpy as np
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols):
 
     current_state_dict = ann.state_dict()
-    print("Current State Dict:", current_state_dict)
 
     new_state_dict = {}
     for param_tensor in ann.state_dict():

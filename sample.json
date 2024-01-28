@@ -826,7 +826,7 @@
     "niter": 1,
     "niteroptim": 1,
     "nstep": 10,
-    "display": "off",
+    "display": 0,
     "bootstrap": 0,
     "nensemble": 1,
     "crossval": 0,

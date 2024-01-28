@@ -42,6 +42,7 @@ def hybtrain(projhyb, file):
         raise ValueError("nstep must be >= 1")
 
     projhyb['ntrain'] = 0
+    istrainSAVE = np.zeros((file['nbatch'], 1))
 
     projhyb['itr'] = []  # List to keep track of training indices.
     cnt_jctrain = 0  # Counter for the number of training noise samples.
@@ -138,8 +139,7 @@ def hybtrain(projhyb, file):
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
-            'method': 'lm',
-            'jac': jacobian,
+            'method': 'trf', ## TODO: ASK IF NEEDS lm OR trf OR dogbox
             'xtol': 1e-9,
             'ftol': 1e-12,
             'verbose': projhyb['display']
@@ -150,7 +150,6 @@ def hybtrain(projhyb, file):
         print(f"   Optimiser:              {algorithm}")
         options = {
             'method': algorithm,
-            'jac': jacobian,
             'hess': hessian,
             'options': {
                 'disp': projhyb['display'],
@@ -200,8 +199,8 @@ def hybtrain(projhyb, file):
     print("Number of neurons in each hidden layer: ", projhyb["mlm"]['nh'])
 
     TrainRes = {
-        'witer': [[0] * projhyb['mlm']['nw'] for _ in range(projhyb['nstep'] * projhyb['niter'] * 2)],
-        'wstep': [[0] * projhyb['mlm']['nw'] for _ in range(projhyb['nstep'])],
+        'witer': np.zeros((projhyb['nstep'] * projhyb['niter'] * 2, projhyb['mlm']['nw'])),
+        'wstep': np.zeros((projhyb['nstep'], projhyb['mlm']['nw'])),
         'istrain': [],
         'resnorm': [0] * (projhyb['nstep'] * projhyb['niter'] * 2),
         'sjctrain': [0] * (projhyb['nstep'] * projhyb['niter'] * 2),
@@ -211,7 +210,7 @@ def hybtrain(projhyb, file):
         'sjctest': [0] * (projhyb['nstep'] * projhyb['niter'] * 2),
         'sjrtest': [0] * (projhyb['nstep'] * projhyb['niter'] * 2),
         'AICc': [0] * (projhyb['nstep'] * projhyb['niter'] * 2),
-        'mj': [0] * projhyb['nstep'],
+        'mj': np.zeros((projhyb['nstep'], 1)),
         'iter': 0,
         'istep': 0,
         't0': time.time()
@@ -230,6 +229,8 @@ def hybtrain(projhyb, file):
         projhyb['mlm']['fundata'].set_weights(weights)
 
     weights = weights.ravel()
+    evaluator = IndirectFunctionEvaluator(ann, projhyb)
+
 
     for istep in range(1, projhyb['nstep'] + 1):
 
@@ -247,45 +248,50 @@ def hybtrain(projhyb, file):
 
         TrainRes['istrain'].extend(projhyb['istrain'])
 
+        
+        '''
         if projhyb['mode'] == 1:  # INDIRECT
             if projhyb['method'] == 4:
-                def fobj(w, istrain): return resfun_indirect_jac(
-                    w, istrain, projhyb, projhyb['method'])
+                def fobj_func(weights):
+                    fobj, _ = resfun_indirect_jac(ann, weights, projhyb['istrain'], projhyb, projhyb['method'])
+                    return fobj
+                def jac_func(weights):
+                    _, jac = resfun_indirect_jac(ann, weights, projhyb['istrain'], projhyb, projhyb['method'])
+                    return jac
             elif projhyb['jacobian'] == 0:
-                def fobj(w): return resfun_indirect(
-                    w, projhyb['istrain'], projhyb, projhyb['method'])
+                def fobj_func(weights):
+                    fobj = resfun_indirect(weights, projhyb['istrain'], projhyb, projhyb['method'])
+                    return fobj
             elif projhyb['jacobian'] == 1:
-                def fobj(w): return resfun_indirect_jac(ann,
-                    w, projhyb['istrain'], projhyb, projhyb['method'])[0]
+                def fobj_func(weights):
+                    fobj, _ = resfun_indirect_jac(ann, weights, projhyb['istrain'], projhyb, projhyb['method'])
+                    return fobj
+                def jac_func(weights):
+                    _, jac = resfun_indirect_jac(ann, weights, projhyb['istrain'], projhyb, projhyb['method'])
+                    return jac
             elif projhyb['hessian'] == 1:
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
 
         elif projhyb['mode'] == 2:  # DIRECT
             if projhyb['method'] == 4:
-                def fobj(w, istrain): return resfun_direct_jac(
-                    w, istrain, projhyb, projhyb['method'])
+                fobj,jac = resfun_direct_jac(weights, istrain, projhyb, projhyb['method'])
             elif projhyb['jacobian'] == 0:
-                def fobj(w): return resfun_direct(
-                    w, projhyb['istrain'], projhyb, projhyb['method'])
+                fobj = resfun_direct(weights, projhyb['istrain'], projhyb, projhyb['method'])
             elif projhyb['jacobian'] == 1:
-                def fobj(w): return resfun_direct_jac(
-                    w, projhyb['istrain'], projhyb, projhyb['method'])
+                fobj,jac = resfun_direct_jac(weights, projhyb['istrain'], projhyb, projhyb['method'])
             elif projhyb['hessian'] == 1:
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
 
         elif projhyb['mode'] == 3:  # SEMIDIRECT
             if projhyb['method'] == 4:
-                def fobj(w, istrain): return resfun_semidirect_jac(
-                    w, istrain, projhyb, projhyb['method'])
+                fobj,jac = resfun_semidirect_jac(weights, istrain, projhyb, projhyb['method'])
             elif projhyb['jacobian'] == 0:
-                def fobj(w): return resfun_semidirect(
-                    w, projhyb['istrain'], projhyb, projhyb['method'])
+                fobj = resfun_semidirect(weights, projhyb['istrain'], projhyb, projhyb['method'])
             elif projhyb['jacobian'] == 1:
-                def fobj(w): return resfun_semidirect_jac(
-                    w, projhyb['istrain'], projhyb, projhyb['method'])
+                fobj,jac = resfun_semidirect_jac(weights, projhyb['istrain'], projhyb, projhyb['method'])
             elif projhyb['hessian'] == 1:
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
-
+        '''
         if istep > 1:
             print('Weights initialization...')
             weights, ann = mlpnetinitw(projhyb['mlm']['fundata'])
@@ -295,19 +301,12 @@ def hybtrain(projhyb, file):
             for nparam in range(projhyb['mlm']['ny']):
                 weights[nparam] = projhyb['mlm']['y'][nparam]['init']
 
+        
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
-            if projhyb['jacobian'] == 0:
-                options = {'jac': '2-point'}  # Let scipy estimate the Jacobian
-            elif projhyb['jacobian'] == 1:
-                options = {'jac': jac}
-
-            if fobj is default_fobj:
-                raise ValueError("Objective function fobj was not defined.")
-
-            result = least_squares(fobj, weights, **options)
+            result = least_squares(evaluator.fobj_func, weights, jac=evaluator.jac_func, **options)
             wfinal, fval = result.x, result.cost
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON
@@ -322,18 +321,20 @@ def hybtrain(projhyb, file):
 
         elif projhyb["method"] == 4:  # ADAMS
             wfinal, fval = adamunlnew(fobj, weights, ofun1, projhyb, options)
+        
+        istep = istep + 1
 
     # Assuming you're using process time for CPU time
     TrainRes["finalcpu"] = time.process_time() - TrainRes["t0"]
     projhyb["istrain"] = istrainSAVE
 
-    sort_indices = np.argsort(TrainRes["mj"][:, 2])
+    sort_indices = np.argsort(TrainRes["mj"], axis=0).ravel()
 
     TrainRes["mj"] = TrainRes["mj"][sort_indices]
-    TrainRes["wstep"] = TrainRes["wstep"][sort_indices, :projhyb["mlm"]["nw"]]
+    TrainRes["wstep"] = TrainRes["wstep"][sort_indices, :]
 
     trainData = TrainRes
-    scipy.io.savemat('hybtrain_results.mat', {"trainData": trainData})
+    scipy.io.savemat('hybtrain_results.mat', {"trainData": TrainRes})
 
 #######################################################################################################################
 
@@ -540,16 +541,6 @@ def hybtrain(projhyb, file):
     return projhyb, trainData
 
 
-def fobj(w):
-    residuals, _ = resfun_indirect_jac(
-        w, projhyb['istrain'], projhyb, projhyb['method'])
-    return residuals
-
-
-def jac(w):
-    _, jacobian = resfun_indirect_jac(
-        w, projhyb['istrain'], projhyb, projhyb['method'])
-    return jacobian
 
 
 def outFun1(witer, optimValues, optstate, projhyb):
@@ -684,6 +675,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
 
                 Ystate = Y[l, isres] - state[isres].t()
 
+
                 sresall[COUNT:COUNT + nres] = Ystate / sY[l, isres]
                 
                 SYrepeat = sY[l, isres].reshape(-1, 1).repeat(1, nw)
@@ -691,28 +683,47 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 result = (- Sw[isres, :].detach().numpy()) / SYrepeat.detach().numpy()
                 
                 sjacall[COUNT:COUNT + nres, 0:nw] = result
+                print("sjacall", sjacall)
                 COUNT = COUNT + nres
                 print("#################################################")
                 print("------------------LOOP", i, "------------------")
                 print("#################################################")
 
-    sresall = sresall.reshape(-1, 1)
-    ind = ~np.isnan(sresall)
-    sresall = sresall[ind]
-    sjacall = sjacall[ind, :]
-    ind = ~np.isinf(sresall)
-    sresall = sresall[ind]
-    sjacall = sjacall[ind, :]
+    sresall = sresall.ravel()
+
+    valid_indices_sresall = ~np.isnan(sresall) & ~np.isinf(sresall)
+    valid_indices_sjacall = ~np.isnan(sjacall).any(axis=1) & ~np.isinf(sjacall).any(axis=1)
+
+    valid_indices = valid_indices_sresall & valid_indices_sjacall
+
+    sresall_filtered = sresall[valid_indices]
+    sjacall_filtered = sjacall[valid_indices, :]
+
+    if np.any(np.isnan(sresall_filtered)) or np.any(np.isinf(sresall_filtered)):
+        raise ValueError("NaN or inf found in sresall_filtered after filtering")
+    if np.any(np.isnan(sjacall_filtered)) or np.any(np.isinf(sjacall_filtered)):
+        raise ValueError("NaN or inf found in sjacall_filtered after filtering")
+    if sresall_filtered.size == 0:
+        raise ValueError("sresall_filtered is empty after filtering")
+    if sjacall_filtered.size == 0:
+        raise ValueError("sjacall_filtered is empty after filtering")
+
+    print("sjacall_filtered", sjacall_filtered)
+    print("sjacall_filtered.shape", sjacall_filtered.shape)
+    print("sresall_filtered", sresall_filtered)
+    print("sresall_filtered.shape", sresall_filtered.shape)
 
     fobj = np.nan
     if method == 1 or method == 4:
-        fobj = sresall
-        jac = sjacall
+        fobj = sresall_filtered
+        jac = sjacall_filtered
     else:
-        fobj = np.dot(sresall.T, sresall) / len(sresall)
-        jac = np.sum(2 * np.repeat(sresall.reshape(-1, 1), nw,
-                     axis=1) * sjacall, axis=0) / len(sresall)
+        fobj = np.dot(sresall_filtered.T, sresall_filtered) / len(sresall_filtered)
+        jac = np.sum(2 * np.repeat(sresall_filtered.reshape(-1, 1), nw,
+                     axis=1) * sjacall_filtered, axis=0) / len(sresall_filtered)
 
+    print("fobj", fobj)
+    print("jac", jac)
     return fobj, jac
 
 
@@ -1124,3 +1135,24 @@ def resfun_semidirect_jac_batch(w, istrain, projhyb, method=1):
 
     return mse, grads
 
+class IndirectFunctionEvaluator:
+    def __init__(self, ann, projhyb):
+        self.ann = ann
+        self.projhyb = projhyb
+        self.last_weights = None
+        self.last_fobj = None
+        self.last_jac = None
+
+    def evaluate(self, weights):
+        if not np.array_equal(weights, self.last_weights):
+            self.last_fobj, self.last_jac = resfun_indirect_jac(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
+            self.last_weights = weights
+        return self.last_fobj, self.last_jac
+
+    def fobj_func(self, weights):
+        fobj, _ = self.evaluate(weights)
+        return fobj
+
+    def jac_func(self, weights):
+        _, jac = self.evaluate(weights)
+        return jac

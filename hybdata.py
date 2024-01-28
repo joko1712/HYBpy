@@ -511,7 +511,10 @@ def hybdata(filename):
 
         if "display" in line:
             display = line[line.find("=")+2:len(line)-1]
-
+            if display == "off":
+                display = 0
+            else:
+                display = 2
         if "bootstrap" in line:
             bootstrap = int(line[line.find("=")+1:len(line)])
 

@@ -137,7 +137,6 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
 
 def anninp_rann_func(projhyb):
     species_values = extract_species_values(projhyb)
-    print("species_values:", species_values)
 
     totalsyms = ["t", "dummyarg1", "dummyarg2", "w"]
 
@@ -186,7 +185,6 @@ def anninp_rann_func(projhyb):
 
     totalsyms = symbols(totalsyms)
 
-    print("anninp:", anninp)
 
     anninp_symbol = sp.sympify(anninp)
 
@@ -200,7 +198,6 @@ def extract_species_values(projhyb):
         species_val = species['val']
         species_values[species_id] = species_val
 
-    print("species_values:", species_values)
     return species_values
 
 

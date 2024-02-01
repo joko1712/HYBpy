@@ -142,7 +142,8 @@ def hybtrain(projhyb, file):
             'method': 'trf', ## TODO: ASK IF NEEDS lm OR trf OR dogbox
             'xtol': 1e-9,
             'ftol': 1e-12,
-            'verbose': projhyb['display']
+            'verbose': projhyb['display'],
+            'maxiter': projhyb['niter'] * projhyb['niteroptim']
         }
 
     elif projhyb['method'] == 2:
@@ -229,8 +230,6 @@ def hybtrain(projhyb, file):
         projhyb['mlm']['fundata'].set_weights(weights)
 
     weights = weights.ravel()
-    evaluator = IndirectFunctionEvaluator(ann, projhyb)
-
 
     for istep in range(1, projhyb['nstep'] + 1):
 
@@ -248,6 +247,7 @@ def hybtrain(projhyb, file):
 
         TrainRes['istrain'].extend(projhyb['istrain'])
 
+        evaluator = IndirectFunctionEvaluator(ann, projhyb)
         
         '''
         if projhyb['mode'] == 1:  # INDIRECT
@@ -291,7 +291,7 @@ def hybtrain(projhyb, file):
                 fobj,jac = resfun_semidirect_jac(weights, projhyb['istrain'], projhyb, projhyb['method'])
             elif projhyb['hessian'] == 1:
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
-        '''
+
         if istep > 1:
             print('Weights initialization...')
             weights, ann = mlpnetinitw(projhyb['mlm']['fundata'])
@@ -301,12 +301,13 @@ def hybtrain(projhyb, file):
             for nparam in range(projhyb['mlm']['ny']):
                 weights[nparam] = projhyb['mlm']['y'][nparam]['init']
 
-        
+        '''
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
-            result = least_squares(evaluator.fobj_func, weights, jac=evaluator.jac_func, **options)
+            #result = least_squares(evaluator.fobj_func, weights, jac=evaluator.jac_func, **options)
+            result = scipy.optimize.minimize(evaluator.fobj_func, weights, method="SLSQP", jac=evaluator.jac_func, tol=1e-9, callback=outFun1, options=options )
             wfinal, fval = result.x, result.cost
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON
@@ -542,16 +543,17 @@ def hybtrain(projhyb, file):
 
 
 
-
+#TODO: CHANGE THIS TO NO RETURN VALUE AND USE GLOBAL VARIABLE
 def outFun1(witer, optimValues, optstate, projhyb):
     stop = False
     optnew = None
     changed = False
+    global TrainRes, evaluator, projhyb
 
     if projhyb['method'] == 3:
         witer = optimValues['x']
 
-    global TrainRes
+    
 
     if optstate == 'init':
         TrainRes['iter0'] = TrainRes['iter'] + 1
@@ -1142,17 +1144,21 @@ class IndirectFunctionEvaluator:
         self.last_weights = None
         self.last_fobj = None
         self.last_jac = None
+        self.scalar =None
 
     def evaluate(self, weights):
         if not np.array_equal(weights, self.last_weights):
             self.last_fobj, self.last_jac = resfun_indirect_jac(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
             self.last_weights = weights
-        return self.last_fobj, self.last_jac
+            print("fobj", self.last_fobj)
+            #TODO: fobj = np.mean(self.last_fobj) perguntar porque o scipy não aceita vetor so aceita um scalar value for "cost" or "fitness" value
+            self.scalar = np.mean(self.last_fobj)
+        return self.last_fobj, self.last_jac, self.scalar
 
     def fobj_func(self, weights):
-        fobj, _ = self.evaluate(weights)
-        return fobj
+        _, _, scalar = self.evaluate(weights)
+        return scalar
 
     def jac_func(self, weights):
-        _, jac = self.evaluate(weights)
+        _, jac, _ = self.evaluate(weights)
         return jac

@@ -3,8 +3,9 @@ import torch
 from sympy import *
 import sympy as sp
 import numpy as np
+from derivativeXY import numerical_derivativeXY
 
-def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols):
+def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values):
 
     current_state_dict = ann.state_dict()
 
@@ -31,10 +32,10 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstat
         if projhyb['mode'] == 1:
 
 
-            DanninpDstate = derivativeXY(anninp, state_symbols)
+            DanninpDstate = numerical_derivativeXY(anninp, state_symbols, values)
             DanninpDstate = np.array(DanninpDstate)
             DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
-            DanninpDstate = DanninpDstate.astype(np.float32)
+            DanninpDstate = DanninpDstate.astype(np.float64)
             DanninpDstate = torch.from_numpy(DanninpDstate)
    
             y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
@@ -46,6 +47,11 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstat
             DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann,DrannDs)
 
             fjac = torch.mm(DfDsDfDrannDrannDs,jac) + DfDrannDrannDw
+
+            torch.set_printoptions(threshold=10_000)
+            print("FJAC",fjac)
+
+            fstate = [expr.evalf(subs=values) for expr in fstate]
 
             return fstate, fjac
 
@@ -65,11 +71,3 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstat
     return None, None, None
 
      
-def derivativeXY(X,Y):
-    z = []
-    for i in range(0, len(Y)):
-        for j in range(0, len(X)):
-            cal = diff(X[j], Y[i])
-
-            z = z + [cal]
-    return z

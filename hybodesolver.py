@@ -4,6 +4,7 @@ from fStateFunc import fstate_func
 import torch
 from sympy import *
 import sympy as sp
+from derivativeXY import numerical_derivativeXY
 
 def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w, batch, projhyb):
     t = t0
@@ -17,40 +18,41 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
     for i in range(1, projhyb["ncompartments"]+1):
         state_symbols.append(sp.sympify(projhyb["compartment"][str(i)]["id"]))
 
-    jac = torch.tensor(jac, dtype=torch.float32)
+    jac = torch.tensor(jac, dtype=torch.float64)
     fstate = fstate_func(projhyb)
 
     anninp, rann, anninp_mat = anninp_rann_func(projhyb)
 
-    anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float32)
+    anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
     anninp_tensor = anninp_tensor.view(-1, 1)       
 
     activations = [anninp_tensor]
 
     y = activations[-1]
-    
-    DfDs = derivativeXY(fstate, state_symbols)
-
-    DfDrann = derivativeXY(fstate, rann)
 
     values = extract_species_values(projhyb)
     values["compartment"] = int(projhyb["compartment"]["1"]["val"])
     for range_y in range(0, len(y)):
         values["rann"+str(range_y+1)] = y[range_y].item()
 
-    DfDrann =[expr.evalf(subs=values) for expr in DfDrann]
+    print("values", values)
+    
+    DfDs = numerical_derivativeXY(fstate, state_symbols, values)
+
+    DfDrann = numerical_derivativeXY(fstate, rann, values)
+
+    print("DfDs", DfDs)
+    print("DfDrann", DfDrann)
+
     DfDrann = np.array(DfDrann)
     DfDrann = DfDrann.reshape(len(fstate), len(rann))
-    DfDrann = DfDrann.astype(np.float32)
+    DfDrann = DfDrann.astype(np.float64)
     DfDrann = torch.from_numpy(DfDrann)
 
-    DfDs = [expr.evalf(subs=values) for expr in DfDs]
     DfDs = np.array(DfDs)
     DfDs = DfDs.reshape(len(fstate), len(state_symbols))
-    DfDs = DfDs.astype(np.float32)
+    DfDs = DfDs.astype(np.float64)
     DfDs = torch.from_numpy(DfDs)
-
-    fstate = [expr.evalf(subs=values) for expr in fstate]
 
     while t < tf:
         h = min(projhyb['time']['TAU'], tf - t)
@@ -70,9 +72,9 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
             ucontrol1 = []
         
         if jac is not 0:
-            k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols)
+            k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
         else:
-            k1_state = odesfun(ann,t, state, None, None, w, ucontrol1, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols)
+            k1_state = odesfun(ann,t, state, None, None, w, ucontrol1, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
 
         # FIX THIS 
         
@@ -85,12 +87,13 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
         h2 = torch.tensor(h2, dtype=torch.float64)
         k1_state = np.array(k1_state)
 
-
-        k1_state = k1_state.astype(np.float32)
+        print("k1_state", k1_state)
+        
+        k1_state = k1_state.astype(np.float64)
         k1_state = torch.from_numpy(k1_state)
 
         state = np.array(state)
-        state = state.astype(np.float32)
+        state = state.astype(np.float64)
         state = torch.from_numpy(state)
 
         h2k1_jac = torch.mul(h2, k1_jac)
@@ -99,31 +102,31 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
         jach2 = jac + h2k1_jac
 
         if jac is not 0:
-            k2_state, k2_jac = odesfun(ann,t + h2, state + h2 * k1_state, jac + h2 * k1_jac, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols)
+            k2_state, k2_jac = odesfun(ann,t + h2, state + h2 * k1_state, jac + h2 * k1_jac, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
            
             k2_state = np.array(k2_state)
-            k2_state = k2_state.astype(np.float32)
+            k2_state = k2_state.astype(np.float64)
             k2_state = torch.from_numpy(k2_state)
 
-            k3_state, k3_jac = odesfun(ann,t + h2, state + h2 * k2_state, jac + h2 * k2_jac, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols)
+            k3_state, k3_jac = odesfun(ann,t + h2, state + h2 * k2_state, jac + h2 * k2_jac, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
             k3_state = np.array(k3_state)
-            k3_state = k3_state.astype(np.float32)
+            k3_state = k3_state.astype(np.float64)
             k3_state = torch.from_numpy(k3_state)
 
         else:
-            k2_state = odesfun(ann,t + h2, state + h2 * k1_state, None, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols)
-            k3_state = odesfun(ann,t + h2, state + h2 * k2_state, None, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols)
+            k2_state = odesfun(ann,t + h2, state + h2 * k1_state, None, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
+            k3_state = odesfun(ann,t + h2, state + h2 * k2_state, None, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
 
         hl = h - h / 1e10
         ucontrol4 = controlfun(t + hl, batch) if controlfun is not None else []
 
         if jac is not None:
-            k4_state, k4_jac = odesfun(ann,t + hl, state + hl * k3_state, jac + hl * k3_jac, None, w, ucontrol4, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols)
+            k4_state, k4_jac = odesfun(ann,t + hl, state + hl * k3_state, jac + hl * k3_jac, None, w, ucontrol4, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
             k4_state = np.array(k4_state)
-            k4_state = k4_state.astype(np.float32)
+            k4_state = k4_state.astype(np.float64)
             k4_state = torch.from_numpy(k4_state)
         else:
-            k4_state = odesfun(ann,t + hl, state + hl * k3_state, None, None, w, ucontrol4, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols)
+            k4_state = odesfun(ann,t + hl, state + hl * k3_state, None, None, w, ucontrol4, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
         state = state + h * (k1_state / 6 + k2_state / 3 + k3_state / 3 + k4_state / 6)
 
         if jac is not None:
@@ -200,12 +203,3 @@ def extract_species_values(projhyb):
 
     return species_values
 
-
-def derivativeXY(X,Y):
-    z = []
-    for i in range(0, len(Y)):
-        for j in range(0, len(X)):
-            cal = diff(X[j], Y[i])
-
-            z = z + [cal]
-    return z

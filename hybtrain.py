@@ -139,11 +139,12 @@ def hybtrain(projhyb, file):
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
-            'method': 'trf', ## TODO: ASK IF NEEDS lm OR trf OR dogbox
+            'method': 'lm', ## TODO: ASK IF NEEDS lm OR trf OR dogbox
             'xtol': 1e-9,
             'ftol': 1e-12,
+            'gtol': 10,
             'verbose': projhyb['display'],
-            'maxiter': projhyb['niter'] * projhyb['niteroptim']
+            'max_nfev': projhyb['niter'] * projhyb['niteroptim']
         }
 
     elif projhyb['method'] == 2:
@@ -230,9 +231,8 @@ def hybtrain(projhyb, file):
         projhyb['mlm']['fundata'].set_weights(weights)
 
     weights = weights.ravel()
-
-    for istep in range(1, projhyb['nstep'] + 1):
-
+    
+    for TrainRes['istep'] in range(1, projhyb['nstep']):
         for i in range(1, file['nbatch'] + 1):
             istrain = file[str(i)]["istrain"]
             projhyb['istrain'] = [0] * file['nbatch']
@@ -292,22 +292,27 @@ def hybtrain(projhyb, file):
             elif projhyb['hessian'] == 1:
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
 
-        if istep > 1:
+        '''
+        #TODO: Refazer a inicializaçao
+        if TrainRes['istep'] > 1:
             print('Weights initialization...')
             weights, ann = mlpnetinitw(projhyb['mlm']['fundata'])
             projhyb['mlm']['fundata'] = ann
 
+        #????
+        '''
         if projhyb['mlm']['nx'] == 0:
             for nparam in range(projhyb['mlm']['ny']):
                 weights[nparam] = projhyb['mlm']['y'][nparam]['init']
-
         '''
+
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
-            #result = least_squares(evaluator.fobj_func, weights, jac=evaluator.jac_func, **options)
-            result = scipy.optimize.minimize(evaluator.fobj_func, weights, method="SLSQP", jac=evaluator.jac_func, tol=1e-9, callback=outFun1, options=options )
+            result = least_squares(evaluator.fobj_func, weights, jac=evaluator.jac_func, **options)
+            print("result", result)
+            #result = scipy.optimize.minimize(evaluator.fobj_func, weights, method="SLSQP", jac=evaluator.jac_func, tol=1e-9, callback=outFunc, options=options )
             wfinal, fval = result.x, result.cost
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON
@@ -322,10 +327,7 @@ def hybtrain(projhyb, file):
 
         elif projhyb["method"] == 4:  # ADAMS
             wfinal, fval = adamunlnew(fobj, weights, ofun1, projhyb, options)
-        
-        istep = istep + 1
-
-    # Assuming you're using process time for CPU time
+          
     TrainRes["finalcpu"] = time.process_time() - TrainRes["t0"]
     projhyb["istrain"] = istrainSAVE
 
@@ -548,13 +550,12 @@ def outFun1(witer, optimValues, optstate, projhyb):
     stop = False
     optnew = None
     changed = False
-    global TrainRes, evaluator, projhyb
+    global TrainRes
 
     if projhyb['method'] == 3:
         witer = optimValues['x']
-
     
-
+    
     if optstate == 'init':
         TrainRes['iter0'] = TrainRes['iter'] + 1
         TrainRes['count'] = 0
@@ -562,9 +563,11 @@ def outFun1(witer, optimValues, optstate, projhyb):
 
     elif optstate == 'iter':
         TrainRes['count'] += 1
+
         if projhyb['method'] == 1:
             fvaliter = sum([x * x for x in optimValues['residual']]
                            ) / len(optimValues['residual'])
+
         else:
             fvaliter = optimValues['fval']
 
@@ -594,6 +597,28 @@ def outFun1(witer, optimValues, optstate, projhyb):
 
     return stop, optnew, changed
 
+def outFunc(xk):
+    #xk -> current parameter vector.
+
+    stop = False
+    optnew = None
+    changed = False
+
+    global TrainRes, evaluator, projhyb
+
+    print("This is the xk", xk)
+
+    if projhyb['method'] == 3:
+        witer = optimValues['x']
+
+    if optstate == 'init':
+        TrainRes['iter0'] = TrainRes['iter'] + 1
+        TrainRes['count'] = 0
+        # workout a way to return the values
+
+    #elif optstate == 'iter':
+        
+        
 
 def derivative_check(fun, jac, x0, tol=1e-6):
     f0 = fun(x0)
@@ -644,6 +669,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
 
 
     sresall = np.zeros(npall * nres)
+    print("sresall", npall * nres)
     sjacall = np.zeros((npall * nres, nw))
 
     COUNT = 0
@@ -691,6 +717,10 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 print("------------------LOOP", i, "------------------")
                 print("#################################################")
 
+    print("sresall", sresall.shape)
+    print("sreall", sresall)
+
+    '''
     sresall = sresall.ravel()
 
     valid_indices_sresall = ~np.isnan(sresall) & ~np.isinf(sresall)
@@ -714,16 +744,17 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     print("sjacall_filtered.shape", sjacall_filtered.shape)
     print("sresall_filtered", sresall_filtered)
     print("sresall_filtered.shape", sresall_filtered.shape)
-
+    
     fobj = np.nan
+    '''
     if method == 1 or method == 4:
-        fobj = sresall_filtered
-        jac = sjacall_filtered
+        fobj = sresall
+        jac = sjacall
     else:
         fobj = np.dot(sresall_filtered.T, sresall_filtered) / len(sresall_filtered)
         jac = np.sum(2 * np.repeat(sresall_filtered.reshape(-1, 1), nw,
                      axis=1) * sjacall_filtered, axis=0) / len(sresall_filtered)
-
+                     
     print("fobj", fobj)
     print("jac", jac)
     return fobj, jac
@@ -1152,13 +1183,13 @@ class IndirectFunctionEvaluator:
             self.last_weights = weights
             print("fobj", self.last_fobj)
             #TODO: fobj = np.mean(self.last_fobj) perguntar porque o scipy não aceita vetor so aceita um scalar value for "cost" or "fitness" value
-            self.scalar = np.mean(self.last_fobj)
-        return self.last_fobj, self.last_jac, self.scalar
+            #self.scalar = np.sum(self.last_fobj)
+        return self.last_fobj, self.last_jac#, self.scalar
 
     def fobj_func(self, weights):
-        _, _, scalar = self.evaluate(weights)
-        return scalar
+        fobj, _ = self.evaluate(weights)
+        return fobj
 
     def jac_func(self, weights):
-        _, jac, _ = self.evaluate(weights)
+        _, jac = self.evaluate(weights)
         return jac

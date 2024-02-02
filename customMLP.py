@@ -23,6 +23,8 @@ class CustomMLP(nn.Module):
 
     def forward(self, x):
         for layer in self.layers:
+            x = x.to(dtype=torch.float64)
+
             x = layer(x)
         return x
 
@@ -30,13 +32,16 @@ class CustomMLP(nn.Module):
         w = []
         for layer in self.layers:
             if isinstance(layer, TanhLayer) or isinstance(layer, ReLULayer):
-                layer.w.data = torch.randn_like(layer.w) * np.sqrt(2 / (layer.w.size(0) + layer.w.size(1)))
+                #TODO: alterar os pessos entre 0.01 e -0.01
+                layer.w.data = torch.randn_like(layer.w) * 0.02 - 0.01
                 layer.b.data = torch.zeros_like(layer.b)
 
             w.extend(layer.w.flatten().detach().numpy())
             w.extend(layer.b.flatten().detach().numpy())
 
         w = np.array(w)
+
+        print("weights", w)
 
         return w, self
 
@@ -45,6 +50,7 @@ class CustomMLP(nn.Module):
 
         for layer in self.layers:
 
+            x = x.to(dtype=torch.float64)
             x = layer(x)
 
             activations.append(x)
@@ -54,7 +60,7 @@ class CustomMLP(nn.Module):
         tensorList = []
         DrannDw = []
         output_size = self.layers[-1].w.shape[0]
-        DrannDanninp = torch.eye(output_size)
+        DrannDanninp = torch.eye(output_size, dtype=torch.float64)
         A1 = DrannDanninp
         tensor_size = 0
 
@@ -73,7 +79,8 @@ class CustomMLP(nn.Module):
 
             if i == 0:
                 break
-
+            
+            print("DrannDanninp", DrannDanninp.dtype, "self.layers[i].w", self.layers[i].w.dtype)
             A1 = -(torch.mm(DrannDanninp,self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
 
 
@@ -96,8 +103,10 @@ class TanhLayer(nn.Module):
         self.input_size = input_size
         self.output_size = output_size
         super(TanhLayer, self).__init__()
-        self.w = nn.Parameter(torch.randn(output_size, input_size))
-        self.b = nn.Parameter(torch.randn(output_size, 1))
+        self.w = nn.Parameter(torch.randn(output_size, input_size, dtype=torch.float64)) 
+        self.b = nn.Parameter(torch.randn(output_size, 1, dtype=torch.float64))
+
+
 
     def forward(self, x):
 
@@ -161,8 +170,9 @@ class Linear(nn.Module):
         self.input_size = input_size
         self.output_size = output_size
         super(Linear, self).__init__()
-        self.w = nn.Parameter(torch.randn(output_size, input_size))
-        self.b = nn.Parameter(torch.randn(output_size, 1))
+        self.w = nn.Parameter(torch.randn(output_size, input_size, dtype=torch.float64)) 
+        self.b = nn.Parameter(torch.randn(output_size, 1, dtype=torch.float64))
+
 
     def forward(self, x):
         return torch.mm(self.w, x) + self.b

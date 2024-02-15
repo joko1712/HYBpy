@@ -2,11 +2,7 @@ import numpy as np
 
 def numerical_derivativeXY(x, y, values, delta=1e-5):
     derivatives = []
-    print("values", values)
-    print("x", x)
-    print("y", y)
     for symbol in y:
-        print(f"Computing derivative with respect to: {symbol}")  # Debugging line
         original_value = values[str(symbol)]
         
         values[symbol] = original_value + delta

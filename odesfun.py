@@ -1,9 +1,12 @@
+from __future__ import division
+
 from fStateFunc import fstate_func 
 import torch
 from sympy import *
 import sympy as sp
 import numpy as np
 from derivativeXY import numerical_derivativeXY
+
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values):
 
@@ -47,9 +50,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, DfDs, DfDrann, fstat
             DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann,DrannDs)
 
             fjac = torch.mm(DfDsDfDrannDrannDs,jac) + DfDrannDrannDw
-
-            torch.set_printoptions(threshold=10_000)
-            print("FJAC",fjac)
 
             fstate = [expr.evalf(subs=values) for expr in fstate]
 

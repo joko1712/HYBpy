@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numpy as np
 import torch
 from fStateFunc import fstate_func 
@@ -6,22 +8,14 @@ from sympy import *
 import sympy as sp
 from derivativeXY import numerical_derivativeXY
 
-def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w, batch, projhyb):
+
+def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w, batch, projhyb):
     t = t0
     hopt = []
 
     state_symbols = []
 
-    for i in range(1, projhyb["nspecies"]+1):
-        state_symbols.append(sp.sympify(projhyb["species"][str(i)]["id"]))
-
-    for i in range(1, projhyb["ncompartments"]+1):
-        state_symbols.append(sp.sympify(projhyb["compartment"][str(i)]["id"]))
-
-    jac = torch.tensor(jac, dtype=torch.float64)
-    fstate = fstate_func(projhyb)
-
-    anninp, rann, anninp_mat = anninp_rann_func(projhyb)
+    anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
     anninp_tensor = anninp_tensor.view(-1, 1)       
@@ -30,19 +24,47 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
 
     y = activations[-1]
 
-    values = extract_species_values(projhyb)
+    print("y", y)
+
+    rann_results = ann.forward(y)
+
+    rann_results = rann_results.detach().numpy()
+
+    values = extract_species_values(projhyb,state)
     values["compartment"] = int(projhyb["compartment"]["1"]["val"])
-    for range_y in range(0, len(y)):
-        values["rann"+str(range_y+1)] = y[range_y].item()
+    for range_y in range(0, len(rann_results)):
+        values["rann"+str(range_y+1)] = rann_results[range_y].item()
+        print("rann", values["rann"+str(range_y+1)])
 
+    for i in range(1, projhyb["mlm"]["ny"]+1):
+        values[projhyb["mlm"]["y"][str(i)]["id"]] = values[projhyb["mlm"]["y"][str(i)]["val"]]
+
+    for i in range(1, projhyb["nparameters"]+1):
+        values[projhyb["parameters"][str(i)]["id"]] = projhyb["parameters"][str(i)]["val"]
+
+    for i in range(1, projhyb["nspecies"]+1):
+        state_symbols.append(sp.sympify(projhyb["species"][str(i)]["id"]))
+
+    for i in range(1, projhyb["ncompartments"]+1):
+        state_symbols.append(sp.sympify(projhyb["compartment"][str(i)]["id"]))
+
+    jac = torch.tensor(jac, dtype=torch.float64)
+    fstate = fstate_func(projhyb,values)
+    print("state_symbols", state_symbols)
     print("values", values)
+
+
+    DfDs_sym = [[expr.diff(symbol) for symbol in state_symbols] for expr in fstate]
+    DfDs = [[expr.subs(values) for expr in row] for row in DfDs_sym]
+
+    #DfDs = numerical_derivativeXY(fstate, state_symbols, values)
+    rann_symbol = []
+    for i in range(1, projhyb["mlm"]["ny"]+1):
+        rann_symbol.append(sp.sympify(projhyb["mlm"]["y"][str(i)]["id"]))
     
-    DfDs = numerical_derivativeXY(fstate, state_symbols, values)
-
-    DfDrann = numerical_derivativeXY(fstate, rann, values)
-
-    print("DfDs", DfDs)
-    print("DfDrann", DfDrann)
+    DfDrann_sys = [[expr.diff(symbol) for symbol in rann_symbol] for expr in fstate]
+    DfDrann = [[expr.subs(values) for expr in row] for row in DfDrann_sys]
+    #DfDrann = numerical_derivativeXY(fstate, rann_symbol, values)
 
     DfDrann = np.array(DfDrann)
     DfDrann = DfDrann.reshape(len(fstate), len(rann))
@@ -87,7 +109,6 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
         h2 = torch.tensor(h2, dtype=torch.float64)
         k1_state = np.array(k1_state)
 
-        print("k1_state", k1_state)
         
         k1_state = k1_state.astype(np.float64)
         k1_state = torch.from_numpy(k1_state)
@@ -138,8 +159,8 @@ def hybodesolver(ann,odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w,
 
 
 
-def anninp_rann_func(projhyb):
-    species_values = extract_species_values(projhyb)
+def anninp_rann_func(projhyb,state):
+    species_values = extract_species_values(projhyb, state)
 
     totalsyms = ["t", "dummyarg1", "dummyarg2", "w"]
 
@@ -169,6 +190,7 @@ def anninp_rann_func(projhyb):
         totalsyms.append(projhyb["mlm"]["x"][str(i)]["id"])
 
         val_expr = sp.sympify(projhyb["mlm"]["x"][str(i)]["val"])
+
         max_expr = sp.sympify(projhyb["mlm"]["x"][str(i)]["max"])
 
         anninp.append(val_expr/max_expr)
@@ -194,11 +216,12 @@ def anninp_rann_func(projhyb):
     return anninp_symbol, rann, anninp_mat
 
 
-def extract_species_values(projhyb):
+def extract_species_values(projhyb, state):
+    # TODO: ADD CONTROL VALUES
     species_values = {}
     for key, species in projhyb['species'].items():
         species_id = species['id']
-        species_val = species['val']
+        species_val = state[int(key)]
         species_values[species_id] = species_val
 
     return species_values

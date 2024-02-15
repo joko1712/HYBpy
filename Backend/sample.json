@@ -497,7 +497,7 @@
     "mlm": {
         "neuron": 1,
         "id": "vm5",
-        "options": [5],
+        "options": [5, 5],
         "layer": "1",
         "xfun": "str2func('autoA_hybmod_anninp')",
         "yfun": "str2func('autoA_hybmod_rann')",

@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import least_squares
 from scipy.optimize import minimize
+from scipy.optimize import check_grad
 import scipy.io
 import json
 import time
@@ -13,6 +14,7 @@ from hybodesolver import hybodesolver
 from odesfun import odesfun
 from Control_functions.control_function_chass import control_function
 import customMLP as mlp
+from hybtrainiterres import hybtrainiterres
 
 with open("sample.json", "r") as f:
     projhyb = json.load(f)
@@ -139,12 +141,12 @@ def hybtrain(projhyb, file):
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
-            'method': 'lm', ## TODO: ASK IF NEEDS lm OR trf OR dogbox
-            'xtol': 1e-9,
+            'xtol': 1e-15,
             'ftol': 1e-12,
-            'gtol': 10,
-            'verbose': projhyb['display'],
-            'max_nfev': projhyb['niter'] * projhyb['niteroptim']
+            'gtol': 1e-10,
+            'verbose': 2,#projhyb['display'],
+            'max_nfev': 50,#projhyb['niter'] * projhyb['niteroptim'] # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
+            'method': 'lm',
         }
 
     elif projhyb['method'] == 2:
@@ -204,6 +206,7 @@ def hybtrain(projhyb, file):
         'witer': np.zeros((projhyb['nstep'] * projhyb['niter'] * 2, projhyb['mlm']['nw'])),
         'wstep': np.zeros((projhyb['nstep'], projhyb['mlm']['nw'])),
         'istrain': [],
+        'count': 0,
         'resnorm': [0] * (projhyb['nstep'] * projhyb['niter'] * 2),
         'sjctrain': [0] * (projhyb['nstep'] * projhyb['niter'] * 2),
         'sjrtrain': [0] * (projhyb['nstep'] * projhyb['niter'] * 2),
@@ -219,7 +222,7 @@ def hybtrain(projhyb, file):
     }
 
     if 'fundata' not in projhyb['mlm'] or projhyb['initweights'] == 1:
-        print('Weights initialization...')
+        print('Weights initialization...1')
         ann = mlpnetcreate(projhyb, projhyb['mlm']['neuron'])
         projhyb['mlm']['fundata'] = ann
         weights, ann = mlp.CustomMLP.get_weights(ann)
@@ -293,11 +296,9 @@ def hybtrain(projhyb, file):
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
 
         '''
-        #TODO: Refazer a inicializaçao
         if TrainRes['istep'] > 1:
-            print('Weights initialization...')
-            weights, ann = mlpnetinitw(projhyb['mlm']['fundata'])
-            projhyb['mlm']['fundata'] = ann
+            print('Weights initialization...2')
+            weights, ann = mlp.CustomMLP.get_weights(ann)
 
         #????
         '''
@@ -310,8 +311,13 @@ def hybtrain(projhyb, file):
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
+            print("optios", options)
+            print("weights", weights)
             result = least_squares(evaluator.fobj_func, weights, jac=evaluator.jac_func, **options)
             print("result", result)
+            callback_wrapper(result, TrainRes, projhyb)
+            print("result", result)
+            print("TrainRes", TrainRes)
             #result = scipy.optimize.minimize(evaluator.fobj_func, weights, method="SLSQP", jac=evaluator.jac_func, tol=1e-9, callback=outFunc, options=options )
             wfinal, fval = result.x, result.cost
 
@@ -327,7 +333,9 @@ def hybtrain(projhyb, file):
 
         elif projhyb["method"] == 4:  # ADAMS
             wfinal, fval = adamunlnew(fobj, weights, ofun1, projhyb, options)
-          
+        
+        TrainRes['istep'] = TrainRes['istep'] + 1
+        
     TrainRes["finalcpu"] = time.process_time() - TrainRes["t0"]
     projhyb["istrain"] = istrainSAVE
 
@@ -353,7 +361,7 @@ def hybtrain(projhyb, file):
     plt.semilogy(x, TrainRes["sjctest"][:TrainRes["iter"]],
                  'r-', linewidth=2, label='test')
 
-    plt.gca().set_xlim([1, max(x)])
+    plt.gca().set_xlim([1, max(result.x)])
     ymin = min([np.min(TrainRes["resnorm"][:TrainRes["iter"]]), np.min(TrainRes["sjctrain"][:TrainRes["iter"]]), np.min(
         TrainRes["sjcval"][:TrainRes["iter"]]), np.min(TrainRes["sjctest"][:TrainRes["iter"]])])
     ymax = max([np.max(TrainRes["resnorm"][:TrainRes["iter"]]), np.max(TrainRes["sjctrain"][:TrainRes["iter"]]), np.max(
@@ -520,8 +528,7 @@ def hybtrain(projhyb, file):
     header_format = "{:<5} {:<10} {:<10} {:<10} {:<10} {:<10} {:<10} {:<10} {:<10} {:<3}"
     data_format = "{:<5} {:<10.2E} {:<10.2E} {:<10.2E} {:<10.2E} {:<10.2E} {:<10.2E} {:<10.2E} {:<10.2E} {:<3}"
 
-    print(header_format.format("STEP", "RESNORM",
-          "[C]train", "[C]valid", "[C]test", "[R]train", "[R]valid", "[R]test", "AICc", "NW"))
+    print(header_format.format("STEP", "RESNORM", "[C]train", "[C]valid", "[C]test", "[R]train", "[R]valid", "[R]test", "AICc", "NW"))
     print(data_format.format(
         istep,
         TrainRes['resnorm'][istep],
@@ -543,98 +550,42 @@ def hybtrain(projhyb, file):
 
     return projhyb, trainData
 
+def callback_wrapper(x, TrainRes, projhyb):
+    witer = x  
+    optimValues = {'x': x, 'fval': None} 
+    optstate = 'iter'  
+    outFun1(witer, optimValues, optstate, projhyb, TrainRes)
 
-
-#TODO: CHANGE THIS TO NO RETURN VALUE AND USE GLOBAL VARIABLE
-def outFun1(witer, optimValues, optstate, projhyb):
+def outFun1(witer, optimValues, optstate, projhyb, TrainRes):
     stop = False
     optnew = None
     changed = False
-    global TrainRes
 
     if projhyb['method'] == 3:
         witer = optimValues['x']
     
-    
     if optstate == 'init':
         TrainRes['iter0'] = TrainRes['iter'] + 1
         TrainRes['count'] = 0
-        return stop, optnew, changed
-
     elif optstate == 'iter':
         TrainRes['count'] += 1
-
-        if projhyb['method'] == 1:
-            fvaliter = sum([x * x for x in optimValues['residual']]
-                           ) / len(optimValues['residual'])
-
-        else:
-            fvaliter = optimValues['fval']
-
-        if TrainRes['count'] < projhyb['niteroptim']:
-            pass
-        else:
+        fvaliter = optimValues.get('fun', sum(x**2 for x in optimValues.get('residual', [])) / len(optimValues.get('residual', [1])))
+        
+        if TrainRes['count'] >= projhyb['niteroptim']:
             TrainRes['count'] = 0
             TrainRes = hybtrainiterres(TrainRes, witer, fvaliter, projhyb)
-
     elif optstate == 'done':
-        if projhyb['method'] == 1:
-            fvaliter = sum([x * x for x in optimValues['residual']]
-                           ) / len(optimValues['residual'])
-        else:
-            fvaliter = optimValues['fval']
-
+        fvaliter = optimValues.get('fun', sum(x**2 for x in optimValues.get('residual', [])) / len(optimValues.get('residual', [1])))
         TrainRes = hybtrainiterres(TrainRes, witer, fvaliter, projhyb)
         TrainRes['istep'] += 1
-
     elif optstate == 'interrupt':
+        
         pass
-
     else:
-        print("Big error")
-        print(optstate)
-        return stop, optnew, changed
+        print("Unexpected optimization state:", optstate)
 
     return stop, optnew, changed
-
-def outFunc(xk):
-    #xk -> current parameter vector.
-
-    stop = False
-    optnew = None
-    changed = False
-
-    global TrainRes, evaluator, projhyb
-
-    print("This is the xk", xk)
-
-    if projhyb['method'] == 3:
-        witer = optimValues['x']
-
-    if optstate == 'init':
-        TrainRes['iter0'] = TrainRes['iter'] + 1
-        TrainRes['count'] = 0
-        # workout a way to return the values
-
-    #elif optstate == 'iter':
         
-        
-
-def derivative_check(fun, jac, x0, tol=1e-6):
-    f0 = fun(x0)
-    j0 = jac(x0)
-    for i in range(len(x0)):
-        x1 = np.array(x0)
-        x1[i] += tol
-        f1 = fun(x1)
-        numerical_derivative = (f1 - f0) / tol
-        if np.abs(numerical_derivative - j0[i]) > tol:
-            print("Derivative check failed.")
-            return False
-    print("Derivative check passed.")
-    return True
-
-
 ####
 #   INDIRECT
 ####
@@ -653,7 +604,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
         if projhyb["species"][str(i)]["isres"] == 1: 
             isres = isres + [i-1]
 
-
     isres = isres + [ns]
     
     print("ires", isres)
@@ -661,7 +611,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     nres = len(isres)
 
     projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
-    npall = 0
+    npall = sum(file[str(i+1)]["np"] for i in range(file["nbatch"]) if file[str(i+1)]["istrain"] == 1)
 
     for i in range(file["nbatch"]):
         if file[str(i+1)]["istrain"] == 1:
@@ -693,13 +643,16 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             state = np.array(file[str(l)]["y"][0])
             Sw = np.zeros((nt, nw))
 
+            print("state", state)
+            print("ann", ann)
 
             for i in range(1, file[str(l)]["np"]):
 
                 batch_data = file[str(l+1)]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
-                                            state, Sw, 0, [], batch_data, projhyb)
+                                            state, Sw, 0, w, batch_data, projhyb)
+                                        
 
                 Ystate = Y[l, isres] - state[isres].t()
 
@@ -711,42 +664,16 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 result = (- Sw[isres, :].detach().numpy()) / SYrepeat.detach().numpy()
                 
                 sjacall[COUNT:COUNT + nres, 0:nw] = result
-                print("sjacall", sjacall)
                 COUNT = COUNT + nres
                 print("#################################################")
                 print("------------------LOOP", i, "------------------")
                 print("#################################################")
+                print("state", state)
+                print("Y", Y)
 
     print("sresall", sresall.shape)
     print("sreall", sresall)
 
-    '''
-    sresall = sresall.ravel()
-
-    valid_indices_sresall = ~np.isnan(sresall) & ~np.isinf(sresall)
-    valid_indices_sjacall = ~np.isnan(sjacall).any(axis=1) & ~np.isinf(sjacall).any(axis=1)
-
-    valid_indices = valid_indices_sresall & valid_indices_sjacall
-
-    sresall_filtered = sresall[valid_indices]
-    sjacall_filtered = sjacall[valid_indices, :]
-
-    if np.any(np.isnan(sresall_filtered)) or np.any(np.isinf(sresall_filtered)):
-        raise ValueError("NaN or inf found in sresall_filtered after filtering")
-    if np.any(np.isnan(sjacall_filtered)) or np.any(np.isinf(sjacall_filtered)):
-        raise ValueError("NaN or inf found in sjacall_filtered after filtering")
-    if sresall_filtered.size == 0:
-        raise ValueError("sresall_filtered is empty after filtering")
-    if sjacall_filtered.size == 0:
-        raise ValueError("sjacall_filtered is empty after filtering")
-
-    print("sjacall_filtered", sjacall_filtered)
-    print("sjacall_filtered.shape", sjacall_filtered.shape)
-    print("sresall_filtered", sresall_filtered)
-    print("sresall_filtered.shape", sresall_filtered.shape)
-    
-    fobj = np.nan
-    '''
     if method == 1 or method == 4:
         fobj = sresall
         jac = sjacall
@@ -948,9 +875,9 @@ def resfun_direct_jac(w, istrain=None, projhyb=None, method=1):
     for l in range(projhyb['nbatch']):
         if istrain[l] == 1:
             tb = projhyb['batch'][l]['t']
-            r = projhyb['batch'][l]['rnoise'] # TODO: rnoise calcular no csv2json 
+            r = projhyb['batch'][l]['rnoise'] 
             upars = projhyb['batch'][l]['u']
-            sr = projhyb['batch'][l]['sr'] #TODO: Desvio padrão dos rates-> 2xsc sem volume
+            sr = projhyb['batch'][l]['sr']
             np_ = len(tb)
 
             for i in range(np_):

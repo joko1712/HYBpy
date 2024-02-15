@@ -1,10 +1,13 @@
+from __future__ import division
+
 import json
 import sympy as sp
 from sympy import symbols, sympify, simplify, Matrix, Eq
 import numpy as np
 
 
-def fstate_func(projhyb):
+
+def fstate_func(projhyb,values):
     Species = []
 
     for i in range(1, projhyb["nspecies"]+1):
@@ -73,15 +76,16 @@ def fstate_func(projhyb):
                         [str(i)]["compartment"])) * sympify(projhyb["species"][str(i)]["id"])
         )
 
+    nyparameters= {}
+    for i in range(1, projhyb["mlm"]["ny"]+1):
+        nyparameters[symbols(projhyb["mlm"]["y"][str(i)]["id"])] = values[projhyb["mlm"]["y"][str(i)]["val"]]
+
     State = Species + Raterules
+
     fState = fSpecies + fRaterules
 
-    # create unified dictionary
-    unified_dict = {**variables, **output, **
-                    parametersvariables, **ruleassvariables}
 
-    # replace the variables in fState with actual values
-    fState = [f.subs(unified_dict) for f in fState]
+    print("fState", fState)
 
 
     '''

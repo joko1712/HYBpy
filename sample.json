@@ -825,7 +825,7 @@
     "derivativecheck": "off",
     "niter": 1,
     "niteroptim": 1,
-    "nstep": 10,
+    "nstep": 2,
     "display": 0,
     "bootstrap": 0,
     "nensemble": 1,

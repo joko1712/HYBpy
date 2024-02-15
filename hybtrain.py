@@ -141,9 +141,6 @@ def hybtrain(projhyb, file):
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
-            'xtol': 1e-15,
-            'ftol': 1e-12,
-            'gtol': 1e-10,
             'verbose': 2,#projhyb['display'],
             'max_nfev': 50,#projhyb['niter'] * projhyb['niteroptim'] # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
             'method': 'lm',
@@ -234,6 +231,7 @@ def hybtrain(projhyb, file):
         projhyb['mlm']['fundata'].set_weights(weights)
 
     weights = weights.ravel()
+    #projhyb["w"]= weights
     
     for TrainRes['istep'] in range(1, projhyb['nstep']):
         for i in range(1, file['nbatch'] + 1):
@@ -299,6 +297,7 @@ def hybtrain(projhyb, file):
         if TrainRes['istep'] > 1:
             print('Weights initialization...2')
             weights, ann = mlp.CustomMLP.get_weights(ann)
+            projhyb["w"] = weights
 
         #????
         '''
@@ -333,9 +332,7 @@ def hybtrain(projhyb, file):
 
         elif projhyb["method"] == 4:  # ADAMS
             wfinal, fval = adamunlnew(fobj, weights, ofun1, projhyb, options)
-        
-        TrainRes['istep'] = TrainRes['istep'] + 1
-        
+                
     TrainRes["finalcpu"] = time.process_time() - TrainRes["t0"]
     projhyb["istrain"] = istrainSAVE
 
@@ -591,6 +588,7 @@ def outFun1(witer, optimValues, optstate, projhyb, TrainRes):
 ####
 
 def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
+    print("weights", w)
     with open("file.json", "r") as read_file:
         file = json.load(read_file)
     if not istrain:
@@ -653,9 +651,15 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, w, batch_data, projhyb)
                                         
+                print("state", state)
+                print("Y", Y)
+                print("ires", isres)
+
+                state = torch.tensor(state, dtype=torch.float64).unsqueeze(0) 
+
+                print("state", state)
 
                 Ystate = Y[l, isres] - state[isres].t()
-
 
                 sresall[COUNT:COUNT + nres] = Ystate / sY[l, isres]
                 
@@ -1111,6 +1115,9 @@ class IndirectFunctionEvaluator:
             print("fobj", self.last_fobj)
             #TODO: fobj = np.mean(self.last_fobj) perguntar porque o scipy não aceita vetor so aceita um scalar value for "cost" or "fitness" value
             #self.scalar = np.sum(self.last_fobj)
+            #TrainRes["istep"] += 1
+            #weights, ann = mlp.CustomMLP.get_weights(ann)
+            #projhyb["w"] = weights
         return self.last_fobj, self.last_jac#, self.scalar
 
     def fobj_func(self, weights):

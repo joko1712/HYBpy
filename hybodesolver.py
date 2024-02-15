@@ -21,7 +21,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     anninp_tensor = anninp_tensor.view(-1, 1)       
 
     activations = [anninp_tensor]
-
+    
     y = activations[-1]
 
     print("y", y)
@@ -30,11 +30,11 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
     rann_results = rann_results.detach().numpy()
 
-    values = extract_species_values(projhyb,state)
-    values["compartment"] = int(projhyb["compartment"]["1"]["val"])
+    state = extract_species_values(projhyb,state)
+    values = {}
+    state["compartment"] = int(projhyb["compartment"]["1"]["val"])
     for range_y in range(0, len(rann_results)):
         values["rann"+str(range_y+1)] = rann_results[range_y].item()
-        print("rann", values["rann"+str(range_y+1)])
 
     for i in range(1, projhyb["mlm"]["ny"]+1):
         values[projhyb["mlm"]["y"][str(i)]["id"]] = values[projhyb["mlm"]["y"][str(i)]["val"]]
@@ -50,31 +50,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
     jac = torch.tensor(jac, dtype=torch.float64)
     fstate = fstate_func(projhyb,values)
-    print("state_symbols", state_symbols)
-    print("values", values)
 
-
-    DfDs_sym = [[expr.diff(symbol) for symbol in state_symbols] for expr in fstate]
-    DfDs = [[expr.subs(values) for expr in row] for row in DfDs_sym]
-
-    #DfDs = numerical_derivativeXY(fstate, state_symbols, values)
-    rann_symbol = []
-    for i in range(1, projhyb["mlm"]["ny"]+1):
-        rann_symbol.append(sp.sympify(projhyb["mlm"]["y"][str(i)]["id"]))
-    
-    DfDrann_sys = [[expr.diff(symbol) for symbol in rann_symbol] for expr in fstate]
-    DfDrann = [[expr.subs(values) for expr in row] for row in DfDrann_sys]
-    #DfDrann = numerical_derivativeXY(fstate, rann_symbol, values)
-
-    DfDrann = np.array(DfDrann)
-    DfDrann = DfDrann.reshape(len(fstate), len(rann))
-    DfDrann = DfDrann.astype(np.float64)
-    DfDrann = torch.from_numpy(DfDrann)
-
-    DfDs = np.array(DfDs)
-    DfDs = DfDs.reshape(len(fstate), len(state_symbols))
-    DfDs = DfDs.astype(np.float64)
-    DfDs = torch.from_numpy(DfDs)
 
     while t < tf:
         h = min(projhyb['time']['TAU'], tf - t)
@@ -94,9 +70,9 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
             ucontrol1 = []
         
         if jac is not 0:
-            k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
+            k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, fstate,  anninp, anninp_tensor, state_symbols, values)
         else:
-            k1_state = odesfun(ann,t, state, None, None, w, ucontrol1, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
+            k1_state = odesfun(ann,t, state, None, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
 
         # FIX THIS 
         
@@ -113,53 +89,63 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
         k1_state = k1_state.astype(np.float64)
         k1_state = torch.from_numpy(k1_state)
 
-        state = np.array(state)
-        state = state.astype(np.float64)
-        state = torch.from_numpy(state)
-
         h2k1_jac = torch.mul(h2, k1_jac)
 
         
         jach2 = jac + h2k1_jac
+        
 
         if jac is not 0:
-            k2_state, k2_jac = odesfun(ann,t + h2, state + h2 * k1_state, jac + h2 * k1_jac, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
+
+            state1 = update_state(state, h2, k1_state)
+            k2_state, k2_jac = odesfun(ann,t + h2, state1, jac + h2 * k1_jac, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
            
             k2_state = np.array(k2_state)
             k2_state = k2_state.astype(np.float64)
             k2_state = torch.from_numpy(k2_state)
 
-            k3_state, k3_jac = odesfun(ann,t + h2, state + h2 * k2_state, jac + h2 * k2_jac, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
+            state2 = update_state(state, h2, k2_state)
+
+            k3_state, k3_jac = odesfun(ann,t + h2, state2, jac + h2 * k2_jac, None, w, ucontrol2, projhyb, fstate,  anninp, anninp_tensor, state_symbols, values)
+            
             k3_state = np.array(k3_state)
             k3_state = k3_state.astype(np.float64)
             k3_state = torch.from_numpy(k3_state)
 
         else:
-            k2_state = odesfun(ann,t + h2, state + h2 * k1_state, None, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
-            k3_state = odesfun(ann,t + h2, state + h2 * k2_state, None, None, w, ucontrol2, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
+            state1 = update_state(state, h2, k1_state)
+            k2_state = odesfun(ann,t + h2, state1, None, None, w, ucontrol2, projhyb, fstate,  anninp, anninp_tensor, state_symbols, values)
+            state2 = update_state(state, h2, k2_state)
+            k3_state = odesfun(ann,t + h2, state2, None, None, w, ucontrol2, projhyb,  fstate, anninp, anninp_tensor, state_symbols, values)
 
         hl = h - h / 1e10
         ucontrol4 = controlfun(t + hl, batch) if controlfun is not None else []
 
         if jac is not None:
-            k4_state, k4_jac = odesfun(ann,t + hl, state + hl * k3_state, jac + hl * k3_jac, None, w, ucontrol4, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
+
+            state3 = update_state(state, hl, k3_state)
+
+            k4_state, k4_jac = odesfun(ann,t + hl, state3, jac + hl * k3_jac, None, w, ucontrol4, projhyb, fstate,  anninp, anninp_tensor, state_symbols, values)
             k4_state = np.array(k4_state)
             k4_state = k4_state.astype(np.float64)
             k4_state = torch.from_numpy(k4_state)
         else:
-            k4_state = odesfun(ann,t + hl, state + hl * k3_state, None, None, w, ucontrol4, projhyb, DfDs, DfDrann, fstate, anninp, anninp_tensor, state_symbols, values)
-        state = state + h * (k1_state / 6 + k2_state / 3 + k3_state / 3 + k4_state / 6)
+            state3 = update_state(state, hl, k3_state)
+            k4_state = odesfun(ann,t + hl, state3, None, None, w, ucontrol4, projhyb,  fstate, anninp, anninp_tensor, state_symbols, values)
+        
+        stateFinal = calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state)
 
         if jac is not None:
             jac = jac + h * (k1_jac / 6 + k2_jac / 3 + k3_jac / 3 + k4_jac / 6)
 
         t = t + h
 
-    return t, state, jac, hess
+    return t, stateFinal, jac, hess
 
 
 
 def anninp_rann_func(projhyb,state):
+
     species_values = extract_species_values(projhyb, state)
 
     totalsyms = ["t", "dummyarg1", "dummyarg2", "w"]
@@ -186,6 +172,8 @@ def anninp_rann_func(projhyb,state):
     anninp_mat = []    
     rann = []
 
+    print("species_values", species_values)
+
     for i in range(1,  projhyb["mlm"]["nx"]+1):
         totalsyms.append(projhyb["mlm"]["x"][str(i)]["id"])
 
@@ -195,10 +183,8 @@ def anninp_rann_func(projhyb,state):
 
         anninp.append(val_expr/max_expr)
 
-
         val_mat = val_expr.evalf(subs=species_values)
         max_mat = max_expr.evalf(subs=species_values)
-
 
         anninp_mat.append(val_mat/max_mat)
 
@@ -218,11 +204,37 @@ def anninp_rann_func(projhyb,state):
 
 def extract_species_values(projhyb, state):
     # TODO: ADD CONTROL VALUES
+
     species_values = {}
     for key, species in projhyb['species'].items():
         species_id = species['id']
-        species_val = state[int(key)]
+        species_val = state[int(key)-1]
         species_values[species_id] = species_val
 
+
     return species_values
+
+
+def update_state(state, h2, k1_state):
+    new_state = {}
+    
+    for index, (species_id, value) in enumerate(state.items()):
+
+        if index < len(k1_state):
+            new_value = value + h2 * k1_state[index]
+            new_state[species_id] = new_value
+        else:
+            new_state[species_id] = value
+    
+    return new_state
+
+
+def calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state):
+    stateFinal = []
+    
+    for i, value in enumerate(state.values()):
+        new_value = value + h * (k1_state[i] / 6 + k2_state[i] / 3 + k3_state[i] / 3 + k4_state[i] / 6)
+        stateFinal.append(new_value.item())
+    
+    return stateFinal
 

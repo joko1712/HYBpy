@@ -141,6 +141,9 @@ def hybtrain(projhyb, file):
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
+            'xtol': 1e-15,
+            'ftol': 1e-12,
+            'gtol': 1e-14,
             'verbose': 2,#projhyb['display'],
             'max_nfev': 50,#projhyb['niter'] * projhyb['niteroptim'] # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
             'method': 'lm',
@@ -650,16 +653,13 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, w, batch_data, projhyb)
-                                        
-                print("state", state)
-                print("Y", Y)
-                print("ires", isres)
 
                 state = torch.tensor(state, dtype=torch.float64).unsqueeze(0) 
 
-                print("state", state)
+                Y_select = Y[l, isres]
 
-                Ystate = Y[l, isres] - state[isres].t()
+                #Ystate = Y[l, isres] - state[isres].t()
+                Ystate = Y_select - state.squeeze(0)
 
                 sresall[COUNT:COUNT + nres] = Ystate / sY[l, isres]
                 
@@ -674,6 +674,8 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 print("#################################################")
                 print("state", state)
                 print("Y", Y)
+                state = state.squeeze().tolist()
+                print("state", state)
 
     print("sresall", sresall.shape)
     print("sreall", sresall)

@@ -53,7 +53,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
             DfDrann = np.array(DfDrann)
             DfDrann = DfDrann.reshape(len(fstate), projhyb["mlm"]["ny"])
-            print("DfDrann",DfDrann)
             DfDrann = DfDrann.astype(np.float64)
             DfDrann = torch.from_numpy(DfDrann)
 

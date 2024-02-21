@@ -31,7 +31,7 @@ class CustomMLP(nn.Module):
     def get_weights(self):
         
         w = []
-        '''
+        
         w = [1.2006380998802779E-5, 2.1145603844498155E-5, -2.9792708564293911E-5, 
             3.9705489251404438E-5, 1.3830384891204938E-5, -3.7745464810076942E-5, 
             1.8898710862674139E-5, 8.54514207552331E-5, -5.1638738811174825E-5, 
@@ -76,13 +76,13 @@ class CustomMLP(nn.Module):
             -3.5610073916940805E-5, 3.5784638008169172E-5, 0.15000020984160262, 
             0.18119985040622649, 4.10045036965661E-5, 1.0010001951654295, 0.1000000075216279, 
             5.4017207288595819E-6, 0.043400002799370965]
-        '''
+        
         wTensor = torch.tensor(w, dtype=torch.float64)
         
         for layer in self.layers:
             if isinstance(layer, TanhLayer) or isinstance(layer, ReLULayer):
                 
-                
+                '''
                 layer.w.data = torch.randn_like(layer.w) * np.sqrt(2 / (layer.w.size(0) + layer.w.size(1)))
                 #layer.w.data = torch.randn_like(layer.w) * 0.02 - 0.01
                 layer.b.data = torch.zeros_like(layer.b)
@@ -91,7 +91,7 @@ class CustomMLP(nn.Module):
                     layer.w.data = wTensor
                     wTensor = wTensor[torch.numel(layer.w):]
                     layer.b.data = torch.zeros_like(layer.b)
-                '''
+                
 
             w.extend(layer.w.flatten().detach().numpy())
             w.extend(layer.b.flatten().detach().numpy())

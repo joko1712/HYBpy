@@ -30,11 +30,15 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
     rann_results = rann_results.detach().numpy()
 
+    print("State", state)
     state = extract_species_values(projhyb,state)
+    print("State", state)
     values = {}
-    state["compartment"] = int(projhyb["compartment"]["1"]["val"])
     for range_y in range(0, len(rann_results)):
         values["rann"+str(range_y+1)] = rann_results[range_y].item()
+
+    values["compartment"] = int(projhyb["compartment"]["1"]["val"])
+
 
     for i in range(1, projhyb["mlm"]["ny"]+1):
         values[projhyb["mlm"]["y"][str(i)]["id"]] = values[projhyb["mlm"]["y"][str(i)]["val"]]
@@ -51,10 +55,10 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     jac = torch.tensor(jac, dtype=torch.float64)
     fstate = fstate_func(projhyb,values)
 
-
     while t < tf:
         h = min(projhyb['time']['TAU'], tf - t)
         batch['h'] = h
+        print("h", h)
 
         if eventfun and callable(eventfun):
             if jac is not 0:
@@ -118,13 +122,12 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
             state2 = update_state(state, h2, k2_state)
             k3_state = odesfun(ann,t + h2, state2, None, None, w, ucontrol2, projhyb,  fstate, anninp, anninp_tensor, state_symbols, values)
 
-        hl = h - h / 1e10
+        hl= h - h / 1e10
         ucontrol4 = controlfun(t + hl, batch) if controlfun is not None else []
 
         if jac is not None:
 
             state3 = update_state(state, hl, k3_state)
-
             k4_state, k4_jac = odesfun(ann,t + hl, state3, jac + hl * k3_jac, None, w, ucontrol4, projhyb, fstate,  anninp, anninp_tensor, state_symbols, values)
             k4_state = np.array(k4_state)
             k4_state = k4_state.astype(np.float64)
@@ -134,12 +137,16 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
             k4_state = odesfun(ann,t + hl, state3, None, None, w, ucontrol4, projhyb,  fstate, anninp, anninp_tensor, state_symbols, values)
         
         stateFinal = calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state)
+        state = extract_species_values(projhyb, stateFinal)
+        print("state", state)
 
         if jac is not None:
             jac = jac + h * (k1_jac / 6 + k2_jac / 3 + k3_jac / 3 + k4_jac / 6)
 
         t = t + h
 
+    
+    print("state", state)
     return t, stateFinal, jac, hess
 
 

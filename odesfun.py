@@ -6,6 +6,7 @@ from sympy import *
 import sympy as sp
 import numpy as np
 from derivativeXY import numerical_derivativeXY
+from derivativeXY import numerical_derivativeXY_optimized
 
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anninp_tensor, state_symbols, values):
@@ -38,18 +39,21 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             NValues.update(values)
             NValues.update(state)
 
+            print("NValues", NValues)
             #DfDs_sym = [[expr.diff(symbol) for symbol in state_symbols] for expr in fstate]
             #DfDs = [[expr.subs(NValues) for expr in row] for row in DfDs_sym]
 
-            DfDs = numerical_derivativeXY(fstate, state_symbols, NValues)
+            #DfDs = numerical_derivativeXY(fstate, state_symbols, NValues)
+            DfDs = numerical_derivativeXY_optimized(fstate, state_symbols, NValues)
             rann_symbol = []
             for i in range(1, projhyb["mlm"]["ny"]+1):
                 rann_symbol.append(sp.sympify(projhyb["mlm"]["y"][str(i)]["id"]))
             
             #DfDrann_sys = [[expr.diff(symbol) for symbol in rann_symbol] for expr in fstate]
             #DfDrann = [[expr.subs(NValues) for expr in row] for row in DfDrann_sys]
-            
-            DfDrann = numerical_derivativeXY(fstate, rann_symbol, NValues)
+     
+            #DfDrann = numerical_derivativeXY(fstate, rann_symbol, NValues)
+            DfDrann = numerical_derivativeXY_optimized(fstate, rann_symbol, NValues)
 
             DfDrann = np.array(DfDrann)
             DfDrann = DfDrann.reshape(len(fstate), projhyb["mlm"]["ny"])
@@ -61,7 +65,8 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             DfDs = DfDs.astype(np.float64)
             DfDs = torch.from_numpy(DfDs)
 
-            DanninpDstate = numerical_derivativeXY(anninp, state_symbols, NValues)
+            #DanninpDstate = numerical_derivativeXY(anninp, state_symbols, NValues)
+            DanninpDstate = numerical_derivativeXY_optimized(anninp, state_symbols, NValues)
             DanninpDstate = np.array(DanninpDstate)
             DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
             DanninpDstate = DanninpDstate.astype(np.float64)

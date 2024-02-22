@@ -58,7 +58,6 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     while t < tf:
         h = min(projhyb['time']['TAU'], tf - t)
         batch['h'] = h
-        print("h", h)
 
         if eventfun and callable(eventfun):
             if jac is not 0:
@@ -78,7 +77,6 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
         else:
             k1_state = odesfun(ann,t, state, None, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
 
-        # FIX THIS 
         
         control = None
         #ucontrol2 = controlfun(t + h / 2, batch) if controlfun is not None else []
@@ -145,8 +143,9 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
         t = t + h
 
-    
-    print("state", state)
+    stateFinal.append(int(projhyb["compartment"]["1"]["val"]))
+
+
     return t, stateFinal, jac, hess
 
 
@@ -242,6 +241,7 @@ def calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state):
     for i, value in enumerate(state.values()):
         new_value = value + h * (k1_state[i] / 6 + k2_state[i] / 3 + k3_state[i] / 3 + k4_state[i] / 6)
         stateFinal.append(new_value.item())
+
     
     return stateFinal
 

@@ -653,9 +653,10 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, w, batch_data, projhyb)
+                
 
                 state = torch.tensor(state, dtype=torch.float64).unsqueeze(0) 
-
+                '''
                 Y_select = Y[l, isres]
 
                 #Ystate = Y[l, isres] - state[isres].t()
@@ -674,8 +675,11 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 print("#################################################")
                 print("state", state)
                 print("Y", Y)
-                state = state.squeeze().tolist()
+                '''
+                state = state.squeeze()
+                state = np.array(state)
                 print("state", state)
+
 
     print("sresall", sresall.shape)
     print("sreall", sresall)

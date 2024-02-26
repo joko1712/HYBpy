@@ -22,6 +22,8 @@ class CustomMLP(nn.Module):
 
 
     def forward(self, x):
+        w = self.get_weights()
+        print("weights", w)
         for layer in self.layers:
             x = x.to(dtype=torch.float64)
 
@@ -92,10 +94,10 @@ class CustomMLP(nn.Module):
                     wTensor = wTensor[torch.numel(layer.w):]
                     layer.b.data = torch.zeros_like(layer.b)
                 
-
+            '''
             w.extend(layer.w.flatten().detach().numpy())
             w.extend(layer.b.flatten().detach().numpy())
-    
+            '''
         w = np.array(w)
 
         print("weights", w)
@@ -112,7 +114,6 @@ class CustomMLP(nn.Module):
 
             activations.append(x)
             
-        # y = output
         y = activations[-1]
         tensorList = []
         DrannDw = []

@@ -26,6 +26,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
     print("y", y)
 
+    print("W", w)
 
     rann_results = ann.forward(y)
 

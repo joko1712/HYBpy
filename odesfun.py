@@ -7,6 +7,7 @@ import sympy as sp
 import numpy as np
 from derivativeXY import numerical_derivativeXY
 from derivativeXY import numerical_derivativeXY_optimized
+from derivativeXY import numerical_derivativeXY_optimized_torch
 
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anninp_tensor, state_symbols, values):
@@ -43,7 +44,9 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DfDs = [[expr.subs(NValues) for expr in row] for row in DfDs_sym]
 
             #DfDs = numerical_derivativeXY(fstate, state_symbols, NValues)
+
             DfDs = numerical_derivativeXY_optimized(fstate, state_symbols, NValues)
+
             rann_symbol = []
             for i in range(1, projhyb["mlm"]["ny"]+1):
                 rann_symbol.append(sp.sympify(projhyb["mlm"]["y"][str(i)]["id"]))
@@ -51,7 +54,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DfDrann_sys = [[expr.diff(symbol) for symbol in rann_symbol] for expr in fstate]
             #DfDrann = [[expr.subs(NValues) for expr in row] for row in DfDrann_sys]
      
-            #DfDrann = numerical_derivativeXY(fstate, rann_symbol, NValues)
             DfDrann = numerical_derivativeXY_optimized(fstate, rann_symbol, NValues)
 
             DfDrann = np.array(DfDrann)

@@ -39,7 +39,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             NValues.update(values)
             NValues.update(state)
 
-            print("NValues", NValues)
             #DfDs_sym = [[expr.diff(symbol) for symbol in state_symbols] for expr in fstate]
             #DfDs = [[expr.subs(NValues) for expr in row] for row in DfDs_sym]
 

@@ -656,7 +656,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 
 
                 state = torch.tensor(state, dtype=torch.float64).unsqueeze(0) 
-                '''
+                
                 Y_select = Y[l, isres]
 
                 #Ystate = Y[l, isres] - state[isres].t()
@@ -675,7 +675,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 print("#################################################")
                 print("state", state)
                 print("Y", Y)
-                '''
+                
                 state = state.squeeze()
                 state = np.array(state)
                 print("state", state)

@@ -1,4 +1,6 @@
 import numpy as np
+from numpy import diff
+
 
 def numerical_derivativeXY(x, y, values, delta=1e-5):
     derivatives = []
@@ -40,3 +42,29 @@ def numerical_derivativeXY_optimized(x, y, values, delta=1e-5):
         values[symbol] = original_value
     
     return derivatives
+
+#Change the function to use torch
+def numerical_derivativeXY_optimized_torch(x, y, values, delta=1e-5):
+    num_variables = len(y)
+    derivatives = np.zeros((num_variables, len(x)))  # Preallocate derivative matrix
+    
+    # Precompute x for the original values
+    x_original = np.array([expr.evalf(subs=values) for expr in x])
+    
+    for i, symbol in enumerate(y):
+        original_value = values[str(symbol)]
+        
+        # Only modify the value of the current symbol for plus and minus delta
+        values[str(symbol)] = original_value + delta
+        x_plus_delta = np.array([expr.evalf(subs=values) for expr in x])
+        
+        values[str(symbol)] = original_value - delta
+        x_minus_delta = np.array([expr.evalf(subs=values) for expr in x])
+        
+        # Calculate derivative and store
+        derivatives[i] = (x_plus_delta - x_minus_delta) / (2 * delta)
+        
+        # Reset the value to original
+        values[str(symbol)] = original_value
+    
+    return derivatives.T 

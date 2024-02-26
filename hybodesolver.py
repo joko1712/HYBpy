@@ -26,10 +26,12 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
     print("y", y)
 
+
     rann_results = ann.forward(y)
 
     rann_results = rann_results.detach().numpy()
 
+    print("rann_results", rann_results)
     print("State", state)
     state = extract_species_values(projhyb,state)
     print("State", state)
@@ -186,6 +188,10 @@ def anninp_rann_func(projhyb,state):
         val_expr = sp.sympify(projhyb["mlm"]["x"][str(i)]["val"])
 
         max_expr = sp.sympify(projhyb["mlm"]["x"][str(i)]["max"])
+
+        print("val_expr", val_expr)
+        print("max_expr", max_expr)
+    
 
         anninp.append(val_expr/max_expr)
 

@@ -35,7 +35,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
     else:
 
         if projhyb['mode'] == 1:
-
+            
             NValues = {}
             NValues.update(values)
             NValues.update(state)
@@ -44,8 +44,10 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DfDs = [[expr.subs(NValues) for expr in row] for row in DfDs_sym]
 
             #DfDs = numerical_derivativeXY(fstate, state_symbols, NValues)
+            #DfDs = numerical_derivativeXY_optimized(fstate, state_symbols, NValues)
 
-            DfDs = numerical_derivativeXY_optimized(fstate, state_symbols, NValues)
+            DfDs = numerical_derivativeXY_optimized_torch(fstate, state_symbols, NValues)
+            print("DfDs", DfDs)
 
             rann_symbol = []
             for i in range(1, projhyb["mlm"]["ny"]+1):
@@ -54,7 +56,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DfDrann_sys = [[expr.diff(symbol) for symbol in rann_symbol] for expr in fstate]
             #DfDrann = [[expr.subs(NValues) for expr in row] for row in DfDrann_sys]
      
-            DfDrann = numerical_derivativeXY_optimized(fstate, rann_symbol, NValues)
+            DfDrann = numerical_derivativeXY_optimized_torch(fstate, rann_symbol, NValues)
 
             DfDrann = np.array(DfDrann)
             DfDrann = DfDrann.reshape(len(fstate), projhyb["mlm"]["ny"])
@@ -67,7 +69,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             DfDs = torch.from_numpy(DfDs)
 
             #DanninpDstate = numerical_derivativeXY(anninp, state_symbols, NValues)
-            DanninpDstate = numerical_derivativeXY_optimized(anninp, state_symbols, NValues)
+            DanninpDstate = numerical_derivativeXY_optimized_torch(anninp, state_symbols, NValues)
             DanninpDstate = np.array(DanninpDstate)
             DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
             DanninpDstate = DanninpDstate.astype(np.float64)

@@ -22,13 +22,14 @@ def numerical_derivativeXY(x, y, values, delta=1e-5):
 
 
 def numerical_derivativeXY_optimized(x, y, values, delta=1e-5):
+    values_dict = values.copy()
     derivatives = []
     
     for symbol in y:
-        original_value = values[str(symbol)]
+        original_value = values_dict[str(symbol)]
         
-        values_plus_delta = values.copy()
-        values_minus_delta = values.copy()
+        values_plus_delta = values_dict.copy()
+        values_minus_delta = values_dict.copy()
         values_plus_delta[symbol] = original_value + delta
         values_minus_delta[symbol] = original_value - delta
         
@@ -39,32 +40,38 @@ def numerical_derivativeXY_optimized(x, y, values, delta=1e-5):
         derivative_for_symbol = (x_plus_delta - x_minus_delta) / (2 * delta)
         derivatives.append(derivative_for_symbol.tolist())
         
-        values[symbol] = original_value
+        values_dict[symbol] = original_value
     
     return derivatives
 
-#Change the function to use torch
 def numerical_derivativeXY_optimized_torch(x, y, values, delta=1e-5):
-    num_variables = len(y)
-    derivatives = np.zeros((num_variables, len(x)))  # Preallocate derivative matrix
+        
+    values_dict = values.copy()
+    values_dict_filtered = values.copy()
+    derivatives = []
+
+    for symbol in y:
+        symbol_str = str(symbol)  # Convert SymPy symbol to string
+        if symbol_str in values_dict_filtered:
+            values_dict_filtered.pop(symbol_str)
+
+    x = [expr.subs(values_dict_filtered) for expr in x]
     
-    # Precompute x for the original values
-    x_original = np.array([expr.evalf(subs=values) for expr in x])
+    for symbol in y:
+        original_value = values_dict[str(symbol)]
+        
+        values_plus_delta = values_dict.copy()
+        values_minus_delta = values_dict.copy()
+        values_plus_delta[symbol] = original_value + delta
+        values_minus_delta[symbol] = original_value - delta
+        
+       
+        x_plus_delta = np.array([expr.evalf(subs=values_plus_delta) for expr in x])
+        x_minus_delta = np.array([expr.evalf(subs=values_minus_delta) for expr in x])
+        
+        derivative_for_symbol = (x_plus_delta - x_minus_delta) / (2 * delta)
+        derivatives.append(derivative_for_symbol.tolist())
+        
+        values_dict[symbol] = original_value
     
-    for i, symbol in enumerate(y):
-        original_value = values[str(symbol)]
-        
-        # Only modify the value of the current symbol for plus and minus delta
-        values[str(symbol)] = original_value + delta
-        x_plus_delta = np.array([expr.evalf(subs=values) for expr in x])
-        
-        values[str(symbol)] = original_value - delta
-        x_minus_delta = np.array([expr.evalf(subs=values) for expr in x])
-        
-        # Calculate derivative and store
-        derivatives[i] = (x_plus_delta - x_minus_delta) / (2 * delta)
-        
-        # Reset the value to original
-        values[str(symbol)] = original_value
-    
-    return derivatives.T 
+    return derivatives

@@ -1,5 +1,7 @@
 import numpy as np
 from numpy import diff
+from sympy import symbols, diff, Matrix
+import torch
 
 
 def numerical_derivativeXY(x, y, values, delta=1e-5):
@@ -64,7 +66,6 @@ def numerical_derivativeXY_optimized_torch(x, y, values, delta=1e-5):
         values_minus_delta = values_dict.copy()
         values_plus_delta[symbol] = original_value + delta
         values_minus_delta[symbol] = original_value - delta
-        
        
         x_plus_delta = np.array([expr.evalf(subs=values_plus_delta) for expr in x])
         x_minus_delta = np.array([expr.evalf(subs=values_minus_delta) for expr in x])
@@ -75,3 +76,24 @@ def numerical_derivativeXY_optimized_torch(x, y, values, delta=1e-5):
         values_dict[symbol] = original_value
     
     return derivatives
+
+
+def numerical_diferentiation(x, y, values):
+    values_dict = values.copy()
+    values_dict_filtered = values.copy()
+    derivatives = []
+
+    for symbol in y:
+        symbol_str = str(symbol)  
+        if symbol_str in values_dict_filtered:
+            values_dict_filtered.pop(symbol_str)
+
+    x = [expr.subs(values_dict_filtered) for expr in x]
+    
+    x = Matrix(x)
+
+    matrix = x.jacobian(y)
+
+    matrix = [expr.subs(values) for expr in matrix]
+
+    return matrix

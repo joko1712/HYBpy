@@ -51,7 +51,7 @@ with open('file.json', 'w') as f:
 
 with open('sample.json', 'w') as f:
     json.dump(projhyb, f, indent=4)
-
+ 
 with open("file.json", "r") as read_file:
     file = json.load(read_file)
 

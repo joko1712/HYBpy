@@ -648,7 +648,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             print("ann", ann)
 
             for i in range(1, file[str(l)]["np"]):
-
                 batch_data = file[str(l+1)]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
@@ -676,6 +675,8 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 print("Y", Y)
                 state = state.squeeze().tolist()
                 print("state", state)
+                projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
+
 
     print("sresall", sresall.shape)
     print("sreall", sresall)

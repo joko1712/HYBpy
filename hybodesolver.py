@@ -23,7 +23,6 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     activations = [anninp_tensor]
     
     y = activations[-1]
-
     print("y", y)
 
     print("W", w)

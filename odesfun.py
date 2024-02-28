@@ -47,7 +47,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DfDs = numerical_derivativeXY_optimized(fstate, state_symbols, NValues)
 
             DfDs = numerical_derivativeXY_optimized_torch(fstate, state_symbols, NValues)
-            print("DfDs", DfDs)
 
             rann_symbol = []
             for i in range(1, projhyb["mlm"]["ny"]+1):

@@ -22,8 +22,6 @@ class CustomMLP(nn.Module):
 
 
     def forward(self, x):
-        w = self.get_weights()
-        print("weights", w)
         for layer in self.layers:
             x = x.to(dtype=torch.float64)
 
@@ -81,23 +79,25 @@ class CustomMLP(nn.Module):
         
         wTensor = torch.tensor(w, dtype=torch.float64)
         
+        '''
         for layer in self.layers:
             if isinstance(layer, TanhLayer) or isinstance(layer, ReLULayer):
                 
-                '''
+            
                 layer.w.data = torch.randn_like(layer.w) * np.sqrt(2 / (layer.w.size(0) + layer.w.size(1)))
                 #layer.w.data = torch.randn_like(layer.w) * 0.02 - 0.01
                 layer.b.data = torch.zeros_like(layer.b)
-                '''
+                
                 if wTensor.shape == layer.w.shape:
                     layer.w.data = wTensor
                     wTensor = wTensor[torch.numel(layer.w):]
                     layer.b.data = torch.zeros_like(layer.b)
                 
-            '''
+            
             w.extend(layer.w.flatten().detach().numpy())
             w.extend(layer.b.flatten().detach().numpy())
-            '''
+        '''
+    
         w = np.array(w)
 
         print("weights", w)
@@ -114,6 +114,7 @@ class CustomMLP(nn.Module):
 
             activations.append(x)
             
+        # y = output
         y = activations[-1]
         tensorList = []
         DrannDw = []
@@ -188,36 +189,24 @@ class ReLULayer(nn.Module):
 
 
 class LSTMLayer(nn.Module):
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, input_size, hidden_size, batch_first=True):
         super(LSTMLayer, self).__init__()
-        self.input_size = input_size
         self.hidden_size = hidden_size
-        self.wf = nn.Parameter(torch.randn(hidden_size, input_size))
-        self.wrf = nn.Parameter(torch.randn(hidden_size, hidden_size))
-        self.bfor = nn.Parameter(torch.randn(hidden_size, 1))
-        self.win = nn.Parameter(torch.randn(hidden_size, input_size))
-        self.wrin = nn.Parameter(torch.randn(hidden_size, hidden_size))
-        self.bin = nn.Parameter(torch.randn(hidden_size, 1))
-        self.wbl = nn.Parameter(torch.randn(hidden_size, input_size))
-        self.wrbl = nn.Parameter(torch.randn(hidden_size, hidden_size))
-        self.bprev = nn.Parameter(torch.randn(hidden_size, 1))
-        self.wout = nn.Parameter(torch.randn(hidden_size, input_size))
-        self.wrout = nn.Parameter(torch.randn(hidden_size, hidden_size))
-        self.bout = nn.Parameter(torch.randn(hidden_size, 1))
-        self.cprev = torch.zeros(hidden_size, 1)
-        self.yprev = torch.zeros(hidden_size, 1)
+        self.batch_first = batch_first
+        
+        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=batch_first)
+        
+        self.hidden = None
+        self.cell = None
 
     def forward(self, x):
-        fg = torch.sigmoid(self.wf @ x + self.wrf @ self.yprev + self.bfor)
-        ing = torch.sigmoid(self.win @ x + self.wrin @ self.yprev + self.bin)
-        blg = torch.tanh(self.wbl @ x + self.wrbl @ self.yprev + self.bprev)
-        outg = torch.sigmoid(self.wout @ x + self.wrout @
-                             self.yprev + self.bout)
-        c = blg * ing + self.cprev * fg
-        y = outg * torch.tanh(c)
-        self.cprev = c
-        self.yprev = y
-        return y
+        output, (hidden, cell) = self.lstm(x, (self.hidden, self.cell))
+
+        return output
+
+    def reset_state(self):
+        self.hidden = None
+        self.cell = None
 
 
 class Linear(nn.Module):

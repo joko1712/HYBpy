@@ -653,16 +653,18 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, w, batch_data, projhyb)
 
-                state = torch.tensor(state, dtype=torch.float64).unsqueeze(0) 
-
-                Y_select = Y[l, isres]
-
+                state = torch.tensor(state, dtype=torch.float64).unsqueeze(0)
+                Y_select = Y[i, isres]
+                print("Y_select", Y[i, isres])
+                print("sY", sY[i, isres])
                 #Ystate = Y[l, isres] - state[isres].t()
                 Ystate = Y_select - state.squeeze(0)
+                print("Ystate", Ystate)
 
-                sresall[COUNT:COUNT + nres] = Ystate / sY[l, isres]
-                
-                SYrepeat = sY[l, isres].reshape(-1, 1).repeat(1, nw)
+                sresall[COUNT:COUNT + nres] = Ystate / sY[i, isres]
+                print("sresall", sresall)
+
+                SYrepeat = sY[i, isres].reshape(-1, 1).repeat(1, nw)
 
                 result = (- Sw[isres, :].detach().numpy()) / SYrepeat.detach().numpy()
                 

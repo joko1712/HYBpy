@@ -85,6 +85,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann,DrannDs)
 
             fjac = torch.mm(DfDsDfDrannDrannDs,jac) + DfDrannDrannDw
+            print("fjac",fjac)
 
             fstate = [expr.evalf(subs=NValues) for expr in fstate]
 

@@ -78,27 +78,20 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
             k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, fstate,  anninp, anninp_tensor, state_symbols, values)
         else:
             k1_state = odesfun(ann,t, state, None, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
-
         
         control = None
         #ucontrol2 = controlfun(t + h / 2, batch) if controlfun is not None else []
         ucontrol2 = controlfun() if control is not None else []
 
-        
         h2 = h / 2
         h2 = torch.tensor(h2, dtype=torch.float64)
+        print("k1_state", k1_state)
+        print("k1_jac", k1_jac)
         k1_state = np.array(k1_state)
-
         
         k1_state = k1_state.astype(np.float64)
         k1_state = torch.from_numpy(k1_state)
-
-        h2k1_jac = torch.mul(h2, k1_jac)
-
         
-        jach2 = jac + h2k1_jac
-        
-
         if jac is not 0:
 
             state1 = update_state(state, h2, k1_state)
@@ -144,6 +137,8 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
             jac = jac + h * (k1_jac / 6 + k2_jac / 3 + k3_jac / 3 + k4_jac / 6)
 
         t = t + h
+
+        print("jac", jac)
 
     stateFinal.append(int(projhyb["compartment"]["1"]["val"]))
 

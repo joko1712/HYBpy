@@ -5,7 +5,6 @@ def mlpnetsetw(custom_mlp, w):
     count = 0
     for layer in custom_mlp.layers:
         print("layer:", layer)
-        # Calculate the number of weights and biases for the current layer
         input_size, output_size = layer.w.shape[1], layer.w.shape[0]
         print("input_size:", input_size)
         print("output_size:", output_size)
@@ -13,13 +12,11 @@ def mlpnetsetw(custom_mlp, w):
         print("num_weights:", num_weights)
         num_biases = output_size
 
-        # Reshape and set the weights
         layer_weights = w[count:count +
                           num_weights].reshape(output_size, input_size)
         layer.w.data = torch.tensor(layer_weights, dtype=layer.w.data.dtype)
         count += num_weights
 
-        # Set the biases
         layer_biases = w[count:count + num_biases].reshape(-1, 1)
         layer.b.data = torch.tensor(layer_biases, dtype=layer.b.data.dtype)
         count += num_biases

@@ -21,6 +21,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     anninp_tensor = anninp_tensor.view(-1, 1)       
 
     activations = [anninp_tensor]
+    print("activations", activations)
     
     y = activations[-1]
     print("y", y)

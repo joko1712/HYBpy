@@ -10,6 +10,9 @@ from derivativeXY import numerical_derivativeXY_optimized
 from derivativeXY import numerical_derivativeXY_optimized_torch
 from derivativeXY import numerical_diferentiation
 
+from mlpnetsetw import mlpnetsetw
+
+
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anninp_tensor, state_symbols, values):
 
@@ -58,25 +61,25 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DfDrann = [[expr.subs(NValues) for expr in row] for row in DfDrann_sys]
      
             DfDrann = numerical_diferentiation(fstate, rann_symbol, NValues)
-
             DfDrann = np.array(DfDrann)
             DfDrann = DfDrann.reshape(len(fstate), projhyb["mlm"]["ny"])
             DfDrann = DfDrann.astype(np.float64)
             DfDrann = torch.from_numpy(DfDrann)
-
             DfDs = np.array(DfDs)
             DfDs = DfDs.reshape(len(fstate), len(state_symbols))
             DfDs = DfDs.astype(np.float64)
             DfDs = torch.from_numpy(DfDs)
-
             #DanninpDstate = numerical_derivativeXY(anninp, state_symbols, NValues)
             DanninpDstate = numerical_diferentiation(anninp, state_symbols, NValues)
             DanninpDstate = np.array(DanninpDstate)
             DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
             DanninpDstate = DanninpDstate.astype(np.float64)
             DanninpDstate = torch.from_numpy(DanninpDstate)
-   
+
+            projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
+
             y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
+
 
             DrannDs = torch.mm(DrannDanninp, DanninpDstate.t())
 
@@ -85,11 +88,9 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann,DrannDs)
 
             fjac = torch.mm(DfDsDfDrannDrannDs,jac) + DfDrannDrannDw
-            print("fjac",fjac)
 
             fstate = [expr.evalf(subs=NValues) for expr in fstate]
 
-            print("fstate",fstate)
             return fstate, fjac
 
         elif projhyb['mode'] == 3:

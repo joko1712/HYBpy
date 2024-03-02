@@ -122,11 +122,10 @@ class CustomMLP(nn.Module):
         DrannDanninp = torch.eye(output_size, dtype=torch.float64)
         A1 = DrannDanninp
         tensor_size = 0
-
+        
         for i in reversed(range(len(self.layers))):
             h1 = activations[i]
             h1l = self.layers[i].derivative(h1)
-
             h1l_reshaped = h1l.t()
             
             h1_reshaped = torch.cat((h1.t(), torch.tensor([[1]])), dim=1)
@@ -134,11 +133,12 @@ class CustomMLP(nn.Module):
             layer_dydw = torch.kron(h1_reshaped,A1)
 
             tensor_size = tensor_size + layer_dydw.shape[1] 
-            tensorList.append(layer_dydw)
+            tensorList.insert(0, layer_dydw)
+
 
             if i == 0:
                 break
-            
+
             A1 = -(torch.mm(DrannDanninp,self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
 
 
@@ -169,8 +169,7 @@ class TanhLayer(nn.Module):
         return torch.tanh(torch.mm(self.w, x) + self.b)
 
     def derivative(self, x):
-        
-        return 1 - x ** 2
+        return (x ** 2) -1 
 
 
 class ReLULayer(nn.Module):

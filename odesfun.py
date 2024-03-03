@@ -16,18 +16,6 @@ from mlpnetsetw import mlpnetsetw
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anninp_tensor, state_symbols, values):
 
-    current_state_dict = ann.state_dict()
-
-    new_state_dict = {}
-    for param_tensor in ann.state_dict():
-        if "w" in param_tensor:
-            new_state_dict[param_tensor] = torch.randn(*current_state_dict[param_tensor].shape)
-        elif "b" in param_tensor:
-            new_state_dict[param_tensor] = torch.zeros_like(current_state_dict[param_tensor])
-
-
-    ann.load_state_dict(new_state_dict)
-
     if jac is None and hess is None:
 
         fstate = fstate_func(projhyb)
@@ -75,8 +63,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
             DanninpDstate = DanninpDstate.astype(np.float64)
             DanninpDstate = torch.from_numpy(DanninpDstate)
-
-            projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
 
             y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
 

@@ -4,12 +4,8 @@ import torch
 def mlpnetsetw(custom_mlp, w):
     count = 0
     for layer in custom_mlp.layers:
-        print("layer:", layer)
         input_size, output_size = layer.w.shape[1], layer.w.shape[0]
-        print("input_size:", input_size)
-        print("output_size:", output_size)
         num_weights = input_size * output_size
-        print("num_weights:", num_weights)
         num_biases = output_size
 
         layer_weights = w[count:count +

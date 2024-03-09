@@ -21,21 +21,16 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     anninp_tensor = anninp_tensor.view(-1, 1)       
 
     activations = [anninp_tensor]
-    print("activations", activations)
     
     y = activations[-1]
-    print("y", y)
 
-    print("W", w)
 
     rann_results = ann.forward(y)
 
     rann_results = rann_results.detach().numpy()
 
-    print("rann_results", rann_results)
-    print("State", state)
+
     state = extract_species_values(projhyb,state)
-    print("State", state)
     values = {}
     for range_y in range(0, len(rann_results)):
         values["rann"+str(range_y+1)] = rann_results[range_y].item()
@@ -86,8 +81,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
         h2 = h / 2
         h2 = torch.tensor(h2, dtype=torch.float64)
-        print("k1_state", k1_state)
-        print("k1_jac", k1_jac)
+
         k1_state = np.array(k1_state)
         
         k1_state = k1_state.astype(np.float64)
@@ -176,7 +170,6 @@ def anninp_rann_func(projhyb,state):
     anninp_mat = []    
     rann = []
 
-    print("species_values", species_values)
 
     for i in range(1,  projhyb["mlm"]["nx"]+1):
         totalsyms.append(projhyb["mlm"]["x"][str(i)]["id"])
@@ -184,9 +177,6 @@ def anninp_rann_func(projhyb,state):
         val_expr = sp.sympify(projhyb["mlm"]["x"][str(i)]["val"])
 
         max_expr = sp.sympify(projhyb["mlm"]["x"][str(i)]["max"])
-
-        print("val_expr", val_expr)
-        print("max_expr", max_expr)
     
 
         anninp.append(val_expr/max_expr)

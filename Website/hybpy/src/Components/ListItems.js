@@ -6,6 +6,7 @@ import BackupIcon from "@mui/icons-material/Backup";
 import LogoutIcon from "@mui/icons-material/Logout";
 import FaceIcon from "@mui/icons-material/Face";
 import InventoryIcon from "@mui/icons-material/Inventory";
+import FlightLandIcon from "@mui/icons-material/FlightLand";
 import { auth } from "../firebase-config";
 
 const logout = (navigate) => {
@@ -14,6 +15,12 @@ const logout = (navigate) => {
 };
 export const mainListItems = (navigate) => (
     <React.Fragment>
+        <ListItemButton onClick={() => navigate("/landingPage")}>
+            <ListItemIcon>
+                <FlightLandIcon />
+            </ListItemIcon>
+            <ListItemText primary='Landing Page' />
+        </ListItemButton>
         <ListItemButton>
             <ListItemIcon>
                 <FaceIcon />

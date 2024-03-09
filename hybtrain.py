@@ -141,11 +141,11 @@ def hybtrain(projhyb, file):
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
-            'xtol': 1e-15,
+            'xtol': 1e-9, #1e-15
             'ftol': 1e-12,
             'gtol': 1e-14,
             'verbose': 2,#projhyb['display'],
-            'max_nfev': 50,#projhyb['niter'] * projhyb['niteroptim'] # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
+            'max_nfev': projhyb['niter'] * projhyb['niteroptim'], # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
             'method': 'lm',
         }
 
@@ -296,14 +296,14 @@ def hybtrain(projhyb, file):
             elif projhyb['hessian'] == 1:
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
 
-        '''
+        
         if TrainRes['istep'] > 1:
             print('Weights initialization...2')
             weights, ann = mlp.CustomMLP.get_weights(ann)
             projhyb["w"] = weights
 
         #????
-        '''
+        
         if projhyb['mlm']['nx'] == 0:
             for nparam in range(projhyb['mlm']['ny']):
                 weights[nparam] = projhyb['mlm']['y'][nparam]['init']
@@ -315,12 +315,15 @@ def hybtrain(projhyb, file):
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
             print("optios", options)
             print("weights", weights)
-            result = least_squares(evaluator.fobj_func, weights, jac=evaluator.jac_func, **options)
+            #try running without jac
+            #try jac to be as it is returned from the function
+            #try scipy.optimize.leastsq
+            #see if there is any problem with the objective function
+            result = least_squares(evaluator.fobj_func, weights, **options)
             print("result", result)
             callback_wrapper(result, TrainRes, projhyb)
             print("result", result)
             print("TrainRes", TrainRes)
-            #result = scipy.optimize.minimize(evaluator.fobj_func, weights, method="SLSQP", jac=evaluator.jac_func, tol=1e-9, callback=outFunc, options=options )
             wfinal, fval = result.x, result.cost
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON
@@ -597,30 +600,26 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     if not istrain:
         istrain = projhyb["istrain"]
 
+    # ires = 11 
     ns = projhyb["nspecies"]
     nt = ns + projhyb["ncompartments"]
     nw = projhyb["mlm"]["nw"]
     isres = []
+    isresY = []
     for i in range(1, ns + 1):
         if projhyb["species"][str(i)]["isres"] == 1: 
-            isres = isres + [i-1]
+            isres = isres + [i]
+            isresY = isresY + [i - 1]
 
-    isres = isres + [ns]
-    
-    print("ires", isres)
+    isres = isres
         
     nres = len(isres)
 
     projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
     npall = sum(file[str(i+1)]["np"] for i in range(file["nbatch"]) if file[str(i+1)]["istrain"] == 1)
 
-    for i in range(file["nbatch"]):
-        if file[str(i+1)]["istrain"] == 1:
-            npall += file[str(i+1)]["np"]
-
-
     sresall = np.zeros(npall * nres)
-    print("sresall", npall * nres)
+
     sjacall = np.zeros((npall * nres, nw))
 
     COUNT = 0
@@ -633,7 +632,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             Y = Y.astype(np.float64)
             Y = torch.from_numpy(Y)
             
-
             batch = str(l)
 
             sY = file[str(l)]["sy"]
@@ -644,29 +642,30 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             state = np.array(file[str(l)]["y"][0])
             Sw = np.zeros((nt, nw))
 
-            print("state", state)
-            print("ann", ann)
-
             for i in range(1, file[str(l)]["np"]):
                 batch_data = file[str(l+1)]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, w, batch_data, projhyb)
 
-                state = torch.tensor(state, dtype=torch.float64).unsqueeze(0)
-                Y_select = Y[i, isres]
-                print("Y_select", Y[i, isres])
-                print("sY", sY[i, isres])
-                #Ystate = Y[l, isres] - state[isres].t()
-                Ystate = Y_select - state.squeeze(0)
+                # rever calculos same as MATLAB
+                
+                Y_select = Y[i, isresY]
+                state_tensor = torch.tensor(state, dtype=torch.float64)
+                state_adjusted = state_tensor[0:nres]
+                Ystate = Y_select - state_adjusted
+                print("Y_select", Y[i, isresY])
+                print("sY", sY[i, isresY])
                 print("Ystate", Ystate)
 
-                sresall[COUNT:COUNT + nres] = Ystate / sY[i, isres]
+                sresall[COUNT:COUNT + nres] = Ystate / sY[i, isresY]
                 print("sresall", sresall)
 
-                SYrepeat = sY[i, isres].reshape(-1, 1).repeat(1, nw)
+                SYrepeat = sY[i, isresY].reshape(-1, 1).repeat(1, nw)
+                print("SYrepeat", SYrepeat)
 
-                result = (- Sw[isres, :].detach().numpy()) / SYrepeat.detach().numpy()
+                result = (- Sw[isresY, :].detach().numpy()) / SYrepeat.detach().numpy()
+                print("result", result)
                 
                 sjacall[COUNT:COUNT + nres, 0:nw] = result
                 COUNT = COUNT + nres
@@ -675,7 +674,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 print("#################################################")
                 print("state", state)
                 print("Y", Y)
-                state = state.squeeze().tolist()
                 print("state", state)
                 projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
 

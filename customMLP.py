@@ -100,8 +100,6 @@ class CustomMLP(nn.Module):
     
         w = np.array(w)
 
-        print("weights", w)
-
         return w, self
 
     def backpropagate(self, x):

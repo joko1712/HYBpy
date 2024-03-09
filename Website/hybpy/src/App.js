@@ -6,6 +6,7 @@ import OldRuns from "./Components/OldRuns";
 import Register from "./Components/Register";
 import Login from "./Components/Login";
 import Dashboard from "./Components/Dashboard";
+import LandingPage from "./Components/LandingPage";
 import { auth } from "./firebase-config";
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
                 <Routes>
                     {auth.currentUser !== null ? (
                         <>
+                            <Route path='/landingPage' element={<LandingPage />} />
                             <Route path='/' element={<Dashboard />} />
                             <Route path='/upload' element={<FileUpload />} />
                             <Route path='/old-runs' element={<OldRuns />} />

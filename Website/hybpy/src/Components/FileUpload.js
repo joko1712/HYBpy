@@ -21,6 +21,7 @@ import PublishIcon from "@mui/icons-material/Publish";
 import Button from "@mui/material/Button";
 import { Input, Select } from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
+import Tooltip, { TooltipProps, tooltipClasses } from "@mui/material/Tooltip";
 import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { useEffect } from "react";
@@ -101,6 +102,7 @@ function FileUpload() {
     const [mode, setMode] = useState("");
     const [backendResponse, setBackendResponse] = useState("");
     const [description, setDescription] = useState("");
+    const [tooltipDisplay, setTooltipDisplay] = useState("block");
 
     const handleFileChange1 = (event) => {
         setSelectedFile1(event.target.files[0]);
@@ -131,6 +133,18 @@ function FileUpload() {
     const handleModeChange = (event) => {
         setMode(event.target.value);
     };
+
+    const changeTooltip = () => {
+        setTooltipDisplay(tooltipDisplay === "block" ? "none" : "block");
+    };
+
+    const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
+        <Tooltip {...props} classes={{ popper: className }} />
+    ))(({}) => ({
+        [`& .${tooltipClasses.tooltip}`]: {
+            maxWidth: 200,
+        },
+    }));
 
     const handleUpload = async () => {
         if (!selectedFile1 || !selectedFile2) {
@@ -280,119 +294,181 @@ function FileUpload() {
                                 ? theme.palette.grey[100]
                                 : theme.palette.grey[900],
                         flexGrow: 1,
-                        height: "100vh",
+                        height: "99vh",
                         overflow: "auto",
                     }}>
                     <Toolbar />
-                    <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
-                        <h2>Create Run</h2>
+                    <Container maxWidth='lg' sx={{}}>
+                        {/* ############################################# Start of the Main Page ############################################# */}
+                        <div style={{ overflow: "auto", marginTop: 20 }}>
+                            <h2 style={{ float: "left", marginTop: 0 }}>Create Run</h2>
+                            <Button
+                                onClick={() => changeTooltip()}
+                                variant='contained'
+                                sx={{ height: "100%", float: "right" }}>
+                                Toggle Tooltip
+                            </Button>
+                        </div>
                         <Grid container spacing={3} columns={20}>
-                            <Grid item xs={20} columns={20}>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        height: 300,
-                                        overflow: "auto",
-                                    }}>
-                                    <Typography level='h1'>HMOD</Typography>
-                                    <p>{selectedFile1 ? selectedFile1.name : "No file selected"}</p>
-                                    <pre>{file1Content}</pre>{" "}
-                                </Paper>
-                                <label htmlFor='hmod-upload'>
-                                    <Grid item xs={10}>
-                                        <Button
-                                            component='span'
-                                            fullWidth
-                                            variant='contained'
-                                            sx={{ height: "100%" }}>
-                                            <PublishIcon fontSize='large' />
-                                            Upload Hmod
-                                        </Button>
-                                        <VisuallyHiddenInput
-                                            type='file'
-                                            id='hmod-upload'
-                                            onChange={handleFileChange1}
-                                        />
-                                    </Grid>
-                                </label>
-                            </Grid>
-                            <Grid item xs={20} columns={20}>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        height: 300,
-                                        overflow: "auto",
-                                    }}>
-                                    <Typography level='h1'>CSV</Typography>
-                                    <p>{selectedFile2 ? selectedFile2.name : "No file selected"}</p>
-                                    <TableContainer
-                                        component={Paper}
-                                        sx={{ maxHeight: 240, overflow: "auto", fontSize: 1 }}>
-                                        <Table size='small' aria-label='a dense table'>
-                                            <TableHead>
-                                                <TableRow>
-                                                    {file2Content.length > 0 &&
-                                                        Object.keys(file2Content[0]).map((key) => (
-                                                            <TableCell key={key}>{key}</TableCell>
-                                                        ))}
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {file2Content.map((row, idx) => (
-                                                    <TableRow key={idx}>
-                                                        {Object.keys(file2Content[0]).map((key) => (
-                                                            <TableCell key={idx + key}>
-                                                                {row[key]}
-                                                            </TableCell>
-                                                        ))}
+                            <CustomWidthTooltip
+                                title={
+                                    tooltipDisplay === "block"
+                                        ? "In this we will ask you to upload the HMOD file which is a file containing the information about the mechanistic model and the settings for the machine learning model. After uploading there will be a preview of the file."
+                                        : ""
+                                }
+                                followCursor
+                                arrow>
+                                <Grid item xs={20} columns={20}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            height: 300,
+                                            overflow: "auto",
+                                        }}>
+                                        <Typography level='h1'>HMOD</Typography>
+                                        <p>
+                                            {selectedFile1
+                                                ? selectedFile1.name
+                                                : "No file selected"}
+                                        </p>
+                                        <pre>{file1Content}</pre>{" "}
+                                    </Paper>
+                                    <label htmlFor='hmod-upload'>
+                                        <Grid item xs={10}>
+                                            <Button
+                                                component='span'
+                                                fullWidth
+                                                variant='contained'
+                                                sx={{ height: "100%" }}>
+                                                <PublishIcon fontSize='large' />
+                                                Upload Hmod
+                                            </Button>
+                                            <VisuallyHiddenInput
+                                                type='file'
+                                                id='hmod-upload'
+                                                onChange={handleFileChange1}
+                                            />
+                                        </Grid>
+                                    </label>
+                                </Grid>
+                            </CustomWidthTooltip>
+                            <CustomWidthTooltip
+                                title={
+                                    tooltipDisplay === "block"
+                                        ? "In this we will ask you to upload the CSV file which is a file containing the information about the batches. After uploading there will be a preview of the file."
+                                        : ""
+                                }
+                                followCursor
+                                arrow>
+                                <Grid item xs={20} columns={20}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            height: 300,
+                                            overflow: "auto",
+                                        }}>
+                                        <Typography level='h1'>CSV</Typography>
+                                        <p>
+                                            {selectedFile2
+                                                ? selectedFile2.name
+                                                : "No file selected"}
+                                        </p>
+                                        <TableContainer
+                                            component={Paper}
+                                            sx={{ maxHeight: 240, overflow: "auto", fontSize: 1 }}>
+                                            <Table size='small' aria-label='a dense table'>
+                                                <TableHead>
+                                                    <TableRow>
+                                                        {file2Content.length > 0 &&
+                                                            Object.keys(file2Content[0]).map(
+                                                                (key) => (
+                                                                    <TableCell key={key}>
+                                                                        {key}
+                                                                    </TableCell>
+                                                                )
+                                                            )}
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </Paper>
-                                <label htmlFor='csv-upload'>
-                                    <Grid item xs={10}>
-                                        <Button
-                                            component='span'
-                                            fullWidth
-                                            variant='contained'
-                                            sx={{ height: "100%" }}>
-                                            <PublishIcon fontSize='large' />
-                                            Upload CSV
-                                        </Button>
-                                        <VisuallyHiddenInput
-                                            type='file'
-                                            id='csv-upload'
-                                            onChange={handleFileChange2}
-                                        />
-                                    </Grid>
-                                </label>
-                            </Grid>
-                            <Grid item xs={20}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                                    <p>Description</p>
-                                    <Input onChange={(e) => setDescription(e.target.value)}></Input>
-                                </Paper>
-                            </Grid>
-                            <Grid item xs={7}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                                    <p>Mode:</p>
-                                    <Select
-                                        labelId='Mode'
-                                        id='Mode'
-                                        value={mode}
-                                        label='Mode'
-                                        onChange={(e) => setMode(e.target.value)}>
-                                        <MenuItem value={"1"}>1</MenuItem>
-                                        <MenuItem value={"2"}>2</MenuItem>
-                                    </Select>
-                                </Paper>
-                            </Grid>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {file2Content.map((row, idx) => (
+                                                        <TableRow key={idx}>
+                                                            {Object.keys(file2Content[0]).map(
+                                                                (key) => (
+                                                                    <TableCell key={idx + key}>
+                                                                        {row[key]}
+                                                                    </TableCell>
+                                                                )
+                                                            )}
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    </Paper>
+                                    <label htmlFor='csv-upload'>
+                                        <Grid item xs={10}>
+                                            <Button
+                                                component='span'
+                                                fullWidth
+                                                variant='contained'
+                                                sx={{ height: "100%" }}>
+                                                <PublishIcon fontSize='large' />
+                                                Upload CSV
+                                            </Button>
+                                            <VisuallyHiddenInput
+                                                type='file'
+                                                id='csv-upload'
+                                                onChange={handleFileChange2}
+                                            />
+                                        </Grid>
+                                    </label>
+                                </Grid>
+                            </CustomWidthTooltip>
+                            <CustomWidthTooltip
+                                title={
+                                    tooltipDisplay === "block"
+                                        ? "In this section you can write a description about the run you are going to create. This is optional."
+                                        : ""
+                                }
+                                followCursor
+                                arrow>
+                                <Grid item xs={20}>
+                                    <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                        <p>Description</p>
+                                        <Input
+                                            onChange={(e) =>
+                                                setDescription(e.target.value)
+                                            }></Input>
+                                    </Paper>
+                                </Grid>
+                            </CustomWidthTooltip>
+                            <CustomWidthTooltip
+                                title={
+                                    tooltipDisplay === "block"
+                                        ? "In this section you can select the batch selection mode. 1 is for selecting train and test batches manualy from a list and 2 is for the selection to be done randomly (with a 2/3; 1/3 split)."
+                                        : ""
+                                }
+                                followCursor
+                                arrow>
+                                <Grid item xs={7}>
+                                    <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                        <p>Mode:</p>
+                                        <Select
+                                            labelId='Mode'
+                                            id='Mode'
+                                            value={mode}
+                                            label='Mode'
+                                            onChange={(e) => setMode(e.target.value)}>
+                                            <MenuItem value={"1"}>1</MenuItem>
+                                            <MenuItem value={"2"}>2</MenuItem>
+                                        </Select>
+                                    </Paper>
+                                </Grid>
+                            </CustomWidthTooltip>
                             {(mode === "1" && (
                                 <>
                                     <Grid item xs={3}>
@@ -445,16 +521,25 @@ function FileUpload() {
                                 (mode === "2" && (
                                     <>
                                         <Grid item xs={4}></Grid>
-                                        <Grid item xs={6}>
-                                            <Button
-                                                onClick={() => handleUpload()}
-                                                fullWidth
-                                                variant='contained'
-                                                sx={{ height: "100%" }}>
-                                                <PublishIcon fontSize='large' />
-                                                Upload Imformation
-                                            </Button>
-                                        </Grid>
+                                        <CustomWidthTooltip
+                                            title={
+                                                tooltipDisplay === "block"
+                                                    ? "After clicking on the Upload Information button the information will be uploaded and the run will be created."
+                                                    : ""
+                                            }
+                                            followCursor
+                                            arrow>
+                                            <Grid item xs={6}>
+                                                <Button
+                                                    onClick={() => handleUpload()}
+                                                    fullWidth
+                                                    variant='contained'
+                                                    sx={{ height: "100%" }}>
+                                                    <PublishIcon fontSize='large' />
+                                                    Upload Imformation
+                                                </Button>
+                                            </Grid>
+                                        </CustomWidthTooltip>
                                     </>
                                 ))}
                         </Grid>

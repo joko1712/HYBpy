@@ -9,6 +9,7 @@ import List from "@mui/material/List";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
+import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
@@ -69,12 +70,17 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
 
 const defaultTheme = createTheme();
 
-export default function Dashboard() {
+export default function LandingPage() {
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
         navigate("/");
     };
+
+    const navigateToCreateRun = () => {
+        navigate("/upload");
+    };
+
     const [open, setOpen] = React.useState(true);
     const toggleDrawer = () => {
         setOpen(!open);
@@ -170,57 +176,70 @@ export default function Dashboard() {
                     }}>
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
-                        <h2>Previous Run</h2>
-                        <Grid container spacing={3}>
-                            <Grid item xs={12} md={8} lg={9}>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        height: 350,
-                                    }}>
-                                    {runs.length > 0 ? (
-                                        <p>{runs[0].response_data.message}</p>
-                                    ) : (
-                                        <p>No runs yet</p>
-                                    )}
-                                </Paper>
-                            </Grid>
-                            <Grid item xs={12} md={4} lg={3}>
-                                <Paper
-                                    sx={{
-                                        pl: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        height: 350,
-                                        overflow: "auto",
-                                    }}>
-                                    {runs.length > 0 ? (
-                                        <div>
-                                            <h2>Run Details:</h2>
-                                            <h3>HMOD:</h3>
-                                            <p>{runs[0].file1_name}</p>
-                                            <h3>CSV:</h3>
-                                            <p>{runs[0].file2_name}</p>
-                                            <h3>Mode:</h3>
-                                            <p>{runs[0].mode}</p>
-                                        </div>
-                                    ) : (
-                                        <p>No runs yet</p>
-                                    )}
-                                </Paper>
-                            </Grid>
-                            <Grid item xs={12}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                                    {runs.length > 0 ? (
-                                        <p>{runs[0].description}</p>
-                                    ) : (
-                                        <p>No runs yet</p>
-                                    )}
-                                </Paper>
-                            </Grid>
-                        </Grid>
+                        <h1>Welcome to Hybpy</h1>
+                        <Typography variant='subtitle1' gutterBottom>
+                            This tool is design to combine the precision of state-of-the-art machine
+                            learning algorithms with the reliability of mechanistic models within a
+                            unified structure. This innovative approach offers a user-friendly
+                            interface that bridges the gap between complex modeling techniques and
+                            practical applications in biosystems engineering.
+                        </Typography>
+                        <h2>What is Hybrid Modeling?</h2>
+                        <Typography variant='subtitle1' gutterBottom>
+                            Hybrid modeling is a cutting-edge approach that integrates the
+                            predictive power of machine learning algorithms with the foundational
+                            principles of mechanistic models. This synergy allows for the creation
+                            of models that are not only highly accurate but also deeply insightful,
+                            providing a comprehensive understanding of bioprocesses and bio
+                            (chemical) systems.
+                        </Typography>
+                        <h2>The Need for a Python Tool for Hybrid Modeling</h2>
+                        <Typography variant='subtitle1' gutterBottom>
+                            Despite the proven effectiveness of hybrid models in the process systems
+                            engineering field, their adoption has been limited. The primary barrier
+                            has been the lack of accessible tools that offer both the sophistication
+                            needed for advanced modeling and the simplicity required for widespread
+                            use. Our Python tool is the solution to this challenge, offering an
+                            open-source, user-friendly platform for analyzing, and simulating hybrid
+                            models.
+                        </Typography>
+                        <h2>How Our Tool Makes a Difference</h2>
+                        <Typography variant='subtitle1' gutterBottom>
+                            Our tool is designed with the user in mind, simplifying the complex
+                            process of hybrid modeling without compromising on power or precision.
+                            It enables researchers and practitioners in the biosystems engineering
+                            community to:
+                            <ul>
+                                <li>
+                                    <b>Construct Hybrid Models:</b> Easily integrate machine
+                                    learning algorithms with mechanistic models to address complex
+                                    modeling challenges.
+                                </li>
+                                <li>
+                                    <b>Analyze and Simulate:</b> Perform detailed analyses and
+                                    simulations to understand and predict the behavior of
+                                    bioprocesses and bio (chemical) systems.
+                                </li>
+                                <li>
+                                    <b>Accelerate Research and Development:</b> Reduce the time and
+                                    resources required to develop and test computational models,
+                                    speeding up innovation.
+                                </li>
+                            </ul>
+                        </Typography>
+                        <Typography variant='h6' gutterBottom>
+                            <b>
+                                Just proceed to the{" "}
+                                <Button
+                                    color='inherit'
+                                    variant='text'
+                                    onClick={() => navigateToCreateRun()}>
+                                    Create Run
+                                </Button>{" "}
+                                tab to start using the tool. If you have any questions or need
+                                assistance, please feel free to contact us.
+                            </b>
+                        </Typography>
                     </Container>
                 </Box>
             </Box>

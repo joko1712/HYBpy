@@ -24,11 +24,12 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     
     y = activations[-1]
 
-
+    print("y", y)
     rann_results = ann.forward(y)
 
     rann_results = rann_results.detach().numpy()
 
+    print("rann", rann_results)
 
     state = extract_species_values(projhyb,state)
     values = {}
@@ -126,14 +127,12 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
         
         stateFinal = calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state)
         state = extract_species_values(projhyb, stateFinal)
-        print("state", state)
 
         if jac is not None:
             jac = jac + h * (k1_jac / 6 + k2_jac / 3 + k3_jac / 3 + k4_jac / 6)
 
         t = t + h
 
-        print("jac", jac)
 
     stateFinal.append(int(projhyb["compartment"]["1"]["val"]))
 

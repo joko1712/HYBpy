@@ -616,6 +616,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     nres = len(isres)
 
     projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
+    
     npall = sum(file[str(i+1)]["np"] for i in range(file["nbatch"]) if file[str(i+1)]["istrain"] == 1)
 
     sresall = np.zeros(npall * nres)
@@ -654,18 +655,12 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 state_tensor = torch.tensor(state, dtype=torch.float64)
                 state_adjusted = state_tensor[0:nres]
                 Ystate = Y_select - state_adjusted
-                print("Y_select", Y[i, isresY])
-                print("sY", sY[i, isresY])
-                print("Ystate", Ystate)
 
                 sresall[COUNT:COUNT + nres] = Ystate / sY[i, isresY]
-                print("sresall", sresall)
 
                 SYrepeat = sY[i, isresY].reshape(-1, 1).repeat(1, nw)
-                print("SYrepeat", SYrepeat)
 
                 result = (- Sw[isresY, :].detach().numpy()) / SYrepeat.detach().numpy()
-                print("result", result)
                 
                 sjacall[COUNT:COUNT + nres, 0:nw] = result
                 COUNT = COUNT + nres
@@ -673,17 +668,13 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 print("------------------LOOP", i, "------------------")
                 print("#################################################")
                 print("state", state)
-                print("Y", Y)
-                print("state", state)
                 projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
 
-
-    print("sresall", sresall.shape)
-    print("sreall", sresall)
+                jac = Sw
 
     if method == 1 or method == 4:
         fobj = sresall
-        jac = sjacall
+        jac = jac
     else:
         fobj = np.dot(sresall_filtered.T, sresall_filtered) / len(sresall_filtered)
         jac = np.sum(2 * np.repeat(sresall_filtered.reshape(-1, 1), nw,

@@ -22,6 +22,8 @@ class CustomMLP(nn.Module):
 
 
     def forward(self, x):
+        print("weights",self.layers[0].w )
+
         for layer in self.layers:
             x = x.to(dtype=torch.float64)
 
@@ -219,3 +221,5 @@ class Linear(nn.Module):
 
     def derivative(self, x):
         return torch.ones_like(x) 
+
+

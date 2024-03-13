@@ -25,6 +25,7 @@ import Tooltip, { TooltipProps, tooltipClasses } from "@mui/material/Tooltip";
 import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { useEffect } from "react";
+import logo from "../Image/HYBpyINVIS_logo.png";
 
 const drawerWidth = 200;
 
@@ -258,8 +259,12 @@ function FileUpload() {
                             color='inherit'
                             noWrap
                             sx={{ flexGrow: 1 }}>
-                            <IconButton color='inherit' onClick={() => navigateToUpload()}>
-                                Dashboard
+                            <IconButton
+                                edge='start'
+                                color='inherit'
+                                size='small'
+                                onClick={() => navigateToUpload()}>
+                                <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
                         {/*Check if there are any runs in progress if so display progress bar if not display nothing */}

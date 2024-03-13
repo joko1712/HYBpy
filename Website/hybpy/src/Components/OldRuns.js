@@ -25,7 +25,7 @@ import ListIcon from "@mui/icons-material/List";
 import { blue } from "@mui/material/colors";
 import { ListItemButton } from "@mui/material";
 import Modal from "@mui/material/Modal";
-
+import logo from "../Image/HYBpyINVIS_logo.png";
 const drawerWidth = 200;
 
 const AppBar = styled(MuiAppBar, {
@@ -180,8 +180,12 @@ export default function OldRuns() {
                             color='inherit'
                             noWrap
                             sx={{ flexGrow: 1 }}>
-                            <IconButton color='inherit' onClick={() => navigateToUpload()}>
-                                Dashboard
+                            <IconButton
+                                edge='start'
+                                color='inherit'
+                                size='small'
+                                onClick={() => navigateToUpload()}>
+                                <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
                         {/*Check if there are any runs in progress if so display progress bar if not display nothing */}

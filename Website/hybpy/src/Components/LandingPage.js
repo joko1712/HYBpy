@@ -21,6 +21,7 @@ import { auth } from "../firebase-config";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { useEffect } from "react";
+import logo from "../Image/HYBpyINVIS_logo.png";
 
 const drawerWidth = 200;
 
@@ -135,8 +136,12 @@ export default function LandingPage() {
                             color='inherit'
                             noWrap
                             sx={{ flexGrow: 1 }}>
-                            <IconButton color='inherit' onClick={() => navigateToUpload()}>
-                                Dashboard
+                            <IconButton
+                                edge='start'
+                                color='inherit'
+                                size='small'
+                                onClick={() => navigateToUpload()}>
+                                <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
                         {/*Check if there are any runs in progress if so display progress bar if not display nothing */}

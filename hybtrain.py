@@ -141,11 +141,11 @@ def hybtrain(projhyb, file):
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
-            'xtol': 1e-9, #1e-15
-            'ftol': 1e-12,
+            'xtol': 1e-15, #1e-15
+            'ftol': 1e-15,
             'gtol': 1e-14,
             'verbose': 2,#projhyb['display'],
-            'max_nfev': projhyb['niter'] * projhyb['niteroptim'], # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
+            'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'], # projhyb['niter'] * projhyb['niteroptim'], # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
             'method': 'lm',
         }
 
@@ -194,8 +194,6 @@ def hybtrain(projhyb, file):
     projhyb["mlm"]['nw'] += (projhyb["mlm"]['nh']
                              [H - 1] + 1) * projhyb["mlm"]['ny']
 
-    projhyb["mlm"]['w'] = np.random.randn(projhyb["mlm"]['nw'], 1) * 0.001
-
     print("Number of weights: ", projhyb["mlm"]['nw'])
     print("Number of inputs: ", projhyb["mlm"]['nx'])
     print("Number of outputs: ", projhyb["mlm"]['ny'])
@@ -221,11 +219,18 @@ def hybtrain(projhyb, file):
         't0': time.time()
     }
 
+    projhyb["mlm"]["DFDS"] = None
+    projhyb["mlm"]["DFDRANN"] = None
+    projhyb["mlm"]["DANNINPDSTATE"] = None
+    projhyb["mlm"]["ANNINP"] = None
+    projhyb['mlm']["FSTATE"] = None
+    projhyb['mlm']['STATE_SYMBOLS'] = None
+
     if 'fundata' not in projhyb['mlm'] or projhyb['initweights'] == 1:
         print('Weights initialization...1')
         ann = mlpnetcreate(projhyb, projhyb['mlm']['neuron'])
         projhyb['mlm']['fundata'] = ann
-        weights, ann = mlp.CustomMLP.get_weights(ann)
+        weights, ann = ann.get_weights()
 
     elif projhyb['initweights'] == 2:
         print('Read weights from file...')
@@ -236,7 +241,9 @@ def hybtrain(projhyb, file):
     weights = weights.ravel()
     #projhyb["w"]= weights
     
-    for TrainRes['istep'] in range(1, projhyb['nstep']):
+    istep = 1
+
+    for istep in range(1, projhyb['nstep']):
         for i in range(1, file['nbatch'] + 1):
             istrain = file[str(i)]["istrain"]
             projhyb['istrain'] = [0] * file['nbatch']
@@ -296,18 +303,16 @@ def hybtrain(projhyb, file):
             elif projhyb['hessian'] == 1:
                 assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
 
-        
-        if TrainRes['istep'] > 1:
-            print('Weights initialization...2')
-            weights, ann = mlp.CustomMLP.get_weights(ann)
-            projhyb["w"] = weights
-
         #????
         
         if projhyb['mlm']['nx'] == 0:
             for nparam in range(projhyb['mlm']['ny']):
                 weights[nparam] = projhyb['mlm']['y'][nparam]['init']
         '''
+        if istep > 1:
+            print('Weights initialization...2')
+            weights, ann = ann.reinitialize_weights()
+            projhyb["w"] = weights
 
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
@@ -315,16 +320,11 @@ def hybtrain(projhyb, file):
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
             print("optios", options)
             print("weights", weights)
-            #try running without jac
-            #try jac to be as it is returned from the function
-            #try scipy.optimize.leastsq
-            #see if there is any problem with the objective function
-            result = least_squares(evaluator.fobj_func, weights, **options)
-            print("result", result)
-            callback_wrapper(result, TrainRes, projhyb)
-            print("result", result)
-            print("TrainRes", TrainRes)
-            wfinal, fval = result.x, result.cost
+
+            result = least_squares(evaluator.fobj_func, weights, jac=evaluator.jac_func, **options)
+
+            callback_wrapper(result, TrainRes, projhyb, istep)
+            
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON
             result = minimize(fobj, weights, method='BFGS', options=options)
@@ -351,7 +351,7 @@ def hybtrain(projhyb, file):
     scipy.io.savemat('hybtrain_results.mat', {"trainData": TrainRes})
 
 #######################################################################################################################
-
+    '''
     # Plot training results
     plt.figure()
     x = np.arange(1, TrainRes["iter"] + 1)
@@ -551,13 +551,54 @@ def hybtrain(projhyb, file):
         np.std(TrainRes['mj'][:, i])) for i in range(8)]) + " None")
     print("CPU:", "{:<10.2E}".format(TrainRes['finalcpu']))
 
+    '''
+
     return projhyb, trainData
 
-def callback_wrapper(x, TrainRes, projhyb):
-    witer = x  
-    optimValues = {'x': x, 'fval': None} 
-    optstate = 'iter'  
-    outFun1(witer, optimValues, optstate, projhyb, TrainRes)
+def callback_wrapper(x, TrainRes, projhyb, istep):
+    try:
+        with open("results.json", "r") as file:
+            data = json.load(file)
+    except json.JSONDecodeError:
+        data = {}
+
+    if "results" not in data:
+        data["results"] = {}
+
+    result_entry = {
+        "solution": x.x,
+        'message': x.message,
+        "success": x.success,
+        "fun": x.fun,
+        "cost": x.cost,
+        "grad": x.grad,
+        "optimality": x.optimality,
+        "Nfev": x.nfev, 
+        "njev": x.njev,
+        "jac": x.jac,
+    }
+
+    result_entry_converted = convert_numpy(result_entry)
+
+    data["results"][TrainRes["istep"]] = result_entry_converted
+
+    with open("results.json", "w") as file:
+        json.dump(data, file, indent=4)
+
+    witer = x
+    optstate = 'iter'
+    # outFun1(witer, optimValues, optstate, projhyb, TrainRes)
+    istep = istep + 1
+    print(TrainRes["istep"])
+
+def convert_numpy(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: convert_numpy(value) for key, value in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return type(obj)(convert_numpy(value) for value in obj)
+    return obj
 
 def outFun1(witer, optimValues, optstate, projhyb, TrainRes):
     stop = False
@@ -595,6 +636,10 @@ def outFun1(witer, optimValues, optstate, projhyb, TrainRes):
 
 def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     print("weights", w)
+
+# LOAD THE WEIGHTS into the ann
+    ann.set_weights(w)
+    ann.print_weights_and_biases()
     with open("file.json", "r") as read_file:
         file = json.load(read_file)
     if not istrain:
@@ -614,14 +659,17 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     isres = isres
         
     nres = len(isres)
-
-    projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
     
     npall = sum(file[str(i+1)]["np"] for i in range(file["nbatch"]) if file[str(i+1)]["istrain"] == 1)
 
     sresall = np.zeros(npall * nres)
 
     sjacall = np.zeros((npall * nres, nw))
+
+    print("npall", npall*nres)
+    print("npall", nres)
+
+    print("nn:", ann)
 
     COUNT = 0
     for l in range(file["nbatch"]):
@@ -648,42 +696,38 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, w, batch_data, projhyb)
-
-                # rever calculos same as MATLAB
                 
                 Y_select = Y[i, isresY]
                 state_tensor = torch.tensor(state, dtype=torch.float64)
                 state_adjusted = state_tensor[0:nres]
-                Ystate = Y_select - state_adjusted
+                Ystate = Y_select - state_adjusted.numpy()
 
-                sresall[COUNT:COUNT + nres] = Ystate / sY[i, isresY]
+                sresall[COUNT:COUNT + nres] = Ystate / sY[i, isresY].numpy()
 
-                SYrepeat = sY[i, isresY].reshape(-1, 1).repeat(1, nw)
-
-                result = (- Sw[isresY, :].detach().numpy()) / SYrepeat.detach().numpy()
-                
+                SYrepeat = sY[i, isresY].reshape(-1, 1).repeat(1, nw).numpy()
+                result = (- Sw[isresY, :].detach().numpy()) / SYrepeat
                 sjacall[COUNT:COUNT + nres, 0:nw] = result
-                COUNT = COUNT + nres
+                COUNT += nres
                 print("#################################################")
                 print("------------------LOOP", i, "------------------")
                 print("#################################################")
                 print("state", state)
-                projhyb["mlm"]["fundata"] = mlpnetsetw(projhyb["mlm"]["fundata"], w)
 
-                jac = Sw
 
     if method == 1 or method == 4:
         fobj = sresall
-        jac = jac
+        jac = sjacall
+
+        '''
+        jac_max_abs = np.max(np.abs(jac))
+        jac_scaled = jac / jac_max_abs
+        '''
     else:
         fobj = np.dot(sresall_filtered.T, sresall_filtered) / len(sresall_filtered)
         jac = np.sum(2 * np.repeat(sresall_filtered.reshape(-1, 1), nw,
                      axis=1) * sjacall_filtered, axis=0) / len(sresall_filtered)
                      
-    print("fobj", fobj)
-    print("jac", jac)
     return fobj, jac
-
 
 def resfun_indirect_fminunc(w, istrain, projhyb):
     ns = projhyb['nstate']
@@ -971,7 +1015,6 @@ def resfun_semidirect(w, istrain=None, projhyb=None, method=1):
 
     return fobj
 
-
 def resfun_semidirect_jac(w, projhyb, istrain=None, method=1):
     if istrain is None:
         istrain = projhyb['istrain']
@@ -1107,6 +1150,7 @@ class IndirectFunctionEvaluator:
             self.last_fobj, self.last_jac = resfun_indirect_jac(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
             self.last_weights = weights
             print("fobj", self.last_fobj)
+            print("jac", self.last_jac)
             #TODO: fobj = np.mean(self.last_fobj) perguntar porque o scipy não aceita vetor so aceita um scalar value for "cost" or "fitness" value
             #self.scalar = np.sum(self.last_fobj)
             #TrainRes["istep"] += 1

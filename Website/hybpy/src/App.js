@@ -27,6 +27,10 @@ function App() {
         };
     }, []);
 
+    const manualSetCurrentUser = (user) => {
+        setCurrentUser(user);
+    };
+
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -38,16 +42,19 @@ function App() {
                     <ul>{currentUser ? <></> : <></>}</ul>
                 </nav>
                 <Routes>
-                    {auth.currentUser !== null ? (
+                    {currentUser != null && currentUser.emailVerified ? (
                         <>
-                            <Route path='/landingPage' element={<LandingPage />} />
-                            <Route path='/' element={<Dashboard />} />
+                            <Route path='/' element={<LandingPage />} />
+                            <Route path='/dashboard' element={<Dashboard />} />
                             <Route path='/upload' element={<FileUpload />} />
                             <Route path='/old-runs' element={<OldRuns />} />
                         </>
                     ) : (
                         <>
-                            <Route path='/' element={<Login />} />
+                            <Route
+                                path='/'
+                                element={<Login manualSetCurrentUser={manualSetCurrentUser} />}
+                            />
                             <Route path='/register' element={<Register />} />
                         </>
                     )}

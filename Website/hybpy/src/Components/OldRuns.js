@@ -113,7 +113,7 @@ export default function OldRuns() {
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
-        navigate("/");
+        navigate("/Dashboard");
     };
     const [open, setOpen] = React.useState(true);
     const toggleDrawer = () => {
@@ -220,8 +220,9 @@ export default function OldRuns() {
                                 ? theme.palette.grey[100]
                                 : theme.palette.grey[900],
                         flexGrow: 1,
-                        height: "99vh",
+                        height: "98vh",
                         overflow: "auto",
+                        hideScrollbar: { scrollbarWidth: "none" },
                     }}>
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>

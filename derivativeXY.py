@@ -1,8 +1,8 @@
 import numpy as np
 from numpy import diff
-from sympy import symbols, diff, Matrix
+from sympy import diff, Matrix, symbols
 import torch
-
+import functools
 
 def numerical_derivativeXY(x, y, values, delta=1e-5):
     derivatives = []
@@ -97,3 +97,30 @@ def numerical_diferentiation(x, y, values):
     matrix = [expr.subs(values) for expr in matrix]
 
     return matrix
+
+
+def numerical_diferentiation_torch(x, y, values):
+    values_dict = values.copy()
+    values_dict_filtered = values.copy()
+    derivatives = []
+    
+    x = Matrix(x)
+
+    matrix = x.jacobian(y)
+
+    return matrix
+
+'''
+@functools.lru_cache(maxsize=None)
+def numerical_diferentiation(x, y, values_frozenset):
+    
+    y_symbols = symbols(y)
+    
+    values_dict = dict(values_frozenset)
+    
+    x_matrix = Matrix(x)
+    jacobian_matrix = x_matrix.jacobian(y_symbols)
+    substituted_matrix = jacobian_matrix.subs(values_dict)
+    
+    return substituted_matrix
+'''

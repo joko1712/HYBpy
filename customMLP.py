@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import random   
 
 class CustomMLP(nn.Module):
     def __init__(self, layer_sizes, layer_types):
@@ -20,17 +21,45 @@ class CustomMLP(nn.Module):
 
         self.layers.append(Linear(layer_sizes[-2], layer_sizes[-1]))
 
+    
+        self.scale_weights(scaling_factor=0.00001)
+
 
     def forward(self, x):
-        print("weights",self.layers[0].w )
-
         for layer in self.layers:
             x = x.to(dtype=torch.float64)
 
             x = layer(x)
         return x
 
+
+    def scale_weights(self, scaling_factor):
+        with torch.no_grad():  
+            for layer in self.layers:
+                for w in layer.w.data:
+                    w *= scaling_factor * random.uniform(0.9, 1.1)
+                layer.b.data *= scaling_factor
+
+    
+    def reinitialize_weights(self):
+        for layer in self.layers:
+            if hasattr(layer, 'w'):
+                if isinstance(layer, (TanhLayer, Linear)): 
+                    nn.init.xavier_uniform_(layer.w)
+                elif isinstance(layer, ReLULayer): 
+                    nn.init.kaiming_uniform_(layer.w, mode='fan_in', nonlinearity='relu')
+
+            if hasattr(layer, 'b'):
+                nn.init.constant_(layer.b, 0)
+
+        
+        self.scale_weights(scaling_factor=0.00001)
+    
+
+    '''
     def get_weights(self):
+
+        print("WHEN YOU SEE THIS, IT MEANS THE CODE IS WORKING")
         
         w = []
         
@@ -79,30 +108,79 @@ class CustomMLP(nn.Module):
             0.18119985040622649, 4.10045036965661E-5, 1.0010001951654295, 0.1000000075216279, 
             5.4017207288595819E-6, 0.043400002799370965]
         
+        
         wTensor = torch.tensor(w, dtype=torch.float64)
         
-        '''
         for layer in self.layers:
-            if isinstance(layer, TanhLayer) or isinstance(layer, ReLULayer):
-                
             
-                layer.w.data = torch.randn_like(layer.w) * np.sqrt(2 / (layer.w.size(0) + layer.w.size(1)))
-                #layer.w.data = torch.randn_like(layer.w) * 0.02 - 0.01
+            # He Initialization (or He Normal Initialization)
+            layer.w.data = torch.randn_like(layer.w) * np.sqrt(2 / (layer.w.size(0) + layer.w.size(1)))
+            layer.w.data = torch.randn_like(layer.w) * 0.00002 - 0.00001
+            layer.b.data = torch.zeros_like(layer.b)
+            
+            # Glorot Initialization (or Xavier Normal Initialization)
+            scaling_factor = 0.00000001
+            fan_in, fan_out = layer.w.size(1), layer.w.size(0)
+            std = np.sqrt(2.0 / (fan_in + fan_out)) * scaling_factor
+            layer.w.data = torch.randn_like(layer.w) * std
+            layer.b.data = torch.zeros_like(layer.b)
+            
+            if wTensor.shape == layer.w.shape:
+                layer.w.data = wTensor
+                wTensor = wTensor[torch.numel(layer.w):]
                 layer.b.data = torch.zeros_like(layer.b)
-                
-                if wTensor.shape == layer.w.shape:
-                    layer.w.data = wTensor
-                    wTensor = wTensor[torch.numel(layer.w):]
-                    layer.b.data = torch.zeros_like(layer.b)
-                
+            
             
             w.extend(layer.w.flatten().detach().numpy())
             w.extend(layer.b.flatten().detach().numpy())
-        '''
+    
     
         w = np.array(w)
+        print("wDRCTFVGYBHUNIJMHBUGVYFCTDXRFCTGVYBHUNJIMKO;P", w)
 
         return w, self
+    '''
+
+    def set_weights(self, new_weights):
+        # Assuming new_weights is a flat NumPy array containing all the new weights
+        start = 0
+        for layer in self.layers:
+            if hasattr(layer, 'w') and hasattr(layer, 'b'):
+                # Calculate the number of elements in the weights and biases
+                weight_num_elements = torch.numel(layer.w)
+                bias_num_elements = torch.numel(layer.b)
+
+                # Extract the corresponding parts from the new_weights array
+                new_w = new_weights[start:start+weight_num_elements]
+                new_b = new_weights[start+weight_num_elements:start+weight_num_elements+bias_num_elements]
+
+                # Update start index for the next layer
+                start += weight_num_elements + bias_num_elements
+
+                # Convert new_w and new_b to PyTorch tensors and reshape them to match the layer's parameters
+                new_w_tensor = torch.from_numpy(new_w).view_as(layer.w).type_as(layer.w)
+                new_b_tensor = torch.from_numpy(new_b).view_as(layer.b).type_as(layer.b)
+
+                # Assign the new weights and biases to the layer
+                layer.w.data = new_w_tensor
+                layer.b.data = new_b_tensor
+
+    def print_weights_and_biases(self):
+        for i, layer in enumerate(self.layers):
+            if hasattr(layer, 'w') and hasattr(layer, 'b'):
+                print(f"Layer {i} weights (w): \n{layer.w.data}")
+                print(f"Layer {i} biases (b): \n{layer.b.data}\n")
+
+
+    def get_weights(self):
+        weights = []
+        for layer in self.layers:
+            # Flatten and convert the weights and biases to numpy arrays, then add to the weights list
+            w = layer.w.data.cpu().numpy().flatten()
+            b = layer.b.data.cpu().numpy().flatten()
+            weights.extend(w)
+            weights.extend(b)
+        return np.array(weights), self
 
     def backpropagate(self, x):
         activations = [x]
@@ -161,8 +239,10 @@ class TanhLayer(nn.Module):
         self.input_size = input_size
         self.output_size = output_size
         super(TanhLayer, self).__init__()
-        self.w = nn.Parameter(torch.randn(output_size, input_size, dtype=torch.float64)) 
-        self.b = nn.Parameter(torch.randn(output_size, 1, dtype=torch.float64))
+        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
+        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
+        nn.init.xavier_uniform_(self.w)
+        nn.init.constant_(self.b, 0)
 
     def forward(self, x):
 
@@ -175,8 +255,10 @@ class TanhLayer(nn.Module):
 class ReLULayer(nn.Module):
     def __init__(self, input_size, output_size):
         super(ReLULayer, self).__init__()
-        self.w = nn.Parameter(torch.randn(output_size, input_size))
-        self.b = nn.Parameter(torch.randn(output_size, 1))
+        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
+        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
+        nn.init.kaiming_uniform_(self.w, mode='fan_in', nonlinearity='relu')
+        nn.init.constant_(self.b, 0)
 
     def forward(self, x):
         xin = torch.mm(self.w, x) + self.b
@@ -213,8 +295,10 @@ class Linear(nn.Module):
         self.input_size = input_size
         self.output_size = output_size
         super(Linear, self).__init__()
-        self.w = nn.Parameter(torch.randn(output_size, input_size, dtype=torch.float64)) 
-        self.b = nn.Parameter(torch.randn(output_size, 1, dtype=torch.float64))
+        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
+        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
+        nn.init.xavier_uniform_(self.w)
+        nn.init.constant_(self.b, 0)
 
     def forward(self, x):
         return torch.mm(self.w, x) + self.b

@@ -1,10 +1,9 @@
 
 import sys
 import os
-import json
+import json 
 import csv
 import pandas as pd
-import json
 import random
 import numpy as np
  
@@ -12,6 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, manual_label, random_label, add_state_and_time_to_data
+
 
 with open("sample.json", "r") as f:
     projhyb = json.load(f)

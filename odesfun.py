@@ -9,8 +9,8 @@ from derivativeXY import numerical_derivativeXY
 from derivativeXY import numerical_derivativeXY_optimized
 from derivativeXY import numerical_derivativeXY_optimized_torch
 from derivativeXY import numerical_diferentiation
+from derivativeXY import numerical_diferentiation_torch
 
-from mlpnetsetw import mlpnetsetw
 
 
 
@@ -32,6 +32,26 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             NValues.update(values)
             NValues.update(state)
 
+
+            if projhyb['mlm']["FSTATE"] == None:
+                fstate = sp.sympify(fstate)
+                projhyb['mlm']["FSTATE"] = fstate
+            else:
+                fstate = projhyb['mlm']["FSTATE"]
+
+            if projhyb['mlm']['STATE_SYMBOLS'] == None:
+                state_symbols = sp.sympify(state_symbols)
+                projhyb['mlm']['STATE_SYMBOLS'] = state_symbols
+            else:
+                state_symbols = projhyb['mlm']['STATE_SYMBOLS']
+
+            if projhyb['mlm']['ANNINP'] == None:
+                anninp = sp.sympify(anninp)
+                projhyb['mlm']['ANNINP'] = anninp
+            else:
+                anninp = projhyb['mlm']['ANNINP']
+            
+
             #DfDs_sym = [[expr.diff(symbol) for symbol in state_symbols] for expr in fstate]
             #DfDs = [[expr.subs(NValues) for expr in row] for row in DfDs_sym]
 
@@ -39,7 +59,11 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DfDs = numerical_derivativeXY_optimized(fstate, state_symbols, NValues)
             #DfDs = numerical_derivativeXY_optimized_torch(fstate, state_symbols, NValues)
 
-            DfDs = numerical_diferentiation(fstate, state_symbols, NValues)
+            if projhyb['mlm']['DFDS'] == None:
+                DfDs = numerical_diferentiation_torch(fstate, state_symbols, NValues)
+                projhyb['mlm']['DFDS'] = DfDs
+            else:
+                DfDs = projhyb['mlm']['DFDS']
 
             rann_symbol = []
             for i in range(1, projhyb["mlm"]["ny"]+1):
@@ -48,7 +72,16 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DfDrann_sys = [[expr.diff(symbol) for symbol in rann_symbol] for expr in fstate]
             #DfDrann = [[expr.subs(NValues) for expr in row] for row in DfDrann_sys]
      
-            DfDrann = numerical_diferentiation(fstate, rann_symbol, NValues)
+            if projhyb['mlm']['DFDRANN'] == None:
+                DfDrann = numerical_diferentiation_torch(fstate, rann_symbol, NValues)
+                projhyb['mlm']['DFDRANN'] = DfDrann
+            else:
+                DfDrann = projhyb['mlm']['DFDRANN']
+
+            DfDs = DfDs.subs(NValues)
+
+            DfDrann = DfDrann.subs(NValues)
+
             DfDrann = np.array(DfDrann)
             DfDrann = DfDrann.reshape(len(fstate), projhyb["mlm"]["ny"])
             DfDrann = DfDrann.astype(np.float64)
@@ -58,7 +91,18 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             DfDs = DfDs.astype(np.float64)
             DfDs = torch.from_numpy(DfDs)
             #DanninpDstate = numerical_derivativeXY(anninp, state_symbols, NValues)
-            DanninpDstate = numerical_diferentiation(anninp, state_symbols, NValues)
+            
+
+            if projhyb['mlm']['DANNINPDSTATE'] == None:
+                DanninpDstate = numerical_diferentiation_torch(anninp, state_symbols, NValues)
+                projhyb['mlm']['DANNINPDSTATE'] = DanninpDstate
+            else:
+                DanninpDstate = projhyb['mlm']['DANNINPDSTATE']
+
+            
+            
+            DanninpDstate = DanninpDstate.subs(NValues)
+
             DanninpDstate = np.array(DanninpDstate)
             DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
             DanninpDstate = DanninpDstate.astype(np.float64)
@@ -73,9 +117,11 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
             DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann,DrannDs)
 
+
             fjac = torch.mm(DfDsDfDrannDrannDs,jac) + DfDrannDrannDw
 
-            fstate = [expr.evalf(subs=NValues) for expr in fstate]
+            fstate = [expr.subs(NValues) for expr in fstate]
+            print(fstate)
 
             return fstate, fjac
 
@@ -93,5 +139,3 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             return fstate, fjac, None
 
     return None, None, None
-
-     

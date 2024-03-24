@@ -22,14 +22,3 @@ k4_state = [10, 11, 12]
 stateFinal = calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state)
 print(stateFinal)
 
-
-
-
-    x = np.array([expr.evalf(subs=values) for expr in x])
-    y = np.array([values[str(symbol)] for symbol in y])
-
-    dydx = diff(y)/diff(x)
-
-    
-
-    return dydx

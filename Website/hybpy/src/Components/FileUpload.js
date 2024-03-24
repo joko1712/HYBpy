@@ -90,7 +90,7 @@ function FileUpload() {
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
-        navigate("/");
+        navigate("/Dashboard");
     };
     const [open, setOpen] = React.useState(true);
     const toggleDrawer = () => {
@@ -268,9 +268,6 @@ function FileUpload() {
                             </IconButton>
                         </Typography>
                         {/*Check if there are any runs in progress if so display progress bar if not display nothing */}
-                        <IconButton color='inherit' size='small'>
-                            <p>Run Progress:</p>
-                        </IconButton>
                     </Toolbar>
                 </AppBar>
                 <Drawer variant='permanent' open={open}>
@@ -299,7 +296,7 @@ function FileUpload() {
                                 ? theme.palette.grey[100]
                                 : theme.palette.grey[900],
                         flexGrow: 1,
-                        height: "99vh",
+                        height: "98vh",
                         overflow: "auto",
                     }}>
                     <Toolbar />
@@ -336,7 +333,7 @@ function FileUpload() {
                                         <p>
                                             {selectedFile1
                                                 ? selectedFile1.name
-                                                : "No file selected"}
+                                                : "Insert your HMOD file containing the information about the mechanistic model and the settings for the machine learning model here."}
                                         </p>
                                         <pre>{file1Content}</pre>{" "}
                                     </Paper>
@@ -380,7 +377,7 @@ function FileUpload() {
                                         <p>
                                             {selectedFile2
                                                 ? selectedFile2.name
-                                                : "No file selected"}
+                                                : "Insert your CSV file containing the information about the batches here."}
                                         </p>
                                         <TableContainer
                                             component={Paper}

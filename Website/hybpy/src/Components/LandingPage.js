@@ -11,8 +11,6 @@ import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
@@ -22,6 +20,7 @@ import { collection, query, where, getDocs, orderBy, limit } from "firebase/fire
 import { db } from "../firebase-config";
 import { useEffect } from "react";
 import logo from "../Image/HYBpyINVIS_logo.png";
+import hybrid from "../Image/hybridmodel.jpg";
 
 const drawerWidth = 200;
 
@@ -75,7 +74,7 @@ export default function LandingPage() {
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
-        navigate("/");
+        navigate("/Dashboard");
     };
 
     const navigateToCreateRun = () => {
@@ -144,10 +143,6 @@ export default function LandingPage() {
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
-                        {/*Check if there are any runs in progress if so display progress bar if not display nothing */}
-                        <IconButton color='inherit' size='small'>
-                            <p>Run Progress:</p>
-                        </IconButton>
                     </Toolbar>
                 </AppBar>
                 <Drawer variant='permanent' open={open}>
@@ -176,29 +171,50 @@ export default function LandingPage() {
                                 ? theme.palette.grey[100]
                                 : theme.palette.grey[900],
                         flexGrow: 1,
-                        height: "99vh",
+                        height: "98vh",
                         overflow: "auto",
+                        hideScrollbar: { scrollbarWidth: "none" },
                     }}>
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
-                        <h1>Welcome to Hybpy</h1>
+                        <h1>Welcome to HYBpy</h1>
                         <Typography variant='subtitle1' gutterBottom>
-                            This tool is design to combine the precision of state-of-the-art machine
-                            learning algorithms with the reliability of mechanistic models within a
-                            unified structure. This innovative approach offers a user-friendly
-                            interface that bridges the gap between complex modeling techniques and
-                            practical applications in biosystems engineering.
+                            This tool is design to combine state-of-the-art machine learning
+                            algorithms with the reliability of mechanistic models within a unified
+                            structure and to simplify the construction and analyses of a hybrid
+                            model. This innovative approach offers a user-friendly interface that
+                            bridges the gap between complex hybrid modeling techniques and practical
+                            applications in bioprocesses engineering.
                         </Typography>
                         <h2>What is Hybrid Modeling?</h2>
                         <Typography variant='subtitle1' gutterBottom>
                             Hybrid modeling is a cutting-edge approach that integrates the
-                            predictive power of machine learning algorithms with the foundational
-                            principles of mechanistic models. This synergy allows for the creation
-                            of models that are not only highly accurate but also deeply insightful,
-                            providing a comprehensive understanding of bioprocesses and bio
-                            (chemical) systems.
+                            predictive power of machine learning algorithms (Nonparametric model)
+                            with the foundational principles of mechanistic models (Parametric
+                            model). This synergy allows for the creation of models that are not only
+                            highly accurate but also deeply insightful, providing a comprehensive
+                            understanding of bioprocesses and bio (chemical) systems.
                         </Typography>
-                        <h2>The Need for a Python Tool for Hybrid Modeling</h2>
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                            }}>
+                            <img src={hybrid} alt='hybrid model' width='600' height='270' />
+                        </div>
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                marginTop: "10px",
+                            }}>
+                            <Typography variant='caption'>
+                                Example of a typical structure for a hybrid model.
+                            </Typography>
+                        </div>
+                        <h2>Why HYBpy?</h2>
                         <Typography variant='subtitle1' gutterBottom>
                             Despite the proven effectiveness of hybrid models in the process systems
                             engineering field, their adoption has been limited. The primary barrier
@@ -208,11 +224,11 @@ export default function LandingPage() {
                             open-source, user-friendly platform for analyzing, and simulating hybrid
                             models.
                         </Typography>
-                        <h2>How Our Tool Makes a Difference</h2>
+                        <h2>Features</h2>
                         <Typography variant='subtitle1' gutterBottom>
                             Our tool is designed with the user in mind, simplifying the complex
                             process of hybrid modeling without compromising on power or precision.
-                            It enables researchers and practitioners in the biosystems engineering
+                            It enables researchers and practitioners in the bioprocesses engineering
                             community to:
                             <ul>
                                 <li>

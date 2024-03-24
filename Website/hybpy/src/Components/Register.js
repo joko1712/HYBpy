@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { auth } from "../firebase-config";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -12,6 +12,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { useNavigate } from "react-router-dom";
 import { BrowserRouter as Router } from "react-router-dom";
 const defaultTheme = createTheme();
 
@@ -21,7 +22,7 @@ function Register() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [emailError, setEmailError] = useState("");
-
+    const navigate = useNavigate();
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
@@ -58,12 +59,26 @@ function Register() {
             return;
         }
 
+        /** REGISTER WITH CONFIRMATION LINK IN THE EMAIL */
+
         createUserWithEmailAndPassword(auth, email, password)
             .then((res) => {
+                sendEmailVerification(auth.currentUser)
+                    .then(() => {
+                        window.alert(
+                            "A confirmation link has been sent to your email. Please verify your email address."
+                        );
+                        navigate("/");
+                    })
+                    .catch((verificationError) => {
+                        console.error("Verification error:", verificationError);
+                        setError(verificationError.message);
+                    });
                 console.log(res.user);
-                Router.push("/");
             })
-            .catch((err) => setError(err.message));
+            .catch((err) => {
+                setError(err.message);
+            });
 
         setEmail("");
         setPassword("");

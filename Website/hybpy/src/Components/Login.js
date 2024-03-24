@@ -13,27 +13,36 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { auth, signInWithGoogle } from "../firebase-config";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import GoogleIcon from "@mui/icons-material/Google";
+import { Route } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Alert } from "@mui/material";
 
 const defaultTheme = createTheme();
 
-function Login() {
+function Login({ manualSetCurrentUser }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const navigate = useNavigate();
 
     const loginUser = async (e) => {
         e.preventDefault();
         setError("");
 
-        signInWithEmailAndPassword(auth, email, password)
-            .then((res) => {
-                console.log(res.user);
-            })
-            .catch((err) => setError(err.message));
-
-        if (error !== null) {
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            if (userCredential.user.emailVerified) {
+                console.log("Email is verified");
+                manualSetCurrentUser(userCredential.user);
+                navigate("/");
+            } else {
+                console.log("Email is not verified");
+                window.alert("Please verify your email address.");
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            setError(error.message);
             window.alert("Invalid email or password.");
-            return;
         }
 
         setEmail("");

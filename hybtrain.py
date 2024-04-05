@@ -144,8 +144,8 @@ def hybtrain(projhyb, file):
             'xtol': 1e-15, #1e-15
             'ftol': 1e-15,
             'gtol': 1e-14,
-            'verbose': 2,#projhyb['display'],
-            'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'], # projhyb['niter'] * projhyb['niteroptim'], # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
+            #'verbose': 2,#projhyb['display'],
+            #'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'], # projhyb['niter'] * projhyb['niteroptim'], # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
             'method': 'lm',
         }
 
@@ -243,6 +243,9 @@ def hybtrain(projhyb, file):
     
     istep = 1
 
+    evaluator = IndirectFunctionEvaluator(ann, projhyb)
+
+
     for istep in range(1, projhyb['nstep']):
         for i in range(1, file['nbatch'] + 1):
             istrain = file[str(i)]["istrain"]
@@ -257,8 +260,6 @@ def hybtrain(projhyb, file):
                 projhyb['istrain'][projhyb['itr'][idx]] = 1
 
         TrainRes['istrain'].extend(projhyb['istrain'])
-
-        evaluator = IndirectFunctionEvaluator(ann, projhyb)
         
         '''
         if projhyb['mode'] == 1:  # INDIRECT
@@ -321,7 +322,9 @@ def hybtrain(projhyb, file):
             print("optios", options)
             print("weights", weights)
 
-            result = least_squares(evaluator.fobj_func, weights, jac=evaluator.jac_func, **options)
+            
+            result = least_squares(evaluator.fobj_func, x0=weights, jac=evaluator.jac_func, **options)
+
 
             callback_wrapper(result, TrainRes, projhyb, istep)
             
@@ -338,6 +341,9 @@ def hybtrain(projhyb, file):
 
         elif projhyb["method"] == 4:  # ADAMS
             wfinal, fval = adamunlnew(fobj, weights, ofun1, projhyb, options)
+    
+    
+    plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
                 
     TrainRes["finalcpu"] = time.process_time() - TrainRes["t0"]
     projhyb["istrain"] = istrainSAVE
@@ -349,6 +355,7 @@ def hybtrain(projhyb, file):
 
     trainData = TrainRes
     scipy.io.savemat('hybtrain_results.mat', {"trainData": TrainRes})
+
 
 #######################################################################################################################
     '''
@@ -702,6 +709,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                 state_adjusted = state_tensor[0:nres]
                 Ystate = Y_select - state_adjusted.numpy()
 
+                
                 sresall[COUNT:COUNT + nres] = Ystate / sY[i, isresY].numpy()
 
                 SYrepeat = sY[i, isresY].reshape(-1, 1).repeat(1, nw).numpy()
@@ -715,19 +723,29 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
 
 
     if method == 1 or method == 4:
+
         fobj = sresall
         jac = sjacall
+        
+        epsilon = 1e-8  
+        jac_max_abs = np.max(np.abs(sjacall), axis=1, keepdims=True)
+        jac_max_abs_safe = np.where(jac_max_abs > epsilon, jac_max_abs, epsilon)
+        jac_normalized = sjacall / jac_max_abs_safe
 
-        '''
-        jac_max_abs = np.max(np.abs(jac))
-        jac_scaled = jac / jac_max_abs
-        '''
+        fobj_max_abs = np.max(np.abs(fobj))
+        fobj_max_abs_safe = max(fobj_max_abs, epsilon)
+        fobj_normalized = fobj / fobj_max_abs_safe
+
+        print("jac", jac_normalized)
+
+        print("fobj", fobj_normalized)
+        
     else:
         fobj = np.dot(sresall_filtered.T, sresall_filtered) / len(sresall_filtered)
         jac = np.sum(2 * np.repeat(sresall_filtered.reshape(-1, 1), nw,
                      axis=1) * sjacall_filtered, axis=0) / len(sresall_filtered)
                      
-    return fobj, jac
+    return fobj_normalized, jac_normalized
 
 def resfun_indirect_fminunc(w, istrain, projhyb):
     ns = projhyb['nstate']
@@ -1143,20 +1161,16 @@ class IndirectFunctionEvaluator:
         self.last_weights = None
         self.last_fobj = None
         self.last_jac = None
-        self.scalar =None
+        # Initialize lists to store history
+        self.fobj_history = []
+        self.jac_norm_history = []
 
     def evaluate(self, weights):
-        if not np.array_equal(weights, self.last_weights):
-            self.last_fobj, self.last_jac = resfun_indirect_jac(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
-            self.last_weights = weights
-            print("fobj", self.last_fobj)
-            print("jac", self.last_jac)
-            #TODO: fobj = np.mean(self.last_fobj) perguntar porque o scipy não aceita vetor so aceita um scalar value for "cost" or "fitness" value
-            #self.scalar = np.sum(self.last_fobj)
-            #TrainRes["istep"] += 1
-            #weights, ann = mlp.CustomMLP.get_weights(ann)
-            #projhyb["w"] = weights
-        return self.last_fobj, self.last_jac#, self.scalar
+        self.last_fobj, self.last_jac = resfun_indirect_jac(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
+        self.last_weights = weights
+        self.fobj_history.append(self.last_fobj)
+        self.jac_norm_history.append(np.linalg.norm(self.last_jac))
+        return self.last_fobj, self.last_jac
 
     def fobj_func(self, weights):
         fobj, _ = self.evaluate(weights)
@@ -1165,3 +1179,31 @@ class IndirectFunctionEvaluator:
     def jac_func(self, weights):
         _, jac = self.evaluate(weights)
         return jac
+
+
+def plot_optimization_results(fobj_values, jacobian_matrix):
+    fobj_norms = [np.linalg.norm(val) for val in fobj_values]
+    fobj_norms_non_zero = [norm for norm in fobj_norms if norm > 0]
+    
+    gradient_norms = [np.linalg.norm(jac) for jac in jacobian_matrix]
+
+    plt.figure(figsize=(14, 7))
+
+    plt.subplot(1, 2, 1)
+    plt.semilogy(fobj_norms_non_zero, '-o', label='Objective Function Norm', markersize=4)
+    plt.xlabel('Iteration (non-zero only)')
+    plt.ylabel('Objective Function Norm (log scale)')
+    plt.title('Objective Function Norm Over Iterations')
+    plt.grid(True)
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.semilogy(gradient_norms, '-x', label='Jacobian Norm', markersize=4)
+    plt.xlabel('Iteration')
+    plt.ylabel('Norm of Jacobian (log scale)')
+    plt.title('Norm of Jacobian Over Iterations')
+    plt.grid(True)
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()

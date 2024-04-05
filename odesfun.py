@@ -79,15 +79,19 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
                 DfDrann = projhyb['mlm']['DFDRANN']
 
             DfDs = DfDs.subs(NValues)
-
             DfDrann = DfDrann.subs(NValues)
 
             DfDrann = np.array(DfDrann)
             DfDrann = DfDrann.reshape(len(fstate), projhyb["mlm"]["ny"])
+            if np.iscomplexobj(DfDrann):
+                print("DfDrann is complex")
+                DfDrann = DfDrann.real
             DfDrann = DfDrann.astype(np.float64)
             DfDrann = torch.from_numpy(DfDrann)
             DfDs = np.array(DfDs)
             DfDs = DfDs.reshape(len(fstate), len(state_symbols))
+            if np.iscomplexobj(DfDs):
+                DfDs = DfDs.real
             DfDs = DfDs.astype(np.float64)
             DfDs = torch.from_numpy(DfDs)
             #DanninpDstate = numerical_derivativeXY(anninp, state_symbols, NValues)
@@ -105,6 +109,8 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
             DanninpDstate = np.array(DanninpDstate)
             DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
+            if np.iscomplexobj(DanninpDstate):
+                DanninpDstate = DanninpDstate.real
             DanninpDstate = DanninpDstate.astype(np.float64)
             DanninpDstate = torch.from_numpy(DanninpDstate)
 

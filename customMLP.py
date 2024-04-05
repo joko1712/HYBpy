@@ -21,7 +21,7 @@ class CustomMLP(nn.Module):
 
         self.layers.append(Linear(layer_sizes[-2], layer_sizes[-1]))
 
-    
+
         self.scale_weights(scaling_factor=0.00001)
 
 
@@ -52,9 +52,17 @@ class CustomMLP(nn.Module):
             if hasattr(layer, 'b'):
                 nn.init.constant_(layer.b, 0)
 
-        
         self.scale_weights(scaling_factor=0.00001)
-    
+
+        weights = []
+        for layer in self.layers:
+            if hasattr(layer, 'w') and hasattr(layer, 'b'):
+                weights.append(layer.w.data.cpu().numpy().flatten())
+                weights.append(layer.b.data.cpu().numpy().flatten())
+
+        # Flatten the weights list into a single array
+        weights = np.concatenate(weights)
+        return weights, self    
 
     '''
     def get_weights(self):
@@ -142,26 +150,20 @@ class CustomMLP(nn.Module):
     '''
 
     def set_weights(self, new_weights):
-        # Assuming new_weights is a flat NumPy array containing all the new weights
         start = 0
         for layer in self.layers:
             if hasattr(layer, 'w') and hasattr(layer, 'b'):
-                # Calculate the number of elements in the weights and biases
                 weight_num_elements = torch.numel(layer.w)
                 bias_num_elements = torch.numel(layer.b)
 
-                # Extract the corresponding parts from the new_weights array
                 new_w = new_weights[start:start+weight_num_elements]
                 new_b = new_weights[start+weight_num_elements:start+weight_num_elements+bias_num_elements]
 
-                # Update start index for the next layer
                 start += weight_num_elements + bias_num_elements
 
-                # Convert new_w and new_b to PyTorch tensors and reshape them to match the layer's parameters
                 new_w_tensor = torch.from_numpy(new_w).view_as(layer.w).type_as(layer.w)
                 new_b_tensor = torch.from_numpy(new_b).view_as(layer.b).type_as(layer.b)
 
-                # Assign the new weights and biases to the layer
                 layer.w.data = new_w_tensor
                 layer.b.data = new_b_tensor
 
@@ -175,7 +177,6 @@ class CustomMLP(nn.Module):
     def get_weights(self):
         weights = []
         for layer in self.layers:
-            # Flatten and convert the weights and biases to numpy arrays, then add to the weights list
             w = layer.w.data.cpu().numpy().flatten()
             b = layer.b.data.cpu().numpy().flatten()
             weights.extend(w)
@@ -242,10 +243,9 @@ class TanhLayer(nn.Module):
         self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
         self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
         nn.init.xavier_uniform_(self.w)
-        nn.init.constant_(self.b, 0)
+        nn.init.xavier_uniform_(self.b)
 
     def forward(self, x):
-
         return torch.tanh(torch.mm(self.w, x) + self.b)
 
     def derivative(self, x):
@@ -258,7 +258,7 @@ class ReLULayer(nn.Module):
         self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
         self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
         nn.init.kaiming_uniform_(self.w, mode='fan_in', nonlinearity='relu')
-        nn.init.constant_(self.b, 0)
+        nn.init.kaiming_uniform_(self.b, mode='fan_in', nonlinearity='relu')
 
     def forward(self, x):
         xin = torch.mm(self.w, x) + self.b
@@ -298,12 +298,10 @@ class Linear(nn.Module):
         self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
         self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
         nn.init.xavier_uniform_(self.w)
-        nn.init.constant_(self.b, 0)
+        nn.init.xavier_uniform_(self.b)
 
     def forward(self, x):
         return torch.mm(self.w, x) + self.b
 
     def derivative(self, x):
         return torch.ones_like(x) 
-
-

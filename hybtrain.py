@@ -311,11 +311,12 @@ def hybtrain(projhyb, file):
             for nparam in range(projhyb['mlm']['ny']):
                 weights[nparam] = projhyb['mlm']['y'][nparam]['init']
         '''
+        '''
         if istep > 1:
             print('Weights initialization...2')
             weights, ann = ann.reinitialize_weights()
             projhyb["w"] = weights
-
+        '''
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
@@ -328,6 +329,9 @@ def hybtrain(projhyb, file):
 
 
             callback_wrapper(result, TrainRes, projhyb, istep)
+
+            projhyb["w"] = result.x
+            weights = result.x
             
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON

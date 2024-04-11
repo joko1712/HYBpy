@@ -144,6 +144,7 @@ def hybtrain(projhyb, file):
             'xtol': 1e-15, #1e-15
             'ftol': 1e-15,
             'gtol': 1e-14,
+            'verbose': 2,
             #'verbose': 2,#projhyb['display'],
             #'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'], # projhyb['niter'] * projhyb['niteroptim'], # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
             'method': 'lm',
@@ -642,6 +643,8 @@ def outFun1(witer, optimValues, optstate, projhyb, TrainRes):
 ####
 
 def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
+    print("TESTE",scipy.linalg.norm(w))
+
     print("weights", w)
 
 # LOAD THE WEIGHTS into the ann
@@ -726,7 +729,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
 
         fobj = sresall
         jac = sjacall
-        
+        '''
         epsilon = 1e-8  
         jac_max_abs = np.max(np.abs(sjacall), axis=1, keepdims=True)
         jac_max_abs_safe = np.where(jac_max_abs > epsilon, jac_max_abs, epsilon)
@@ -739,13 +742,14 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
         print("jac", jac_normalized)
 
         print("fobj", fobj_normalized)
+        '''
         
     else:
         fobj = np.dot(sresall_filtered.T, sresall_filtered) / len(sresall_filtered)
         jac = np.sum(2 * np.repeat(sresall_filtered.reshape(-1, 1), nw,
                      axis=1) * sjacall_filtered, axis=0) / len(sresall_filtered)
                      
-    return fobj_normalized, jac_normalized
+    return fobj, jac
 
 def resfun_indirect_fminunc(w, istrain, projhyb):
     ns = projhyb['nstate']
@@ -1161,16 +1165,18 @@ class IndirectFunctionEvaluator:
         self.last_weights = None
         self.last_fobj = None
         self.last_jac = None
-        # Initialize lists to store history
         self.fobj_history = []
         self.jac_norm_history = []
 
     def evaluate(self, weights):
-        self.last_fobj, self.last_jac = resfun_indirect_jac(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
-        self.last_weights = weights
-        self.fobj_history.append(self.last_fobj)
-        self.jac_norm_history.append(np.linalg.norm(self.last_jac))
-        return self.last_fobj, self.last_jac
+        if np.array_equal(weights, self.last_weights):
+            return self.last_fobj, self.last_jac
+        else:
+            self.last_fobj, self.last_jac = resfun_indirect_jac(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
+            self.last_weights = weights
+            self.fobj_history.append(self.last_fobj)
+            self.jac_norm_history.append(np.linalg.norm(self.last_jac))
+            return self.last_fobj, self.last_jac
 
     def fobj_func(self, weights):
         fobj, _ = self.evaluate(weights)
@@ -1179,7 +1185,6 @@ class IndirectFunctionEvaluator:
     def jac_func(self, weights):
         _, jac = self.evaluate(weights)
         return jac
-
 
 def plot_optimization_results(fobj_values, jacobian_matrix):
     fobj_norms = [np.linalg.norm(val) for val in fobj_values]
@@ -1207,3 +1212,9 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
 
     plt.tight_layout()
     plt.show()
+
+
+
+#TEST WITH LOCAL SAVING OF FOBJ AND JAC
+#TEST WITH ADAM
+#TEST WITH CALLING OPTIMIZER WITH SOLUTION

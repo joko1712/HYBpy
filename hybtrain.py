@@ -733,7 +733,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
 
         fobj = sresall
         jac = sjacall
-        '''
+        
         epsilon = 1e-8  
         jac_max_abs = np.max(np.abs(sjacall), axis=1, keepdims=True)
         jac_max_abs_safe = np.where(jac_max_abs > epsilon, jac_max_abs, epsilon)
@@ -746,14 +746,14 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
         print("jac", jac_normalized)
 
         print("fobj", fobj_normalized)
-        '''
+        
         
     else:
         fobj = np.dot(sresall_filtered.T, sresall_filtered) / len(sresall_filtered)
         jac = np.sum(2 * np.repeat(sresall_filtered.reshape(-1, 1), nw,
                      axis=1) * sjacall_filtered, axis=0) / len(sresall_filtered)
                      
-    return fobj, jac
+    return fobj_normalized, jac_normalized
 
 def resfun_indirect_fminunc(w, istrain, projhyb):
     ns = projhyb['nstate']

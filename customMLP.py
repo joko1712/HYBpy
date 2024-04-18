@@ -242,7 +242,7 @@ class TanhLayer(nn.Module):
         self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
         self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
         nn.init.xavier_uniform_(self.w)
-        nn.init.xavier_uniform_(self.b)
+        nn.init.zeros_(self.b)
 
     def forward(self, x):
         return torch.tanh(torch.mm(self.w, x) + self.b)
@@ -257,7 +257,7 @@ class ReLULayer(nn.Module):
         self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
         self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
         nn.init.kaiming_uniform_(self.w, mode='fan_in', nonlinearity='relu')
-        nn.init.kaiming_uniform_(self.b, mode='fan_in', nonlinearity='relu')
+        nn.init.zeros_(self.b)
 
     def forward(self, x):
         xin = torch.mm(self.w, x) + self.b
@@ -297,7 +297,7 @@ class Linear(nn.Module):
         self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
         self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
         nn.init.xavier_uniform_(self.w)
-        nn.init.xavier_uniform_(self.b)
+        nn.init.zeros_(self.b) 
 
     def forward(self, x):
         return torch.mm(self.w, x) + self.b

@@ -147,7 +147,7 @@ def hybtrain(projhyb, file):
             'verbose': 2,
             #'verbose': 2,#projhyb['display'],
             #'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'], # projhyb['niter'] * projhyb['niteroptim'], # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
-            'method': 'lm',
+            'method': 'trf',
         }
 
     elif projhyb['method'] == 2:
@@ -244,7 +244,9 @@ def hybtrain(projhyb, file):
     
     istep = 1
 
-    evaluator = IndirectFunctionEvaluator(ann, projhyb)
+    if projhyb['mode'] == 1:
+
+        evaluator = IndirectFunctionEvaluator(ann, projhyb, resfun_indirect_jac)
 
 
     for istep in range(1, projhyb['nstep']):
@@ -311,12 +313,12 @@ def hybtrain(projhyb, file):
             for nparam in range(projhyb['mlm']['ny']):
                 weights[nparam] = projhyb['mlm']['y'][nparam]['init']
         '''
-        '''
+        
         if istep > 1:
             print('Weights initialization...2')
             weights, ann = ann.reinitialize_weights()
             projhyb["w"] = weights
-        '''
+        
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
@@ -329,10 +331,6 @@ def hybtrain(projhyb, file):
 
 
             callback_wrapper(result, TrainRes, projhyb, istep)
-
-            projhyb["w"] = result.x
-            weights = result.x
-            
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON
             result = minimize(fobj, weights, method='BFGS', options=options)
@@ -1163,9 +1161,10 @@ def resfun_semidirect_jac_batch(w, istrain, projhyb, method=1):
     return mse, grads
 
 class IndirectFunctionEvaluator:
-    def __init__(self, ann, projhyb):
+    def __init__(self, ann, projhyb, evaluation_function):
         self.ann = ann
         self.projhyb = projhyb
+        self.evaluation_function = evaluation_function
         self.last_weights = None
         self.last_fobj = None
         self.last_jac = None
@@ -1176,10 +1175,14 @@ class IndirectFunctionEvaluator:
         if np.array_equal(weights, self.last_weights):
             return self.last_fobj, self.last_jac
         else:
-            self.last_fobj, self.last_jac = resfun_indirect_jac(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
-            self.last_weights = weights
-            self.fobj_history.append(self.last_fobj)
-            self.jac_norm_history.append(np.linalg.norm(self.last_jac))
+            try:
+                self.last_fobj, self.last_jac = self.evaluation_function(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
+                self.last_weights = weights
+                self.fobj_history.append(self.last_fobj)
+                self.jac_norm_history.append(np.linalg.norm(self.last_jac))
+            except Exception as e:
+                print(f"Error evaluating function: {e}")
+                raise
             return self.last_fobj, self.last_jac
 
     def fobj_func(self, weights):
@@ -1218,7 +1221,7 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
     plt.show()
 
 
-
-#TEST WITH LOCAL SAVING OF FOBJ AND JAC
+#TEST WITH TRANSPOSE JACOBIAN
+#TEST WITH CURVEFIT
+#TEST WITH DOGBOX
 #TEST WITH ADAM
-#TEST WITH CALLING OPTIMIZER WITH SOLUTION

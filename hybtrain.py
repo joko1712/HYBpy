@@ -2,6 +2,7 @@ import numpy as np
 from scipy.optimize import least_squares
 from scipy.optimize import minimize
 from scipy.optimize import check_grad
+from scipy.optimize import dual_annealing
 import scipy.io
 import json
 import time
@@ -9,6 +10,7 @@ import matplotlib.pyplot as plt
 from mlpnetinit import mlpnetinitw
 from mlpnetcreate import mlpnetcreate
 import torch
+from torch.utils.data import Dataset, DataLoader
 from mlpnetsetw import mlpnetsetw
 from hybodesolver import hybodesolver
 from odesfun import odesfun
@@ -141,12 +143,12 @@ def hybtrain(projhyb, file):
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
-            'xtol': 1e-15, #1e-15
-            'ftol': 1e-15,
-            'gtol': 1e-14,
-            'verbose': 2,
+            'xtol': 1e-10, #1e-15
+            #'ftol': 1e-15,
+            #'gtol': 1e-14,
+            'verbose': projhyb['display'],
             #'verbose': 2,#projhyb['display'],
-            #'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'], # projhyb['niter'] * projhyb['niteroptim'], # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
+            'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'], # projhyb['niter'] * projhyb['niteroptim'], # Ideally, this should be set to: 100 * projhyb['niter'] * projhyb['niteroptim']
             'method': 'trf',
         }
 
@@ -155,28 +157,27 @@ def hybtrain(projhyb, file):
         print(f"   Optimiser:              {algorithm}")
         options = {
             'method': algorithm,
-            'hess': hessian,
             'options': {
-                'disp': projhyb['display'],
-                'maxiter': projhyb['niter'] * projhyb['niteroptim']
+                'verbose': projhyb['display'],
+                'maxiter':100 * projhyb['niter'] * projhyb['niteroptim']
             },
-            'callback': lambda xk: outFun1(xk, state)
+            #'callback': lambda xk: outFun1(xk, state)
         }
 
     elif projhyb['method'] == 3:
         print("   Optimiser:              Simulated Annealing")
         bounds = [(-20, 20)] * projhyb['mlm']['nw']
         options = {
-            'maxiter': projhyb['niter'] * projhyb['niteroptim'],
-            'disp': projhyb['display'],
-            'callback': lambda xk: outFun1(xk, state)
+            'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'],
+            'verbose': projhyb['display'],
+            #'callback': lambda xk: outFun1(xk, state)
         }
 
     elif projhyb['method'] == 4:
         print("   Optimiser:              Adam")
-        npall = sum(len(projhyb['batch'][l]['t']) for l in range(
-            projhyb['nbatch']) if projhyb['istrain'][l] == 1)
-        options['niter'] = projhyb['niter'] * projhyb['niteroptim']
+        data = json.load(open('file.json'))
+        dataset = TimeSeriesDataset(data)
+        dataloader = DataLoader(dataset, batch_size=10, shuffle=True)
 
     print("\n\n")
 
@@ -226,6 +227,7 @@ def hybtrain(projhyb, file):
     projhyb["mlm"]["ANNINP"] = None
     projhyb['mlm']["FSTATE"] = None
     projhyb['mlm']['STATE_SYMBOLS'] = None
+    projhyb['mlm']['NVALUES'] = None
 
     if 'fundata' not in projhyb['mlm'] or projhyb['initweights'] == 1:
         print('Weights initialization...1')
@@ -313,41 +315,46 @@ def hybtrain(projhyb, file):
             for nparam in range(projhyb['mlm']['ny']):
                 weights[nparam] = projhyb['mlm']['y'][nparam]['init']
         '''
-        
+        print("istep", istep)
         if istep > 1:
             print('Weights initialization...2')
             weights, ann = ann.reinitialize_weights()
             projhyb["w"] = weights
-        
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
             print("optios", options)
             print("weights", weights)
-
             
             result = least_squares(evaluator.fobj_func, x0=weights, jac=evaluator.jac_func, **options)
+            #callback_wrapper(result, TrainRes, projhyb, istep)
+            
 
-
-            callback_wrapper(result, TrainRes, projhyb, istep)
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON
-            result = minimize(fobj, weights, method='BFGS', options=options)
-            wfinal, fval = result.x, result.fun
+            print("optios", options)
+            print("weights", weights)
+            if options.get('method', None) == 'trust-constr':
+                result = minimize(evaluator.fobj_func, x0=weights, jac=evaluator.jac_func, hess=None, **options)
+            else:
+                result = minimize(evaluator.fobj_func, x0=weights, hess=evaluator.hess_func, **options)
+            
+            callback_wrapper(result, TrainRes, projhyb, istep)
+
 
         elif projhyb["method"] == 3:  # SIMULATED ANNEALING
-            from scipy.optimize import dual_annealing
-            result = dual_annealing(fobj, bounds=list(
-                zip(ParsLB, ParsUB)), **optopts)
-            wfinal, fval = result.x, result.fun
+            result = dual_annealing(evaluator.fobj_func, bounds=bounds, **options)
+            callback_wrapper(result, TrainRes, projhyb, istep)
 
         elif projhyb["method"] == 4:  # ADAMS
-            wfinal, fval = adamunlnew(fobj, weights, ofun1, projhyb, options)
-    
-    
+            optimizer = torch.optim.Adam(ann.parameters(), lr=0.001)
+            loss = fobj_func(weights)
+            train_model(ann, dataloader, optimizer, loss_function, epochs=10)
+
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
-                
+    teststate(ann, projhyb['istrain'], projhyb, projhyb['method'],result.x)
+            
     TrainRes["finalcpu"] = time.process_time() - TrainRes["t0"]
     projhyb["istrain"] = istrainSAVE
 
@@ -358,7 +365,6 @@ def hybtrain(projhyb, file):
 
     trainData = TrainRes
     scipy.io.savemat('hybtrain_results.mat', {"trainData": TrainRes})
-
 
 #######################################################################################################################
     '''
@@ -701,8 +707,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             sY = torch.from_numpy(sY)
             
             state = np.array(file[str(l)]["y"][0])
-            Sw = np.zeros((nt, nw))
-
+            Sw = np.zeros((nt, nw)) 
             for i in range(1, file[str(l)]["np"]):
                 batch_data = file[str(l+1)]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
@@ -731,7 +736,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
 
         fobj = sresall
         jac = sjacall
-        
+        '''
         epsilon = 1e-8  
         jac_max_abs = np.max(np.abs(sjacall), axis=1, keepdims=True)
         jac_max_abs_safe = np.where(jac_max_abs > epsilon, jac_max_abs, epsilon)
@@ -744,14 +749,14 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
         print("jac", jac_normalized)
 
         print("fobj", fobj_normalized)
-        
+        '''
         
     else:
-        fobj = np.dot(sresall_filtered.T, sresall_filtered) / len(sresall_filtered)
-        jac = np.sum(2 * np.repeat(sresall_filtered.reshape(-1, 1), nw,
-                     axis=1) * sjacall_filtered, axis=0) / len(sresall_filtered)
+        fobj = np.dot(sresall.T, sresall) / len(sresall)
+        jac = np.sum(2 * np.repeat(sresall.reshape(-1, 1), nw,
+                     axis=1) * sjacall, axis=0) / len(sresall)
                      
-    return fobj_normalized, jac_normalized
+    return fobj, jac
 
 def resfun_indirect_fminunc(w, istrain, projhyb):
     ns = projhyb['nstate']
@@ -1160,6 +1165,30 @@ def resfun_semidirect_jac_batch(w, istrain, projhyb, method=1):
 
     return mse, grads
 
+
+def train_model(model, dataloader, optimizer, loss_function, epochs):
+    model.train()
+    for epoch in range(epochs):
+        for inputs, targets in dataloader:
+            optimizer.zero_grad()
+            outputs = model(inputs.float())
+            loss = loss_function(outputs, targets.float())
+            loss.backward()
+            optimizer.step()
+            print(f'Epoch {epoch+1}, Loss: {loss.item()}')
+
+
+class TimeSeriesDataset(Dataset):
+    def __init__(self, data):
+        self.inputs = torch.tensor([data[str(batch)]['state'] for batch in data if 'state' in data[str(batch)]])
+        self.targets = torch.tensor([data[str(batch)]['y'] for batch in data if 'y' in data[str(batch)]])
+
+    def __len__(self):
+        return len(self.inputs)
+
+    def __getitem__(self, idx):
+        return self.inputs[idx], self.targets[idx]
+
 class IndirectFunctionEvaluator:
     def __init__(self, ann, projhyb, evaluation_function):
         self.ann = ann
@@ -1221,7 +1250,100 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
     plt.show()
 
 
-#TEST WITH TRANSPOSE JACOBIAN
-#TEST WITH CURVEFIT
-#TEST WITH DOGBOX
-#TEST WITH ADAM
+def teststate(ann, istrain, projhyb, weights, method=1):
+
+    dictState = {}
+
+    print("weights", weights)
+
+    # LOAD THE WEIGHTS into the ann
+    ann.set_weights(weights)
+    ann.print_weights_and_biases()
+    with open("file.json", "r") as read_file:
+        file = json.load(read_file)
+    if not istrain:
+        istrain = projhyb["istrain"]
+
+    # ires = 11 
+    ns = projhyb["nspecies"]
+    nt = ns + projhyb["ncompartments"]
+    nw = projhyb["mlm"]["nw"]
+    isres = []
+    isresY = []
+    for i in range(1, ns + 1):
+        if projhyb["species"][str(i)]["isres"] == 1: 
+            isres = isres + [i]
+            isresY = isresY + [i - 1]
+
+    isres = isres
+        
+    nres = len(isres)
+
+    npall = sum(file[str(i+1)]["np"] for i in range(file["nbatch"]) if file[str(i+1)]["istrain"] == 1)
+
+    sresall = np.zeros(npall * nres)
+
+    sjacall = np.zeros((npall * nres, nw))
+
+    print("npall", npall*nres)
+    print("npall", nres)
+
+    print("nn:", ann)
+
+    COUNT = 0
+    for l in range(file["nbatch"]):
+        l = l + 1
+        if file[str(l)]["istrain"] == 1:
+            tb = file[str(l)]["time"]
+            print("tb", tb)
+            Y = file[str(l)]["y"]
+            Y = np.array(Y)
+            Y = Y.astype(np.float64)
+            Y = torch.from_numpy(Y)
+            
+            batch = str(l)
+
+            sY = file[str(l)]["sy"]
+            sY = np.array(sY)
+            sY = sY.astype(np.float64)
+            sY = torch.from_numpy(sY)
+            
+            state = np.array(file[str(l)]["y"][0])
+            Sw = np.zeros((nt, nw))
+
+            for i in range(1, file[str(l)]["np"]):
+                batch_data = file[str(l+1)]
+                _, state, Sw, hess = hybodesolver(ann,odesfun, control_function , projhyb["fun_event"], tb[i-1], tb[i], state, None, None, w, batch_data, projhyb)
+
+                dictState[i] = state
+        
+
+
+    for i in range(1, projhyb['mlm']['nx']):
+        actual = []
+        predicted = []
+        print(dictState)
+        actual.append(file[str(1)][str(0)]["state"][i-1])
+        predicted.append(file[str(1)][str(0)]["state"][i-1])
+        
+        for l in range(tb[-1]):
+            actual.append(file[str(1)][str(l+1)]["state"][i-1]) 
+            print("ada", actual)
+        
+        for l in range(tb[-1]):
+            predicted.append(dictState[l+1][i-1])
+            print("adaf", predicted)
+
+        print("ada", actual, "adaf", predicted)
+
+        x = tb
+        plt.plot(x, predicted, label="curve 1")
+        plt.plot(x, actual, label="curve 2")
+        plt.figure(figsize=(11, 8))
+        plt.legend()
+        plt.show()
+
+
+
+    print("dictState", dictState)   
+    print("dasdas", asdasd)

@@ -1,32 +1,37 @@
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
+import sys
+input = sys.stdin.read
 
-# Load the actual data
-data_actual = pd.read_csv('chassbatch1.csv')
+def main():
+    # Reading input once and splitting into lines
+    data = input().split()
+    print(data)
+    
+    results = []
+    process_cases(int(data[0]), data, 1, results)
+    
+    # Store results
+    for result in results:
+        print(result)
 
-# Assuming the model predictions are stored in another CSV or added to the DataFrame
-# For the example, let's just create some mock predictions within the actual data DataFrame
-# In practice, you would replace these lines with loading or generating your model predictions
-data_actual['adp_pred'] = data_actual['adp'] * np.random.uniform(0.9, 1.1, len(data_actual))
-data_actual['asa_pred'] = data_actual['asa'] * np.random.uniform(0.9, 1.1, len(data_actual))
+def process_cases(num_cases, data, index, results):
+    if num_cases == 0:
+        return
+    num_integers = int(data[index])
+    integers = list(map(int, data[index+1:index+1+num_integers]))
+    print(integers)
+    # Processing current case using a recursive approach
+    sum_squares = sum_squares_positive(integers, 0, 0)
+    results.append(sum_squares)
+    # Move to next case
+    process_cases(num_cases - 1, data, index + 1 + num_integers, results)
 
-# Plotting
-plt.figure(figsize=(12, 8))
+def sum_squares_positive(numbers, index, accum):
+    if index == len(numbers):
+        return accum
+    current = numbers[index]
+    if current > 0:
+        accum += current * current
+    return sum_squares_positive(numbers, index + 1, accum)
 
-# Actual concentrations vs. Predictions for two species (adp and asa as examples)
-plt.errorbar(data_actual['time'], data_actual['adp'], yerr=data_actual['sdadp'], label='ADP Actual', fmt='o', capsize=5)
-plt.plot(data_actual['time'], data_actual['adp_pred'], label='ADP Prediction', linestyle='--')
-
-plt.errorbar(data_actual['time'], data_actual['asa'], yerr=data_actual['sdasa'], label='ASA Actual', fmt='o', capsize=5)
-plt.plot(data_actual['time'], data_actual['asa_pred'], label='ASA Prediction', linestyle='--')
-
-# Customization
-plt.title('Species Concentration: Actual vs. Prediction')
-plt.xlabel('Time')
-plt.ylabel('Concentration')
-plt.legend()
-plt.grid(True)
-
-# Show plot
-plt.show()
+if __name__ == "__main__":
+    main()

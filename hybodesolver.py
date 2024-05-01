@@ -71,7 +71,8 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
         else:
             ucontrol1 = []
         
-        if jac is not 0:
+
+        if jac != None:
             k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, fstate,  anninp, anninp_tensor, state_symbols, values)
         else:
             k1_state = odesfun(ann,t, state, None, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
@@ -88,7 +89,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
         k1_state = k1_state.astype(np.float64)
         k1_state = torch.from_numpy(k1_state)
         
-        if jac is not 0:
+        if jac != None:
 
             state1 = update_state(state, h2, k1_state)
             k2_state, k2_jac = odesfun(ann,t + h2, state1, jac + h2 * k1_jac, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
@@ -114,7 +115,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
         hl= h - h / 1e10
         ucontrol4 = controlfun(t + hl, batch) if controlfun is not None else []
 
-        if jac is not None:
+        if jac != None:
 
             state3 = update_state(state, hl, k3_state)
             k4_state, k4_jac = odesfun(ann,t + hl, state3, jac + hl * k3_jac, None, w, ucontrol4, projhyb, fstate,  anninp, anninp_tensor, state_symbols, values)
@@ -125,15 +126,20 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
             state3 = update_state(state, hl, k3_state)
             k4_state = odesfun(ann,t + hl, state3, None, None, w, ucontrol4, projhyb,  fstate, anninp, anninp_tensor, state_symbols, values)
         
-        stateFinal = calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state)
-        state = extract_species_values(projhyb, stateFinal)
 
-        if jac is not None:
+        if jac != None:
+            stateFinal = calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state)
+            state = extract_species_values(projhyb, stateFinal)
+
+        else :
+            stateFinal = calculate_state_final_nojac(state, h, k1_state, k2_state, k3_state, k4_state)
+            state = extract_species_values(projhyb, stateFinal)
+
+        if jac != None:
             jac = jac + h * (k1_jac / 6 + k2_jac / 3 + k3_jac / 3 + k4_jac / 6)
 
         t = t + h
-
-
+    
     stateFinal.append(int(projhyb["compartment"]["1"]["val"]))
 
 
@@ -236,3 +242,14 @@ def calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state):
     
     return stateFinal
 
+
+
+def calculate_state_final_nojac(state, h, k1_state, k2_state, k3_state, k4_state):
+    stateFinal = []
+    
+    for i, value in enumerate(state.values()):
+        new_value = value + h * (k1_state[i] / 6 + k2_state[i] / 3 + k3_state[i] / 3 + k4_state[i] / 6)
+        stateFinal.append(new_value)
+
+    
+    return stateFinal

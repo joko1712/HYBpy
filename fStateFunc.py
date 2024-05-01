@@ -84,6 +84,8 @@ def fstate_func(projhyb,values):
 
     fState = fSpecies + fRaterules
 
+    print("State", State) 
+    print("parametersvariables", parametersvariables)   
     fState = [expr.evalf(subs=parametersvariables) for expr in fState]
 
 

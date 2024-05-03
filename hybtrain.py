@@ -315,7 +315,6 @@ def hybtrain(projhyb, file):
             for nparam in range(projhyb['mlm']['ny']):
                 weights[nparam] = projhyb['mlm']['y'][nparam]['init']
         '''
-        print("istep", istep)
         if istep > 1:
             print('Weights initialization...2')
             weights, ann = ann.reinitialize_weights()
@@ -326,10 +325,9 @@ def hybtrain(projhyb, file):
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
             print("optios", options)
             print("weights", weights)
-            
+            testing = teststate(ann, projhyb['istrain'], projhyb, projhyb['method'])
             result = least_squares(evaluator.fobj_func, x0=weights, jac=evaluator.jac_func, **options)
-            #callback_wrapper(result, TrainRes, projhyb, istep)
-            
+            callback_wrapper(result, TrainRes, projhyb, istep)
 
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON
@@ -351,10 +349,9 @@ def hybtrain(projhyb, file):
             optimizer = torch.optim.Adam(ann.parameters(), lr=0.001)
             loss = fobj_func(weights)
             train_model(ann, dataloader, optimizer, loss_function, epochs=10)
-
+    
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
-    teststate(ann, projhyb['istrain'], projhyb, projhyb['method'],result.x)
-            
+                
     TrainRes["finalcpu"] = time.process_time() - TrainRes["t0"]
     projhyb["istrain"] = istrainSAVE
 
@@ -707,8 +704,9 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             sY = torch.from_numpy(sY)
             
             state = np.array(file[str(l)]["y"][0])
-            Sw = np.zeros((nt, nw)) 
-            for i in range(1, file[str(l)]["np"]):
+            Sw = np.zeros((nt, nw))
+
+            for i in range(1, file[str(l)]["np"]+1):
                 batch_data = file[str(l+1)]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
@@ -1250,14 +1248,27 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
     plt.show()
 
 
-def teststate(ann, istrain, projhyb, weights, method=1):
+def teststate(ann, istrain, projhyb, method=1):
 
     dictState = {}
 
-    print("weights", weights)
+        
+    w = [ 0.004755334311871201, -0.03937645604933323, -0.005674698822225286,
+        -0.025814281000525515, -0.002762308305975738, 0.032216139981546724,
+        0.025469340568186307, 0.012465638675032606, -0.01066557305256126,
+        0.004016640679683735, -0.0020070242719430202, -0.003509728564202286,
+        -0.22287854305444255, -0.047925116986124575, 3.0031196191737357e-5,
+        0.22810979558539696, 0.01594613348122581, 2.2265583074761587e-5,
+        -0.013201540142145892, 0.14448669426495242, 0.17995189911422202,
+        4.23454462884836e-5, 1.0121509632493695, 0.10154478615389168, 5.8884237042298795e-6,
+        0.04497040642706763]
+
+    w = np.array(w)
+
+    print("weights", w)
 
     # LOAD THE WEIGHTS into the ann
-    ann.set_weights(weights)
+    ann.set_weights(w)
     ann.print_weights_and_biases()
     with open("file.json", "r") as read_file:
         file = json.load(read_file)
@@ -1313,7 +1324,7 @@ def teststate(ann, istrain, projhyb, weights, method=1):
 
             for i in range(1, file[str(l)]["np"]):
                 batch_data = file[str(l+1)]
-                _, state, Sw, hess = hybodesolver(ann,odesfun, control_function , projhyb["fun_event"], tb[i-1], tb[i], state, None, None, w, batch_data, projhyb)
+                _, state, Sw, hess = hybodesolver(ann,odesfun, control_function , projhyb["fun_event"], tb[i-1], tb[i], state, 0, 0, w, batch_data, projhyb)
 
                 dictState[i] = state
         
@@ -1337,9 +1348,9 @@ def teststate(ann, istrain, projhyb, weights, method=1):
         print("ada", actual, "adaf", predicted)
 
         x = tb
+        plt.figure(figsize=(14, 7))
         plt.plot(x, predicted, label="curve 1")
         plt.plot(x, actual, label="curve 2")
-        plt.figure(figsize=(11, 8))
         plt.legend()
         plt.show()
 

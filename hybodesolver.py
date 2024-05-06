@@ -51,7 +51,8 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     for i in range(1, projhyb["ncompartments"]+1):
         state_symbols.append(sp.sympify(projhyb["compartment"][str(i)]["id"]))
 
-    jac = torch.tensor(jac, dtype=torch.float64)
+    if jac is not None:
+        jac = torch.tensor(jac, dtype=torch.float64)
     fstate = fstate_func(projhyb,values)
 
     while t < tf:

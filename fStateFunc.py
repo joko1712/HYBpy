@@ -22,7 +22,7 @@ def fstate_func(projhyb,values):
 
     Compartments = []
 
-    for i in range(1, projhyb["ncompartments"]+1):
+    for i in range(1, projhyb["ncompartment"]+1):
         Compartments.append(sp.sympify(projhyb["compartment"][str(i)]["id"]))
 
     variables = {}

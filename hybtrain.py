@@ -266,55 +266,6 @@ def hybtrain(projhyb, file):
 
         TrainRes['istrain'].extend(projhyb['istrain'])
         
-        '''
-        if projhyb['mode'] == 1:  # INDIRECT
-            if projhyb['method'] == 4:
-                def fobj_func(weights):
-                    fobj, _ = resfun_indirect_jac(ann, weights, projhyb['istrain'], projhyb, projhyb['method'])
-                    return fobj
-                def jac_func(weights):
-                    _, jac = resfun_indirect_jac(ann, weights, projhyb['istrain'], projhyb, projhyb['method'])
-                    return jac
-            elif projhyb['jacobian'] == 0:
-                def fobj_func(weights):
-                    fobj = resfun_indirect(weights, projhyb['istrain'], projhyb, projhyb['method'])
-                    return fobj
-            elif projhyb['jacobian'] == 1:
-                def fobj_func(weights):
-                    fobj, _ = resfun_indirect_jac(ann, weights, projhyb['istrain'], projhyb, projhyb['method'])
-                    return fobj
-                def jac_func(weights):
-                    _, jac = resfun_indirect_jac(ann, weights, projhyb['istrain'], projhyb, projhyb['method'])
-                    return jac
-            elif projhyb['hessian'] == 1:
-                assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
-
-        elif projhyb['mode'] == 2:  # DIRECT
-            if projhyb['method'] == 4:
-                fobj,jac = resfun_direct_jac(weights, istrain, projhyb, projhyb['method'])
-            elif projhyb['jacobian'] == 0:
-                fobj = resfun_direct(weights, projhyb['istrain'], projhyb, projhyb['method'])
-            elif projhyb['jacobian'] == 1:
-                fobj,jac = resfun_direct_jac(weights, projhyb['istrain'], projhyb, projhyb['method'])
-            elif projhyb['hessian'] == 1:
-                assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
-
-        elif projhyb['mode'] == 3:  # SEMIDIRECT
-            if projhyb['method'] == 4:
-                fobj,jac = resfun_semidirect_jac(weights, istrain, projhyb, projhyb['method'])
-            elif projhyb['jacobian'] == 0:
-                fobj = resfun_semidirect(weights, projhyb['istrain'], projhyb, projhyb['method'])
-            elif projhyb['jacobian'] == 1:
-                fobj,jac = resfun_semidirect_jac(weights, projhyb['istrain'], projhyb, projhyb['method'])
-            elif projhyb['hessian'] == 1:
-                assert projhyb['hessian'] == 1, 'Hessian not yet implemented'
-
-        #????
-        
-        if projhyb['mlm']['nx'] == 0:
-            for nparam in range(projhyb['mlm']['ny']):
-                weights[nparam] = projhyb['mlm']['y'][nparam]['init']
-        '''
         if istep > 1:
             print('Weights initialization...2')
             weights, ann = ann.reinitialize_weights()
@@ -322,21 +273,30 @@ def hybtrain(projhyb, file):
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
+        
+        if projhyb['jacobian'] == 1:
+            options['jac'] = evaluator.jac_func
+
+        if projhyb['hessian'] == 1:
+            options['hess'] = evaluator.hess_func
+        
+
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
             print("optios", options)
             print("weights", weights)
-            testing = teststate(ann, projhyb['istrain'], projhyb, projhyb['method'])
-            result = least_squares(evaluator.fobj_func, x0=weights, jac=evaluator.jac_func, **options)
+            result = least_squares(evaluator.fobj_func, x0=weights, **options)
             callback_wrapper(result, TrainRes, projhyb, istep)
 
 
         elif projhyb["method"] == 2:  # QUASI-NEWTON
             print("optios", options)
             print("weights", weights)
+            testing = teststate(ann, projhyb['istrain'], projhyb, projhyb['method'])
+
             if options.get('method', None) == 'trust-constr':
-                result = minimize(evaluator.fobj_func, x0=weights, jac=evaluator.jac_func, hess=None, **options)
+                result = minimize(evaluator.fobj_func, x0=weights, hess=None, **options)
             else:
-                result = minimize(evaluator.fobj_func, x0=weights, hess=evaluator.hess_func, **options)
+                result = minimize(evaluator.fobj_func, x0=weights, **options)
             
             callback_wrapper(result, TrainRes, projhyb, istep)
 
@@ -350,6 +310,9 @@ def hybtrain(projhyb, file):
             loss = fobj_func(weights)
             train_model(ann, dataloader, optimizer, loss_function, epochs=10)
     
+    
+    testing = teststate(ann, projhyb['istrain'], projhyb, projhyb['method'])
+
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
                 
     TrainRes["finalcpu"] = time.process_time() - TrainRes["t0"]
@@ -662,7 +625,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
 
     # ires = 11 
     ns = projhyb["nspecies"]
-    nt = ns + projhyb["ncompartments"]
+    nt = ns + projhyb["ncompartment"]
     nw = projhyb["mlm"]["nw"]
     isres = []
     isresY = []
@@ -706,7 +669,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             state = np.array(file[str(l)]["y"][0])
             Sw = np.zeros((nt, nw))
 
-            for i in range(1, file[str(l)]["np"]+1):
+            for i in range(1, file[str(l)]["np"]):
                 batch_data = file[str(l+1)]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
@@ -756,165 +719,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
                      
     return fobj, jac
 
-def resfun_indirect_fminunc(w, istrain, projhyb):
-    ns = projhyb['nstate']
-    nw = projhyb['mlm']['nw']
-    isres = projhyb['isres']
-    nres = projhyb['nres']
-
-    if 'mlmsetwfunc' in projhyb and projhyb['mlmsetwfunc'] is not None:
-        projhyb['mlm']['fundata'] = projhyb['mlmsetwfunc'](
-            projhyb['mlm']['fundata'], w) 
-
-    sres = 0
-    sjac = np.zeros(nw)
-
-    COUNT = 0
-    print(file["nbatch"])
-    for l in range(file['nbatch']):
-        if file[str(l)]["istrain"] == 1:
-            tb = file[str(l)]["time"]
-            Y = file[str(l)]["y"]
-
-            if 'u' not in file[str(l)]:
-                upars = []
-            else:
-                upars = file[str(l)]["u"]  # VERIFICAR !!!!!!!!!!!!!!!!
-
-            sY = file[str(l)]["sy"]
-
-            np = file[str(l)]["np"]
-
-            # Convert the row into a column vector
-
-            first = file[str(l)]["time"][0]
-            print(first)
-            n_columns = len(file[str(l)][str(first)]["state"])
-            print(n_columns)
-            first_row = file[str(l)]["y"][:n_columns]
-            print(first_row)
-            first_row_column = np.array(first_row).reshape(1, n_columns)
-            print(first_row_column)
-
-            state = np.array(file[str(l)]['y'][0]).reshape(-1, 1)
-            Sw = np.zeros((ns, nw))
-
-            for i in range(1, np):
-                # Assuming `hybodesolver` is a previously defined function
-                _, state, Sw = hybodesolver(projhyb['fun_hybodes_jac'],
-                                            projhyb['fun_control'],
-                                            projhyb['fun_event'],
-                                            tb[i-1], tb[i], state, Sw, 0, w, upars, projhyb)
-                for j in range(nres):
-                    k1 = isres[j]
-                    if not np.isnan(Y[i][k1]):
-                        res = (Y[i][k1] - state[k1][0]) / sY[i][k1]
-                        sres = sres + res**2
-                        sjac = sjac + (-2 * res / sY[i][k1]) * Sw[k1, :]
-                        COUNT += 1
-
-    sres = sres / COUNT
-    sjac = sjac / COUNT
-    return sres, sjac
-
-
-def resfun_indirect_fminunc_hess(w, istrain, projhyb):
-    ns = projhyb['nstate']
-    nw = projhyb['mlm']['nw']
-    isres = projhyb['isres']
-    nres = len(isres)
-
-    if projhyb['mlmsetwfunc']:
-        projhyb['mlm']['fundata'] = projhyb['mlmsetwfunc'](
-            projhyb['mlm']['fundata'], w)  # set weights
-
-    sres = 0
-    sjac = np.zeros(nw)
-    shess = np.zeros((nw, nw))
-
-    COUNT = 0
-
-    for l in range(projhyb['nbatch']):
-        if istrain[l] == 1:
-            tb = projhyb['batch'][l]['t']
-            Y = projhyb['batch'][l]['state']
-            upars = projhyb['batch'][l]['u']
-            sY = projhyb['batch'][l]['sc']
-            np = len(tb)
-
-            state = projhyb['batch'][l]['state'][0, :].T
-            Sw = np.zeros((ns, nw))
-            Hsw = np.zeros((ns * nw, nw))
-
-            for i in range(1, np):
-                _, state, Sw, Hsw = hybodesolver(
-                    projhyb['fun_hybodes_jac_hess'], projhyb['fun_control'], projhyb['fun_event'], tb[i-1], tb[i],
-                    state, Sw, Hsw, w, upars, projhyb
-                )
-
-                for j in range(nres):
-                    k1 = isres[j]
-                    if not np.isnan(Y[i, k1]):
-                        COUNT += 1
-                        res = (Y[i, k1] - state[k1, 0]) / sY[i, k1]
-                        sres += res * res
-                        sjac -= 2 * res / sY[i, k1] * Sw[k1, :]
-                        shess += (2 / sY[i, k1] ** 2) * np.outer(Sw[k1, :nw], Sw[k1, :nw]) - (
-                            2 * res / sY[i, k1]) * Hsw[(k1-1) * nw: k1 * nw, :nw]
-
-    sres /= COUNT
-    sjac /= COUNT
-    shess /= COUNT
-
-    return sres, sjac, shess
-
-
-def resfun_indirect(w, istrain=None, projhyb=None, method=1):
-    if projhyb is None:
-        raise ValueError("projhyb argument is required.")
-
-    if istrain is None:
-        istrain = projhyb['istrain']
-
-    ns = projhyb['nstate']
-    nw = projhyb['mlm']['nw']
-    isres = projhyb['isres']
-    nres = projhyb['nres']
-
-    projhyb['mlm']['fundata'] = projhyb['mlmsetwfunc'](
-        projhyb['mlm']['fundata'], w)  # set weights
-
-    npall = sum(projhyb['batch'][i]['np']
-                for i in range(projhyb['nbatch']) if istrain[i] == 1)
-    resall = np.zeros(npall * nres)
-
-    COUNT = 0
-    for l in range(projhyb['nbatch']):
-        if istrain[l] == 1:
-            tb = projhyb['batch'][l]['t']
-            Y = projhyb['batch'][l]['state']
-            upars = projhyb['batch'][l]['u']
-            sY = projhyb['batch'][l]['sc']
-            np_ = len(tb)
-            state = projhyb['batch'][l]['state'][0, :]
-
-            for i in range(1, np_):
-                _, state = hybodesolver(
-                    projhyb['fun_hybodes'], projhyb['fun_control'], projhyb['fun_event'],
-                    tb[i - 1], tb[i], state, 0, 0, w, upars, projhyb
-                )
-                resall[COUNT:COUNT +
-                       nres] = (Y[i, isres] - state[isres]) / sY[i, isres]
-                COUNT += nres
-
-    # finally remove missing values from residuals
-    resall = resall[~np.isnan(resall)]
-    resall = resall[~np.isinf(resall)]
-
-    if method == 1:
-        return resall
-    else:
-        return resall.T @ resall / len(resall)
 
 ####
 #   DIRECT
@@ -1252,34 +1056,20 @@ def teststate(ann, istrain, projhyb, method=1):
 
     dictState = {}
 
+    with open("results.json", "r") as results_file:
+        results = json.load(results_file)
+
         
-    w = [
-            0.0007015136744011259, -0.00108158614635343, 0.0016277780454606024,
-            -0.0044868582510268215, -0.00025876226047783304, 0.0003998375561490441,
-            -0.00030982710470514927, 0.0008408703591640135, -0.001316023949769433,
-            -8.246174447388206e-5, 0.001832687825885902, -0.0018390711596655345,
-            -0.0002719614095334463, 0.0003915115875978113, -0.00048411693392123287,
-            -0.0018352169672119201, -0.0035451750651185054, 0.004934859082002653,
-            -0.0004793174711216672, -0.006839754233849848, 0.008747807364036107,
-            0.0010397657273866084, -0.002790830315718261, 0.004012692350829219,
-            -0.0007072631147986224, 0.0018484701066135418, -0.0026829467041733198,
-            0.0007464982281708707, -0.0008256536625255011, 0.0013024396141238465,
-            0.0006204560583460203, -0.00019843855649051377, 0.00035290073150040426,
-            -4.05003135404205e-8, -8.237184566466017e-9, -1.451596974273829e-8,
-            0.004958193793622058, 0.001807339623727989, -0.002935729074873417,
-            0.006330622594155984, 0.0007052727064987708, -0.007012136123205187,
-            -0.0036931321917908545, -0.00043322168769721863, 0.005572823065529416,
-            3.187803371872334e-5, 3.136646675753254e-5, -1.8630998971103636e-5,
-            0.0036292640833626533, -0.009901967847844287, 0.01049759145652982,
-            -0.001036992193423449, -0.0002600338157864808, 0.0008525624646927241,
-            0.0012692126175676583, 0.0023778328636348827, -0.006600608329204656,
-            0.005827652433090245, -0.0006930997050804566, -0.0001317226311142237,
-            -8.245043015917419e-5, 0.0008503115459427479, -0.0011922697759143258,
-            0.0027363823323260303, 0.015218727894093018, 0.00045185603376538534,
-            0.00015569636343160464, 0.001131644773930095, -0.00042854481652551836,
-            0.15001892698398084, 0.18120289375808177, 4.0887059147576793e-5, 1.0010187783776994,
-            0.10000424727452327, 5.1093644390314715e-6, 0.04340354879913855
-        ]
+    w =  [
+                -0.0023416981667583104, -0.00798016620472829, 0.001475018033802915,
+                0.018308415246695117, 0.0005537230970959682, -0.016859571509595633,
+                -0.0012765320495863456, -0.007187604210067335, 0.004390743010624425,
+                -0.0023898069189952557, -0.0003910445082653616, -0.0006485141990209379,
+                0.5635359833079687, 0.09709754252200725, 0.0007099249852643722,
+                -0.38839776775808216, -0.02364415189223726, -7.943344914009417e-5,
+                0.002580055115456103, 0.1456091904235862, 0.18034712946732276, 3.726328488029208e-5,
+                1.0013114092620305, 0.09911907859287576, 6.022093352721663e-6, 0.040492255764239496
+            ]
 
     w = np.array(w)
 
@@ -1295,7 +1085,7 @@ def teststate(ann, istrain, projhyb, method=1):
 
     # ires = 11 
     ns = projhyb["nspecies"]
-    nt = ns + projhyb["ncompartments"]
+    nt = ns + projhyb["ncompartment"]
     nw = projhyb["mlm"]["nw"]
     isres = []
     isresY = []
@@ -1364,13 +1154,22 @@ def teststate(ann, istrain, projhyb, method=1):
             print("adaf", predicted)
 
         print("ada", actual, "adaf", predicted)
-
+        actual = np.array(actual)
+        predicted = np.array(predicted)
+        mu = np.mean(predicted)
+        std_dev = np.std(predicted, ddof=1) 
+        n = np.size(actual)
+        print("mu", mu, "std_dev", std_dev, "n", n)
+        ci = std_dev * 1.96 / np.sqrt(n)
         x = tb
         plt.figure(figsize=(14, 7))
-        plt.plot(x, predicted, label="curve 1")
-        plt.plot(x, actual, label="curve 2")
+        plt.plot(x, predicted, label="Predicted")
+        plt.plot(x, actual, label="Actual")
+        plt.title(f"State {projhyb['species'][str(i)]['id']} ")
+
         plt.legend()
         plt.show()
+
 
 
 

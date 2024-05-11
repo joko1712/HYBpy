@@ -4,41 +4,45 @@ import torch.nn.functional as F
 import numpy as np
 import random   
 
+
 class CustomMLP(nn.Module):
     def __init__(self, layer_sizes, layer_types):
         super(CustomMLP, self).__init__()
         self.layers = nn.ModuleList()
+        self.device = torch.device("cpu")  
+
         for i, layer_type in enumerate(layer_types):
             if layer_type == 'tanh':
-                self.layers.append(
-                    TanhLayer(layer_sizes[i], layer_sizes[i + 1]))
+                layer = TanhLayer(layer_sizes[i], layer_sizes[i + 1])
             elif layer_type == 'relu':
-                self.layers.append(
-                    ReLULayer(layer_sizes[i], layer_sizes[i + 1]))
+                layer = ReLULayer(layer_sizes[i], layer_sizes[i + 1])
             elif layer_type == 'lstm':
-                self.layers.append(
-                    LSTMLayer(layer_sizes[i], layer_sizes[i + 1]))
+                layer = LSTMLayer(layer_sizes[i], layer_sizes[i + 1])
+            layer.to(self.device) 
+            self.layers.append(layer)
 
         self.layers.append(Linear(layer_sizes[-2], layer_sizes[-1]))
+        self.layers.to(self.device)
 
 
         self.scale_weights(scaling_factor=0.0001)
 
 
     def forward(self, x):
+        x = x.to(self.device)  
         for layer in self.layers:
-            x = x.to(dtype=torch.float64)
-
             x = layer(x)
+        
         return x
 
 
     def scale_weights(self, scaling_factor):
-        with torch.no_grad():  
+        with torch.no_grad():
             for layer in self.layers:
-                for w in layer.w.data:
-                    w *= scaling_factor * random.uniform(0.9, 1.1)
-                layer.b.data *= scaling_factor
+                if hasattr(layer, 'w'):
+                    layer.w.data *= scaling_factor * torch.tensor(random.uniform(0.9, 1.1)).to(self.device)
+                if hasattr(layer, 'b'):
+                    layer.b.data *= scaling_factor
 
     
     def reinitialize_weights(self):
@@ -184,20 +188,15 @@ class CustomMLP(nn.Module):
 
     def backpropagate(self, x):
         activations = [x]
-
         for layer in self.layers:
-
-            x = x.to(dtype=torch.float64)
             x = layer(x)
-
             activations.append(x)
-            
-        # y = output
+
         y = activations[-1]
         tensorList = []
         DrannDw = []
         output_size = self.layers[-1].w.shape[0]
-        DrannDanninp = torch.eye(output_size, dtype=torch.float64)
+        DrannDanninp = torch.eye(output_size, dtype=torch.float64, device=x.device)
         A1 = DrannDanninp
         tensor_size = 0
         
@@ -206,45 +205,37 @@ class CustomMLP(nn.Module):
             h1l = self.layers[i].derivative(h1)
             h1l_reshaped = h1l.t()
             
-            h1_reshaped = torch.cat((h1.t(), torch.tensor([[1]])), dim=1)
+            h1_reshaped = torch.cat((h1.t(), torch.tensor([[1]], device=x.device)), dim=1)  
             
-            layer_dydw = torch.kron(h1_reshaped,A1)
+            layer_dydw = torch.kron(h1_reshaped, A1)
 
-            tensor_size = tensor_size + layer_dydw.shape[1] 
+            tensor_size += layer_dydw.shape[1] 
             tensorList.insert(0, layer_dydw)
-
 
             if i == 0:
                 break
 
-            A1 = -(torch.mm(DrannDanninp,self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
-
-
+            A1 = -(torch.mm(DrannDanninp, self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
             DrannDanninp = A1
 
-            h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]])), dim=1)
+            h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]], device=x.device)), dim=1)  
 
-        DrannDanninp = torch.mm(A1,self.layers[0].w)
-
-
-        DrannDw = tensorList
-
-        DrannDw = torch.cat(DrannDw, dim=1)
+        DrannDanninp = torch.mm(A1, self.layers[0].w)
+        DrannDw = torch.cat(tensorList, dim=1)
         DrannDw = DrannDw.view(7, tensor_size)
 
         return y, DrannDanninp, DrannDw
 
 class TanhLayer(nn.Module):
     def __init__(self, input_size, output_size):
-        self.input_size = input_size
-        self.output_size = output_size
         super(TanhLayer, self).__init__()
-        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
-        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
+        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())  
+        self.b = nn.Parameter(torch.Tensor(output_size, 1).double()) 
         nn.init.xavier_uniform_(self.w)
         nn.init.zeros_(self.b)
 
     def forward(self, x):
+        x = x.double() 
         return torch.tanh(torch.mm(self.w, x) + self.b)
 
     def derivative(self, x):
@@ -254,14 +245,14 @@ class TanhLayer(nn.Module):
 class ReLULayer(nn.Module):
     def __init__(self, input_size, output_size):
         super(ReLULayer, self).__init__()
-        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
-        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
+        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())  
+        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())  
         nn.init.kaiming_uniform_(self.w, mode='fan_in', nonlinearity='relu')
         nn.init.zeros_(self.b)
 
     def forward(self, x):
-        xin = torch.mm(self.w, x) + self.b
-        return F.leaky_relu(xin, negative_slope=0.003)
+        x = x.double() 
+        return F.leaky_relu(torch.mm(self.w, x) + self.b)
 
     def derivative(self, x):
         xin = torch.mm(self.w, x) + self.b
@@ -291,15 +282,14 @@ class LSTMLayer(nn.Module):
 
 class Linear(nn.Module):
     def __init__(self, input_size, output_size):
-        self.input_size = input_size
-        self.output_size = output_size
         super(Linear, self).__init__()
-        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
-        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
+        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())  
+        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())  
         nn.init.xavier_uniform_(self.w)
-        nn.init.zeros_(self.b) 
+        nn.init.zeros_(self.b)
 
     def forward(self, x):
+        x = x.double()  # Convert x to double
         return torch.mm(self.w, x) + self.b
 
     def derivative(self, x):

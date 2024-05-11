@@ -7,52 +7,30 @@ import torch
 from sympy import *
 import sympy as sp
 from derivativeXY import numerical_derivativeXY
-
+from torch.autograd import profiler
 
 def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w, batch, projhyb):
     t = t0
-    hopt = []
-
-    state_symbols = []
+    device = torch.device("cpu")
 
     anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
+    anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float32).to(device).view(-1, 1)
 
-    anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
-    anninp_tensor = anninp_tensor.view(-1, 1)       
+    rann_results = ann(anninp_tensor).detach()
 
-    activations = [anninp_tensor]
-    
-    y = activations[-1]
-
-    print("y", y)
-    rann_results = ann.forward(y)
-
-    rann_results = rann_results.detach().numpy()
-
-    print("rann", rann_results)
-
-    state = extract_species_values(projhyb,state)
-    values = {}
-    for range_y in range(0, len(rann_results)):
-        values["rann"+str(range_y+1)] = rann_results[range_y].item()
-
+    state = extract_species_values(projhyb, state)
+    values = {"rann" + str(i + 1): rann_results[i].item() for i in range(rann_results.size(0))}
     values["compartment"] = int(projhyb["compartment"]["1"]["val"])
 
+    # Assigning ID values from the configuration
+    values.update({projhyb["mlm"]["y"][str(i + 1)]["id"]: values["rann" + str(i + 1)] for i in range(len(rann_results))})
+    values.update({projhyb["parameters"][str(i + 1)]["id"]: projhyb["parameters"][str(i + 1)]["val"] for i in range(projhyb["nparameters"])})
 
-    for i in range(1, projhyb["mlm"]["ny"]+1):
-        values[projhyb["mlm"]["y"][str(i)]["id"]] = values[projhyb["mlm"]["y"][str(i)]["val"]]
+    state_symbols = [sp.sympify(projhyb[entity][str(i)]["id"]) for entity in ["species", "compartment"] for i in range(1, projhyb["n" + entity] + 1)]
 
-    for i in range(1, projhyb["nparameters"]+1):
-        values[projhyb["parameters"][str(i)]["id"]] = projhyb["parameters"][str(i)]["val"]
-
-    for i in range(1, projhyb["nspecies"]+1):
-        state_symbols.append(sp.sympify(projhyb["species"][str(i)]["id"]))
-
-    for i in range(1, projhyb["ncompartments"]+1):
-        state_symbols.append(sp.sympify(projhyb["compartment"][str(i)]["id"]))
 
     if jac is not None:
-        jac = torch.tensor(jac, dtype=torch.float64)
+        jac = torch.tensor(jac, dtype=torch.float64).to(device)
     fstate = fstate_func(projhyb,values)
 
     while t < tf:
@@ -83,7 +61,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
         ucontrol2 = controlfun() if control is not None else []
 
         h2 = h / 2
-        h2 = torch.tensor(h2, dtype=torch.float64)
+        h2 = torch.tensor(h2, dtype=torch.float64).to(device)
 
         k1_state = np.array(k1_state)
         
@@ -92,8 +70,10 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
         
         if jac != None:
 
+            jac_update = jac + h2 * k1_jac
             state1 = update_state(state, h2, k1_state)
-            k2_state, k2_jac = odesfun(ann,t + h2, state1, jac + h2 * k1_jac, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
+        
+            k2_state, k2_jac = odesfun(ann,t + h2, state1, jac_update, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
            
             k2_state = np.array(k2_state)
             k2_state = k2_state.astype(np.float64)
@@ -157,7 +137,7 @@ def anninp_rann_func(projhyb,state):
     for i in range(1, projhyb["nspecies"]+1):
         totalsyms.append(projhyb["species"][str(i)]["id"])  # Species
 
-    for i in range(1, projhyb["ncompartments"]+1):
+    for i in range(1, projhyb["ncompartment"]+1):
         totalsyms.append(projhyb["compartment"][str(i)]["id"])  # Compartments
 
     for i in range(1, projhyb["nparameters"]+1):

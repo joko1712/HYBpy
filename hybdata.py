@@ -538,7 +538,7 @@ def hybdata(filename):
         "tspan": listArray,
         "nspecies": nspecies,
         "species": species_dict,
-        "ncompartments": ncompartments,
+        "ncompartment": ncompartments,
         "compartment": compartment_dict,
         "nparameters": nparameters,
         "parameters": parameters_dict,

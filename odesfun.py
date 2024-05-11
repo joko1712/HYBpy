@@ -14,73 +14,95 @@ from derivativeXY import numerical_diferentiation_torch
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+def convert_and_transfer_matrix(sym_matrix, device):
+    if isinstance(sym_matrix, sp.Matrix):
+        np_array = np.array(sym_matrix).astype(np.float64)
+    else:
+        np_array = sym_matrix.astype(np.float64)
+    tensor = torch.from_numpy(np_array)
+    tensor = tensor.to(device)
+    return tensor
 
-def computeDFDS(projhyb, fstate, state_symbols, NValues):
-    if projhyb['mlm']['DFDS'] == None:
+def computeDFDS(projhyb, fstate, state_symbols, NValues, device):
+    if projhyb['mlm']['DFDS'] is None:
         DfDs = numerical_diferentiation_torch(fstate, state_symbols, NValues)
         projhyb['mlm']['DFDS'] = DfDs
     else:
         DfDs = projhyb['mlm']['DFDS']
-
-    DfDs = DfDs.subs(NValues)
-    DfDs = np.array(DfDs)
+    
+    if isinstance(DfDs, sp.Matrix):
+        DfDs = DfDs.subs(NValues)
+        DfDs = convert_and_transfer_matrix(DfDs, device)
+    else:
+        DfDs = DfDs.to(device)
+    
     DfDs = DfDs.reshape(len(fstate), len(state_symbols))
-    if np.iscomplexobj(DfDs):
-        DfDs = DfDs.real
-    DfDs = DfDs.astype(np.float64)
-    DfDs = torch.from_numpy(DfDs)
-
+    
+    if DfDs.is_complex():
+        DfDs = DfDs.real()
+    
     return DfDs
 
-def computeDFDRANN(projhyb, fstate, rann_symbol, NValues):
+def computeDFDRANN(projhyb, fstate, rann_symbol, NValues, device):
     if projhyb['mlm']['DFDRANN'] == None:
         DfDrann = numerical_diferentiation_torch(fstate, rann_symbol, NValues)
         projhyb['mlm']['DFDRANN'] = DfDrann
     else:
         DfDrann = projhyb['mlm']['DFDRANN']
 
-    DfDrann = DfDrann.subs(NValues)
+    if isinstance(DfDrann, sp.Matrix):
+        DfDrann = DfDrann.subs(NValues)
+        DfDrann = convert_and_transfer_matrix(DfDrann, device)
+    else:
+        DfDrann = DfDrann.to(device)
 
-    DfDrann = np.array(DfDrann)
     DfDrann = DfDrann.reshape(len(fstate), projhyb["mlm"]["ny"])
-    if np.iscomplexobj(DfDrann):
-        print("DfDrann is complex")
-        DfDrann = DfDrann.real
-    DfDrann = DfDrann.astype(np.float64)
-    DfDrann = torch.from_numpy(DfDrann)
+    
+    if DfDrann.is_complex():
+        DfDrann = DfDrann.real()
 
     return DfDrann
 
-def computeDANNINPDSTATE(projhyb, anninp, state_symbols, NValues):
+def computeDANNINPDSTATE(projhyb, anninp, state_symbols, NValues, device):
     if projhyb['mlm']['DANNINPDSTATE'] == None:
         DanninpDstate = numerical_diferentiation_torch(anninp, state_symbols, NValues)
         projhyb['mlm']['DANNINPDSTATE'] = DanninpDstate
     else:
         DanninpDstate = projhyb['mlm']['DANNINPDSTATE']
 
-    DanninpDstate = DanninpDstate.subs(NValues)
-
-    DanninpDstate = np.array(DanninpDstate)
+    if isinstance(DanninpDstate, sp.Matrix):
+        DanninpDstate = DanninpDstate.subs(NValues)
+        DanninpDstate = convert_and_transfer_matrix(DanninpDstate, device)
+    else:
+        DanninpDstate = DanninpDstate.to(device)
+    
     DanninpDstate = DanninpDstate.reshape(len(anninp)+1, len(anninp))
-    if np.iscomplexobj(DanninpDstate):
-        DanninpDstate = DanninpDstate.real
-    DanninpDstate = DanninpDstate.astype(np.float64)
-    DanninpDstate = torch.from_numpy(DanninpDstate)
+    
+    if DanninpDstate.is_complex():
+        DanninpDstate = DanninpDstate.real()
 
     return DanninpDstate
 
-def computeBackpropagation(ann, anninp_tensor):
+def computeBackpropagation(ann, anninp_tensor, device):
     y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
+
+    y = y.to(device)
+    DrannDanninp = DrannDanninp.to(device)
+    DrannDw = DrannDw.to(device)
 
     return y, DrannDanninp, DrannDw
 
-def computeDRANNDS(DrannDanninp, DanninpDstate):
+def computeDRANNDS(DrannDanninp, DanninpDstate, device):
     DrannDs = torch.mm(DrannDanninp, DanninpDstate.t())
+
+    DrannDs = DrannDs.to(device)
 
     return DrannDs
 
-def computeDfDrannDrannDw(DfDrann, DrannDw):
+def computeDfDrannDrannDw(DfDrann, DrannDw, device):
     DfDrannDrannDw = torch.mm(DfDrann, DrannDw)
+
+    DfDrannDrannDw = DfDrannDrannDw.to(device)
 
     return DfDrannDrannDw
 
@@ -140,13 +162,14 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DanninpDstate = numerical_derivativeXY(anninp, state_symbols, NValues)
 
 
+            device = torch.device("cpu")
 
             with ThreadPoolExecutor(max_workers=4) as executor:
                 future_to_function = {
-                    executor.submit(computeDFDS, projhyb, fstate, state_symbols, NValues): 'DfDs',
-                    executor.submit(computeDFDRANN, projhyb, fstate, rann_symbol, NValues): 'DfDrann',
-                    executor.submit(computeDANNINPDSTATE, projhyb, anninp, state_symbols, NValues): 'DanninpDstate',
-                    executor.submit(computeBackpropagation, ann, anninp_tensor): 'backpropagation'
+                    executor.submit(computeDFDS, projhyb, fstate, state_symbols, NValues, device): 'DfDs',
+                    executor.submit(computeDFDRANN, projhyb, fstate, rann_symbol, NValues, device): 'DfDrann',
+                    executor.submit(computeDANNINPDSTATE, projhyb, anninp, state_symbols, NValues, device): 'DanninpDstate',
+                    executor.submit(computeBackpropagation, ann, anninp_tensor, device): 'backpropagation'
                 }
 
                 results = {}
@@ -162,8 +185,8 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
             with ThreadPoolExecutor(max_workers=2) as executor:
                 future_to_function = {
-                    executor.submit(computeDRANNDS, DrannDanninp, DanninpDstate): 'DrannDs',
-                    executor.submit(computeDfDrannDrannDw, DfDrann, DrannDw): 'DfDrannDrannDw'
+                    executor.submit(computeDRANNDS, DrannDanninp, DanninpDstate, device): 'DrannDs',
+                    executor.submit(computeDfDrannDrannDw, DfDrann, DrannDw, device): 'DfDrannDrannDw'
                 }
 
                 results = {}
@@ -178,6 +201,9 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
             DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann,DrannDs)
 
+            DfDsDfDrannDrannDs = DfDsDfDrannDrannDs.to(device)
+            
+            jac = jac.to(device)
 
             fjac = torch.mm(DfDsDfDrannDrannDs,jac) + DfDrannDrannDw
 

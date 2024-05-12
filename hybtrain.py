@@ -291,7 +291,6 @@ def hybtrain(projhyb, file):
         elif projhyb["method"] == 2:  # QUASI-NEWTON
             print("optios", options)
             print("weights", weights)
-            testing = teststate(ann, projhyb['istrain'], projhyb, projhyb['method'])
 
             if options.get('method', None) == 'trust-constr':
                 result = minimize(evaluator.fobj_func, x0=weights, hess=None, **options)
@@ -311,7 +310,7 @@ def hybtrain(projhyb, file):
             train_model(ann, dataloader, optimizer, loss_function, epochs=10)
     
     
-    testing = teststate(ann, projhyb['istrain'], projhyb, projhyb['method'])
+    testing = teststate(ann, projhyb['istrain'], projhyb, result.x, projhyb['method'])
 
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
                 
@@ -1052,25 +1051,18 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
     plt.show()
 
 
-def teststate(ann, istrain, projhyb, method=1):
+def teststate(ann, istrain, projhyb, w, method=1):
 
     dictState = {}
-
-    with open("results.json", "r") as results_file:
-        results = json.load(results_file)
-
-        
-    w =  [
-                -0.0023416981667583104, -0.00798016620472829, 0.001475018033802915,
-                0.018308415246695117, 0.0005537230970959682, -0.016859571509595633,
-                -0.0012765320495863456, -0.007187604210067335, 0.004390743010624425,
-                -0.0023898069189952557, -0.0003910445082653616, -0.0006485141990209379,
-                0.5635359833079687, 0.09709754252200725, 0.0007099249852643722,
-                -0.38839776775808216, -0.02364415189223726, -7.943344914009417e-5,
-                0.002580055115456103, 0.1456091904235862, 0.18034712946732276, 3.726328488029208e-5,
-                1.0013114092620305, 0.09911907859287576, 6.022093352721663e-6, 0.040492255764239496
-            ]
-
+    w = [-0.0023416981667583104, -0.00798016620472829, 0.001475018033802915,
+        0.018308415246695117, 0.0005537230970959682, -0.016859571509595633,
+        -0.0012765320495863456, -0.007187604210067335, 0.004390743010624425,
+        -0.0023898069189952557, -0.0003910445082653616, -0.0006485141990209379,
+        0.5635359833079687, 0.09709754252200725, 0.0007099249852643722,
+        -0.38839776775808216, -0.02364415189223726, -7.943344914009417e-5,
+        0.002580055115456103, 0.1456091904235862, 0.18034712946732276, 3.726328488029208e-5,
+        1.0013114092620305, 0.09911907859287576, 6.022093352721663e-6, 0.040492255764239496]
+    
     w = np.array(w)
 
     print("weights", w)
@@ -1083,7 +1075,6 @@ def teststate(ann, istrain, projhyb, method=1):
     if not istrain:
         istrain = projhyb["istrain"]
 
-    # ires = 11 
     ns = projhyb["nspecies"]
     nt = ns + projhyb["ncompartment"]
     nw = projhyb["mlm"]["nw"]
@@ -1141,6 +1132,7 @@ def teststate(ann, istrain, projhyb, method=1):
     for i in range(1, projhyb['mlm']['nx']):
         actual = []
         predicted = []
+        err = []
         print(dictState)
         actual.append(file[str(1)][str(0)]["state"][i-1])
         predicted.append(file[str(1)][str(0)]["state"][i-1])
@@ -1148,23 +1140,30 @@ def teststate(ann, istrain, projhyb, method=1):
         for l in range(tb[-1]):
             actual.append(file[str(1)][str(l+1)]["state"][i-1]) 
             print("ada", actual)
-        
-        for l in range(tb[-1]):
             predicted.append(dictState[l+1][i-1])
             print("adaf", predicted)
+            err.append(file[str(1)][str(l+1)]["sc"][i-1])
 
-        print("ada", actual, "adaf", predicted)
+        print("ada", actual, "adaf", predicted, "err", err)
         actual = np.array(actual)
         predicted = np.array(predicted)
+        # Calculate the confidence interval
+        '''
         mu = np.mean(predicted)
         std_dev = np.std(predicted, ddof=1) 
         n = np.size(actual)
         print("mu", mu, "std_dev", std_dev, "n", n)
         ci = std_dev * 1.96 / np.sqrt(n)
+        '''
         x = tb
-        plt.figure(figsize=(14, 7))
-        plt.plot(x, predicted, label="Predicted")
-        plt.plot(x, actual, label="Actual")
+
+        fig, ax = plt.subplots()
+        ax.errorbar(x, actual, err, fmt='o', linewidth=2, capsize=6, label="Actual", color='blue')
+        ax.set(xlim=(0, 8), xticks=np.arange(1, 8), ylim=(0, 8), yticks=np.arange(1, 8))
+    
+
+        ax.plot(x, predicted, label="Predicted", color='red', linewidth=2)
+        
         plt.title(f"State {projhyb['species'][str(i)]['id']} ")
 
         plt.legend()

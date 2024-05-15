@@ -17,6 +17,7 @@ from odesfun import odesfun
 from Control_functions.control_function_chass import control_function
 import customMLP as mlp
 from hybtrainiterres import hybtrainiterres
+from sklearn.metrics import mean_squared_error, r2_score
 
 with open("sample.json", "r") as f:
     projhyb = json.load(f)
@@ -143,7 +144,7 @@ def hybtrain(projhyb, file):
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
-            'xtol': 1e-10, #1e-15
+            'xtol': 1e-5, #1e-15
             #'ftol': 1e-15,
             #'gtol': 1e-14,
             'verbose': projhyb['display'],
@@ -252,6 +253,7 @@ def hybtrain(projhyb, file):
 
 
     for istep in range(1, projhyb['nstep']):
+        print("TESTING")
         for i in range(1, file['nbatch'] + 1):
             istrain = file[str(i)]["istrain"]
             projhyb['istrain'] = [0] * file['nbatch']
@@ -1054,7 +1056,8 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
 def teststate(ann, istrain, projhyb, w, method=1):
 
     dictState = {}
-    w = [-0.0023416981667583104, -0.00798016620472829, 0.001475018033802915,
+    '''
+    w = [ -0.0023416981667583104, -0.00798016620472829, 0.001475018033802915,
         0.018308415246695117, 0.0005537230970959682, -0.016859571509595633,
         -0.0012765320495863456, -0.007187604210067335, 0.004390743010624425,
         -0.0023898069189952557, -0.0003910445082653616, -0.0006485141990209379,
@@ -1062,115 +1065,127 @@ def teststate(ann, istrain, projhyb, w, method=1):
         -0.38839776775808216, -0.02364415189223726, -7.943344914009417e-5,
         0.002580055115456103, 0.1456091904235862, 0.18034712946732276, 3.726328488029208e-5,
         1.0013114092620305, 0.09911907859287576, 6.022093352721663e-6, 0.040492255764239496]
-    
+    '''
     w = np.array(w)
-
-    print("weights", w)
 
     # LOAD THE WEIGHTS into the ann
     ann.set_weights(w)
     ann.print_weights_and_biases()
     with open("file.json", "r") as read_file:
         file = json.load(read_file)
+    
     if not istrain:
         istrain = projhyb["istrain"]
 
     ns = projhyb["nspecies"]
     nt = ns + projhyb["ncompartment"]
     nw = projhyb["mlm"]["nw"]
-    isres = []
-    isresY = []
-    for i in range(1, ns + 1):
-        if projhyb["species"][str(i)]["isres"] == 1: 
-            isres = isres + [i]
-            isresY = isresY + [i - 1]
-
-    isres = isres
-        
+    
+    isres = [i for i in range(1, ns + 1) if projhyb["species"][str(i)]["isres"] == 1]
+    isresY = [i - 1 for i in isres]
+    
     nres = len(isres)
 
     npall = sum(file[str(i+1)]["np"] for i in range(file["nbatch"]) if file[str(i+1)]["istrain"] == 1)
 
     sresall = np.zeros(npall * nres)
-
     sjacall = np.zeros((npall * nres, nw))
-
-    print("npall", npall*nres)
-    print("npall", nres)
-
-    print("nn:", ann)
 
     COUNT = 0
     for l in range(file["nbatch"]):
         l = l + 1
-        if file[str(l)]["istrain"] == 1:
-            tb = file[str(l)]["time"]
-            print("tb", tb)
-            Y = file[str(l)]["y"]
-            Y = np.array(Y)
-            Y = Y.astype(np.float64)
-            Y = torch.from_numpy(Y)
-            
-            batch = str(l)
-
-            sY = file[str(l)]["sy"]
-            sY = np.array(sY)
-            sY = sY.astype(np.float64)
-            sY = torch.from_numpy(sY)
-            
-            state = np.array(file[str(l)]["y"][0])
-            Sw = np.zeros((nt, nw))
-
-            for i in range(1, file[str(l)]["np"]):
-                batch_data = file[str(l+1)]
-                _, state, Sw, hess = hybodesolver(ann,odesfun, control_function , projhyb["fun_event"], tb[i-1], tb[i], state, None, None, w, batch_data, projhyb)
-
-                dictState[i] = state
+        tb = file[str(l)]["time"]
+        print("tb", tb)
+        Y = np.array(file[str(l)]["y"]).astype(np.float64)
+        Y = torch.from_numpy(Y)
         
+        batch = str(l)
 
+        sY = np.array(file[str(l)]["sy"]).astype(np.float64)
+        sY = torch.from_numpy(sY)
+        
+        state = np.array(file[str(l)]["y"][0])
+        Sw = np.zeros((nt, nw))
 
-    for i in range(1, projhyb['mlm']['nx']):
-        actual = []
+        for i in range(1, file[str(l)]["np"]):
+            batch_data = file[str(l)]
+            _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, None, None, w, batch_data, projhyb)
+
+            if l not in dictState:
+                dictState[l] = {}
+            dictState[l][i] = state
+
+    for i in range(0, projhyb['mlm']['nx']):
+        actual_train = []
+        actual_test = []
         predicted = []
+        test = []
         err = []
-        print(dictState)
-        actual.append(file[str(1)][str(0)]["state"][i-1])
-        predicted.append(file[str(1)][str(0)]["state"][i-1])
-        
-        for l in range(tb[-1]):
-            actual.append(file[str(1)][str(l+1)]["state"][i-1]) 
-            print("ada", actual)
-            predicted.append(dictState[l+1][i-1])
-            print("adaf", predicted)
-            err.append(file[str(1)][str(l+1)]["sc"][i-1])
+        print("dictState", dictState)
+        print("batches", projhyb["train_batches"], projhyb["test_batches"])
 
-        print("ada", actual, "adaf", predicted, "err", err)
-        actual = np.array(actual)
-        predicted = np.array(predicted)
-        # Calculate the confidence interval
-        '''
-        mu = np.mean(predicted)
-        std_dev = np.std(predicted, ddof=1) 
-        n = np.size(actual)
-        print("mu", mu, "std_dev", std_dev, "n", n)
-        ci = std_dev * 1.96 / np.sqrt(n)
-        '''
+        actual_train.append(file[str(1)][str(0)]["state"][i])
+        actual_test.append(file[str(1)][str(0)]["state"][i])
+        predicted.append(file[str(projhyb["train_batches"][0])][str(0)]["state"][i])
+        test.append(file[str(projhyb["test_batches"][0])][str(0)]["state"][i])
+        err.append(file[str(1)][str(0)]["sc"][i])
+
+        for l in range(tb[-1]):
+            actual_train.append(file[str(projhyb["train_batches"][0])][str(l+1)]["state"][i]) 
+            actual_test.append(file[str(projhyb["test_batches"][0])][str(l+1)]["state"][i]) 
+            predicted.append(dictState[projhyb["train_batches"][0]][l+1][i])
+            test.append(dictState[projhyb["test_batches"][0]][l+1][i])
+            err.append(file[str(1)][str(l+1)]["sc"][i])
+
+        print("actual", actual_train)
+        print("predicted", predicted)
+        print("test", test)
+
+        actual_train = np.array(actual_train, dtype=np.float64)
+        actual_test = np.array(actual_test, dtype=np.float64)
+        predicted = np.array(predicted, dtype=np.float64)
+        test = np.array(test, dtype=np.float64)
+        err = np.array(err, dtype=np.float64)
+
+        mse_train = mean_squared_error(actual_train, predicted)
+        print(f'Training MSE: {mse_train}')
+        mse_test = mean_squared_error(actual_test, predicted)
+        print(f'Test MSE: {mse_test}')
+
+        r2_train = r2_score(actual_train, predicted)
+        print(f'Training R²: {r2_train}')
+        r2_test = r2_score(actual_test, predicted)
+        print(f'Test R²: {r2_test}')
+
+
+        z_score = 2.05
+        margin = z_score * err
+
+        lower_bound = predicted - margin
+        upper_bound = predicted + margin
+
+
         x = tb
 
-        fig, ax = plt.subplots()
-        ax.errorbar(x, actual, err, fmt='o', linewidth=2, capsize=6, label="Actual", color='blue')
-        ax.set(xlim=(0, 8), xticks=np.arange(1, 8), ylim=(0, 8), yticks=np.arange(1, 8))
-    
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.errorbar(x, actual_train, err, fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
+        ax.plot(x, predicted, label="Predicted", color='red', linewidth=1)
+        ax.fill_between(x, lower_bound, upper_bound, color='gray', label="Confidence Interval", alpha=0.5)
 
-        ax.plot(x, predicted, label="Predicted", color='red', linewidth=2)
+        plt.xlabel('Time (s)')
+        plt.ylabel('Concentration')
+        plt.title(f"Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+
+        textstr = '\n'.join((
+            f'Training MSE: {mse_train:.4f}',
+            f'Training R²: {r2_train:.4f}',
+            f'Test MSE: {mse_test:.4f}',
+            f'Test R²: {r2_test:.4f}',
+        ))
+
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10,
+                verticalalignment='top', bbox=props)
         
-        plt.title(f"State {projhyb['species'][str(i)]['id']} ")
-
         plt.legend()
         plt.show()
-
-
-
-
-    print("dictState", dictState)   
-    print("dasdas", asdasd)

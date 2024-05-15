@@ -817,7 +817,7 @@
     "datasource": 3,
     "datafun": "@chassdata",
     "mode": 1,
-    "method": 2,
+    "method": 1,
     "jacobian": 1,
     "hessian": 0,
     "derivativecheck": "off",

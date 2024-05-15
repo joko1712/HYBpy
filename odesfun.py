@@ -162,7 +162,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
             #DanninpDstate = numerical_derivativeXY(anninp, state_symbols, NValues)
 
 
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            device = torch.device("cpu")
 
             with ThreadPoolExecutor(max_workers=4) as executor:
                 future_to_function = {

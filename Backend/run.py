@@ -1,4 +1,3 @@
-
 import sys
 import os
 import json 
@@ -17,7 +16,7 @@ with open("sample.json", "r") as f:
     projhyb = json.load(f)
 
 
-with open("chassbatch1.csv", 'r') as f:
+with open("combined_chassbatch.csv", 'r') as f:
     reader = csv.reader(f)
     headers = next(reader)
 
@@ -25,7 +24,7 @@ with open("chassbatch1.csv", 'r') as f:
     current_time_group = 1
     current_time = None
 
-    for row in reader:
+    for row in reader:  
 
         if not row or not row[0].strip():
             current_time_group += 1
@@ -54,7 +53,7 @@ with open('sample.json', 'w') as f:
     json.dump(projhyb, f, indent=4)
  
 with open("file.json", "r") as read_file:
-    file = json.load(read_file)
+    file = json.load(read_file) 
 
 projhyb, trainData = hybtrain(projhyb, file)
 response_data = {

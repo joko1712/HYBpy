@@ -1,0 +1,286 @@
+%--------------------------------------------------------------------------
+% hybrid model definition data structure
+
+%Timespan
+parkram.tspan=0:1:15
+
+%Species
+parkram.nspecies=4
+parkram.species(1).id="X"
+parkram.species(1).val=1
+parkram.species(1).compartment="V"
+parkram.species(1).fixed=0
+parkram.species(1).min= 0;
+parkram.species(1).max= 5;
+parkram.species(1).isres=1;
+parkram.species(2).id="S"
+parkram.species(2).val=5
+parkram.species(2).compartment="V"
+parkram.species(2).fixed=0
+parkram.species(2).min= 0;
+parkram.species(2).max= 20;
+parkram.species(2).isres=1;
+parkram.species(3).id="PT"
+parkram.species(3).val=0
+parkram.species(3).compartment="V"
+parkram.species(3).fixed=0
+parkram.species(3).min= 0;
+parkram.species(3).max= 5;
+parkram.species(3).isres=1;
+parkram.species(4).id="PM"
+parkram.species(4).val=0
+parkram.species(4).compartment="V" 
+parkram.species(4).fixed=0
+parkram.species(4).min= 0;
+parkram.species(4).max= 5;
+parkram.species(4).isres=1;
+
+%Compartments
+parkram.ncompartments=1
+parkram.compartment(1).id="V"
+parkram.compartment(1).val=1
+parkram.compartment(1).min= 0;
+parkram.compartment(1).max= 10;
+parkram.compartment(1).isres=0;
+
+%Parameters
+parkram.nparameters=36
+parkram.parameters(1).id="Y"
+parkram.parameters(1).val="7.3"
+parkram.parameters(1).reaction="global"
+parkram.parameters(2).id="miumax"
+parkram.parameters(2).val="21.87" 
+parkram.parameters(2).reaction="global"
+parkram.parameters(3).id="u"
+parkram.parameters(3).val="0.1250"
+parkram.parameters(3).reaction="global"
+parkram.parameters(4).id="w1"
+parkram.parameters(4).val="0.04145889088"
+parkram.parameters(4).reaction="global"
+parkram.parameters(5).id="w2"
+parkram.parameters(5).val="-3.130926228"
+parkram.parameters(5).reaction="global"
+parkram.parameters(6).id="w3"
+parkram.parameters(6).val="0.6271107965"
+parkram.parameters(6).reaction="global"
+parkram.parameters(7).id="w4"
+parkram.parameters(7).val="3.11219556"
+parkram.parameters(7).reaction="global"
+parkram.parameters(8).id="w5"
+parkram.parameters(8).val="-0.04613724747"
+parkram.parameters(8).reaction="global"
+parkram.parameters(9).id="w6"
+parkram.parameters(9).val="-0.4771192813"
+parkram.parameters(9).reaction="global"
+parkram.parameters(10).id="w7"
+parkram.parameters(10).val="-0.4854218437"
+parkram.parameters(10).reaction="global"
+parkram.parameters(11).id="w8"
+parkram.parameters(11).val="0.2660880012"
+parkram.parameters(11).reaction="global"
+parkram.parameters(12).id="w9"
+parkram.parameters(12).val="-0.2709011384"
+parkram.parameters(12).reaction="global"
+parkram.parameters(13).id="w10"
+parkram.parameters(13).val="-0.2129001917"
+parkram.parameters(13).reaction="global"
+parkram.parameters(14).id="w11"
+parkram.parameters(14).val="-0.2326718404"
+parkram.parameters(14).reaction="global"
+parkram.parameters(15).id="w12"
+parkram.parameters(15).val="0.2287819518"
+parkram.parameters(15).reaction="global"
+parkram.parameters(16).id="w13"
+parkram.parameters(16).val="-0.1149452962"
+parkram.parameters(16).reaction="global"
+parkram.parameters(17).id="w14"
+parkram.parameters(17).val="0.03798159149"
+parkram.parameters(17).reaction="global"
+parkram.parameters(18).id="w15"
+parkram.parameters(18).val="-1.712640964"
+parkram.parameters(18).reaction="global"
+parkram.parameters(19).id="w16"
+parkram.parameters(19).val="-1.591059102"
+parkram.parameters(19).reaction="global"
+parkram.parameters(20).id="w17"
+parkram.parameters(20).val="0.2244055318"
+parkram.parameters(20).reaction="global"
+parkram.parameters(21).id="w18"
+parkram.parameters(21).val="-0.004997621762"
+parkram.parameters(21).reaction="global"
+parkram.parameters(22).id="w19"
+parkram.parameters(22).val="0.3544039302"
+parkram.parameters(22).reaction="global"
+parkram.parameters(23).id="w20"
+parkram.parameters(23).val="0.1004989263"
+parkram.parameters(23).reaction="global"
+parkram.parameters(24).id="w21"
+parkram.parameters(24).val="-0.9094335129"
+parkram.parameters(24).reaction="global"
+parkram.parameters(25).id="w22"
+parkram.parameters(25).val="1.620545147"
+parkram.parameters(25).reaction="global"
+parkram.parameters(26).id="w23"
+parkram.parameters(26).val="-0.208960252"
+parkram.parameters(26).reaction="global"
+parkram.parameters(27).id="w24"
+parkram.parameters(27).val="0.2556621247"
+parkram.parameters(27).reaction="global"
+parkram.parameters(28).id="w25"
+parkram.parameters(28).val="0.06019878342"
+parkram.parameters(28).reaction="global"
+parkram.parameters(29).id="w26"
+parkram.parameters(29).val="-0.1339623237"
+parkram.parameters(29).reaction="global"
+parkram.parameters(30).id="w27"
+parkram.parameters(30).val="-0.6352437644"
+parkram.parameters(30).reaction="global"
+parkram.parameters(31).id="w28"
+parkram.parameters(31).val="0.4603940402"
+parkram.parameters(31).reaction="global"
+parkram.parameters(32).id="H1"
+parkram.parameters(32).val="0"
+parkram.parameters(32).reaction="global"
+parkram.parameters(33).id="H2"
+parkram.parameters(33).val="0"
+parkram.parameters(33).reaction="global"
+parkram.parameters(34).id="H3"
+parkram.parameters(34).val="0"
+parkram.parameters(34).reaction="global"
+parkram.parameters(35).id="H4"
+parkram.parameters(35).val="0"
+parkram.parameters(35).reaction="global"
+parkram.parameters(36).id="H5"
+parkram.parameters(36).val="0"
+parkram.parameters(36).reaction="global"
+ 
+
+% Assignment rules
+parkram.nruleAss=9
+parkram.ruleAss(1).id="D"
+parkram.ruleAss(1).val="Feed/V"
+parkram.ruleAss(2).id="H1"
+parkram.ruleAss(2).val="tanh(w1*S/5 + w6)"
+parkram.ruleAss(3).id="H2"
+parkram.ruleAss(3).val="tanh(w2*S/5 + w7)"
+parkram.ruleAss(4).id="H3"
+parkram.ruleAss(4).val="tanh(w3*S/5 + w8)"
+parkram.ruleAss(5).id="H4"
+parkram.ruleAss(5).val="tanh(w4*S/5 + w9)"
+parkram.ruleAss(6).id="H5"
+parkram.ruleAss(6).val="tanh(w5*S/5 + w10)"
+parkram.ruleAss(7).id="miu"
+parkram.ruleAss(7).val="w11*H1+w14*H2+w17*H3+w20*H4+w23*H5+w26"
+parkram.ruleAss(8).id="vPT"
+parkram.ruleAss(8).val="w12*H1+w15*H2+w18*H3+w21*H4+w24*H5+w27"
+parkram.ruleAss(9).id="vPM"
+parkram.ruleAss(9).val="w13*H1+w16*H2+w19*H3+w22*H4+w25*H5+w28"
+
+% Events
+parkram.nevent=1
+parkram.event(1).id="Controller"
+parkram.event(1).cond="t >= 0"
+parkram.event(1).var(1)="Feed"
+parkram.event(1).val(1)="u" 
+
+%Reactions
+parkram.nreaction=4
+parkram.reaction(1).id="rX"
+parkram.reaction(1).rate="miu*X"
+parkram.reaction(1).Y=["1", "-Y", "0", "0"]
+parkram.reaction(2).id="rSin" 
+parkram.reaction(2).rate="D*Sin"
+parkram.reaction(2).Y=["0", "1", "0", "0"]
+parkram.reaction(3).id="rPT"
+parkram.reaction(3).rate="vPT*X"
+parkram.reaction(3).Y=["0", "0", "1", "0"]
+parkram.reaction(4).id="rPM" 
+parkram.reaction(4).rate= "vPM*(PT-PM)"
+parkram.reaction(4).Y=["0", "0", "0", "1"]
+
+%Rate rules
+parkram.nraterules=1
+parkram.raterules(1).id="V"
+parkram.raterules(1).val="D*V"
+parkram.raterules(1).min= 0;
+parkram.raterules(1).max= 10;
+parkram.raterules(1).isres= 0;
+
+
+% %model configuration
+parkram.time.min=0;
+parkram.time.max=15;
+parkram.time.id='t[h]';
+parkram.time.TAU=0.25;
+parkram.time.tspan=0:1:15;
+
+% control---------------------------
+parkram.ncontrol=2;
+parkram.control(1).id= 'Feed';
+parkram.control(1).val= 0;
+parkram.control(1).min= 0;
+parkram.control(1).max= 2;
+parkram.control(1).constant = 0;
+parkram.control(2).id=   'Sin';
+parkram.control(2).val=  500;
+parkram.control(2).min=  0;
+parkram.control(2).max=  500;
+parkram.control(2).constant=1;
+parkram.fun_control=@control_function_parkramirez;
+% 
+% % MLM - Machine Learning Model --------------------------------------------
+parkram.mlm.id = 'mlpnet'; %'user-defined'; %'mlpnet' %mlp1H
+parkram.mlm.nx = 1;
+parkram.mlm.x(1).id = 'anninp1';
+parkram.mlm.x(1).val= 'S';
+parkram.mlm.x(1).min= 0; 
+parkram.mlm.x(1).max= 5;
+parkram.mlm.ny = 3;
+parkram.mlm.y(1).id = 'miu';
+parkram.mlm.y(1).val= 'rann1';
+parkram.mlm.y(1).min= 0; 
+parkram.mlm.y(1).max= 0.5;
+parkram.mlm.y(2).id = 'vPT';
+parkram.mlm.y(2).val= 'rann2';
+parkram.mlm.y(2).min= 0; 
+parkram.mlm.y(2).max= 0.4;
+parkram.mlm.y(3).id = 'vPM';
+parkram.mlm.y(3).val= 'rann3';
+parkram.mlm.y(3).min= 0; 
+parkram.mlm.y(3).max= 4;
+parkram.mlm.options={'hidden nodes', [5]}; %user defined
+parkram.mlm.layer=1 %1-tanh 2-ReLu %user defined
+parkram.mlm.xfun=str2func('autoA_hybmod_anninp'); %generated automatically
+parkram.mlm.yfun=str2func('autoA_hybmod_rann'); %only used if 'user-defined'
+parkram.symbolic='full-symbolic';
+parkram.symbolic='semi-symbolic';
+
+%Model configuration
+
+parkram.id='parkramirez';
+
+parkram.time.min=0;
+parkram.time.max=15;
+parkram.time.id='t[h]';
+parkram.time.TAU=0.25;
+parkram.time.tspan=0:1:15;
+
+parkram.datasource=3; %1 - text file; 2- excel file; 3-userdefined function
+parkram.datafun=@parkramirezdata;
+
+%training configuration
+parkram.mode=1;%;    %1-indirect, 2-direct, 3-semidirect
+parkram.method=1;    %1-lev-marquardt, 2-quasi-Newton   3- Simulated Annealing
+parkram.jacobian=1;  %1-ON, 0- OFF   [ONLY FOR LEVENBERG-MARQUARDT]
+parkram.hessian=0;   %1-ON  0- OFF   [only for quasi-Newton]
+parkram.derivativecheck='off'; %'on' or 'off' [ONLY FOR LEVENBERG-MARQUARDT]
+parkram.niter=400;
+parkram.niteroptim=1;
+parkram.nstep=30;
+parkram.display='off';   %'off','Iter'
+parkram.bootstrap=0; %1-do bootstrap; 0-no boostrapp
+parkram.nensemble=3; %number of models to aggregate >=1; if >1 confidence intervals are computed
+parkram.crossval=1;  %0 - no cross-validation; 1 - do crossvalidation
+
+
+end

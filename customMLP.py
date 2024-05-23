@@ -153,6 +153,8 @@ class CustomMLP(nn.Module):
     '''
 
     def set_weights(self, new_weights):
+        if isinstance(new_weights, torch.Tensor):
+            new_weights = new_weights.detach().cpu().numpy()
         start = 0
         for layer in self.layers:
             if hasattr(layer, 'w') and hasattr(layer, 'b'):

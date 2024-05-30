@@ -578,3 +578,8 @@ def hybdata(filename):
 
     with open("sample.json", "w") as outfile:
         json.dump(dict, outfile)
+
+    with open("sample.json", "r") as f:
+        projhyb = json.load(f)
+
+    return projhyb

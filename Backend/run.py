@@ -12,12 +12,12 @@ from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, manual_label, random_label, add_state_and_time_to_data
 
-projhyb = hybdata("Chass1.hmod")
+projhyb = hybdata("Backend/Chass1.hmod")
 print(projhyb)
 
 
 
-with open("combined_chassbatch.csv", 'r') as f:
+with open("Backend/combined_chassbatch.csv", 'r') as f:
     reader = csv.reader(f)
     headers = next(reader)
 

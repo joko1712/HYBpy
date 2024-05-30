@@ -26,6 +26,7 @@ import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { useEffect } from "react";
 import logo from "../Image/HYBpyINVIS_logo.png";
+import { LineChart } from "./LineChart";
 
 const drawerWidth = 200;
 
@@ -426,6 +427,23 @@ function FileUpload() {
                                                 id='csv-upload'
                                                 onChange={handleFileChange2}
                                             />
+                                            <Grid item xs={12}>
+                                                <Paper
+                                                    sx={{
+                                                        p: 2,
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                    }}>
+                                                    <Typography variant='h6'>
+                                                        Batch Data Visualization
+                                                    </Typography>
+                                                    {file2Content.length > 0 ? (
+                                                        <LineChart data={file2Content} />
+                                                    ) : (
+                                                        <Typography>No data loaded</Typography>
+                                                    )}
+                                                </Paper>
+                                            </Grid>
                                         </Grid>
                                     </label>
                                 </Grid>

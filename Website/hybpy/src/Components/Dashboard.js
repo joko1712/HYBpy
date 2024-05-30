@@ -21,6 +21,8 @@ import { collection, query, where, getDocs, orderBy, limit } from "firebase/fire
 import { db } from "../firebase-config";
 import { useEffect } from "react";
 import logo from "../Image/HYBpyINVIS_logo.png";
+import ImageList from "@mui/material/ImageList";
+import ImageListItem from "@mui/material/ImageListItem";
 const drawerWidth = 200;
 
 const AppBar = styled(MuiAppBar, {
@@ -173,54 +175,45 @@ export default function Dashboard() {
                         overflow: "auto",
                     }}>
                     <Toolbar />
-                    <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
-                        <h2>Previous Run</h2>
+                    <Container maxWidth='lg' sx={{ mt: 4, mb: 4 }}>
                         <Grid container spacing={3}>
+                            {/* Recent Runs */}
                             <Grid item xs={12} md={8} lg={9}>
                                 <Paper
                                     sx={{
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 350,
+                                        height: 240,
                                     }}>
                                     {runs.length > 0 ? (
-                                        <p>{runs[0].response_data.message}</p>
+                                        <ImageList cols={3} gap={8}>
+                                            {runs[0].plot_urls.map((url) => (
+                                                <ImageListItem key={url}>
+                                                    <img src={url} alt='Run Plot' loading='lazy' />
+                                                </ImageListItem>
+                                            ))}
+                                        </ImageList>
                                     ) : (
-                                        <p>No runs yet</p>
+                                        <Typography>No plots available</Typography>
                                     )}
                                 </Paper>
                             </Grid>
+                            {/* Recent Run Details */}
                             <Grid item xs={12} md={4} lg={3}>
-                                <Paper
-                                    sx={{
-                                        pl: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        height: 350,
-                                        overflow: "auto",
-                                    }}>
-                                    {runs.length > 0 ? (
-                                        <div>
-                                            <h2>Run Details:</h2>
-                                            <h3>HMOD:</h3>
-                                            <p>{runs[0].file1_name}</p>
-                                            <h3>CSV:</h3>
-                                            <p>{runs[0].file2_name}</p>
-                                            <h3>Mode:</h3>
-                                            <p>{runs[0].mode}</p>
-                                        </div>
-                                    ) : (
-                                        <p>No runs yet</p>
-                                    )}
-                                </Paper>
-                            </Grid>
-                            <Grid item xs={12}>
                                 <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
                                     {runs.length > 0 ? (
-                                        <p>{runs[0].description}</p>
+                                        <>
+                                            <Typography variant='h6' gutterBottom>
+                                                Run Details
+                                            </Typography>
+                                            <Typography>{`HMOD: ${runs[0].file1_name}`}</Typography>
+                                            <Typography>{`CSV: ${runs[0].file2_name}`}</Typography>
+                                            <Typography>{`Mode: ${runs[0].mode}`}</Typography>
+                                            <Typography>{`Description: ${runs[0].description}`}</Typography>
+                                        </>
                                     ) : (
-                                        <p>No runs yet</p>
+                                        <Typography>No recent run details</Typography>
                                     )}
                                 </Paper>
                             </Grid>

@@ -12,12 +12,12 @@ from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, manual_label, random_label, add_state_and_time_to_data
 
-projhyb = hybdata("Backend\Chass1.hmod")
+projhyb = hybdata("Chass1.hmod")
 print(projhyb)
 
 
 
-with open("Backend\combined_chassbatch.csv", 'r') as f:
+with open("combined_chassbatch.csv", 'r') as f:
     reader = csv.reader(f)
     headers = next(reader)
 
@@ -57,8 +57,9 @@ with h5py.File('sample.h5', 'w') as f:
 with open("file.json", "r") as read_file:
     file = json.load(read_file) 
 '''
+user_id = 'Joko'
 
-projhyb, trainData = hybtrain(projhyb, data)
+projhyb, trainData = hybtrain(projhyb, data, user_id)
 response_data = {
     "message": "Files processed successfully",
     "projhyb": projhyb,  # Assuming this is serializable to JSON

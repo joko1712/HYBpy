@@ -44,6 +44,15 @@ def upload_file_to_storage(file, user_id, filename):
 
     return blob.public_url
 
+def upload_plots_to_gcs(folder_path, user_id):
+    plot_urls = []
+    for filename in glob.glob(os.path.join(folder_path, '*.png')):
+        bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
+        blob = bucket.blob(f'{user_id}/plots/{user_id}/{os.path.basename(filename)}')
+        blob.upload_from_filename(filename)
+        plot_urls.append(blob.public_url)
+    return plot_urls
+
 # This is the request http://localhost:5000/upload
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -131,12 +140,11 @@ def upload_file():
         with open("file.json", "r") as read_file:
             file = json.load(read_file)
 
-        #projhyb, trainData = hybtrain(projhyb, file)
-        trainData = "trainData"
+        projhyb, trainData = hybtrain(projhyb, file, user_id)
         response_data = {
             "message": "Files processed successfully",
             "projhyb": projhyb,
-            "trainData": trainData 
+            "trainData": trainData
         }
         add_run(file1_url, file2_url, file1.filename, file2.filename, response_data, user_id, description, mode)
         return json.dumps(response_data), 200
@@ -151,6 +159,8 @@ def upload_file():
 
 @app.route('/add-run', methods=['POST'])
 def add_run(file1_url, file2_url, file1, file2, response_data, user_id, description, mode):
+    plot_urls = upload_plots_to_gcs(f'{user_id}/plots', user_id)
+
     run_data = {
         "userId": user_id,
         "file1": file1_url,
@@ -160,7 +170,8 @@ def add_run(file1_url, file2_url, file1, file2, response_data, user_id, descript
         "response_data": response_data,
         "description": description,
         "mode": mode,
-        "createdAt": firestore.SERVER_TIMESTAMP
+        "createdAt": firestore.SERVER_TIMESTAMP,
+        "plots": plot_urls,
     }
     user_ref = db.collection('users').document(user_id)
     ren_ref = user_ref.collection('runs').document()

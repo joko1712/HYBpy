@@ -25,7 +25,7 @@ def default_fobj(w):
         "Objective function fobj is not properly defined.")
 
 
-def hybtrain(projhyb, file):
+def hybtrain(projhyb, file, user_id):
 
     fobj = default_fobj
 
@@ -700,3 +700,8 @@ def teststate(ann, istrain, projhyb, file, w, method=1):
         
         plt.legend()
         plt.show()
+        os.makedirs('plots', exist_ok=True)
+        # Save the plot
+        plot_filename = f'{user_id}/plots/metabolite_{projhyb["species"][str(i+1)]["id"]}_{time.strftime("%Y%m%d-%H%M%S")}.png'
+        plt.savefig(plot_filename, dpi=300)
+        plt.close(fig)

@@ -376,7 +376,7 @@ chass.derivativecheck='off'; %'on' or 'off' [ONLY FOR LEVENBERG-MARQUARDT]
 chass.niter=100;
 chass.niteroptim=1;
 chass.nstep=2;
-chass.display='off';   %'off','Iter'
+chass.display=2;   %'off','Iter'
 chass.bootstrap=0; %1-do bootstrap; 0-no boostrapp
 chass.nensemble=1; %number of models to aggregate >=1; if >1 confidence intervals are computed
 chass.crossval=0;  %0 - no cross-validation; 1 - do crossvalidation

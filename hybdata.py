@@ -576,10 +576,7 @@ def hybdata(filename):
         "addrop": addrop,
     }
 
-    with open("sample.json", "w") as outfile:
-        json.dump(dict, outfile)
+    
+    
 
-    with open("sample.json", "r") as f:
-        projhyb = json.load(f)
-
-    return projhyb
+    return dict

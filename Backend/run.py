@@ -5,7 +5,8 @@ import csv
 import pandas as pd
 import random
 import numpy as np
- 
+import h5py
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from hybtrain import hybtrain
 from hybdata import hybdata
@@ -44,18 +45,20 @@ data = add_state_and_time_to_data(data, projhyb)
 count = len(data)
 data["nbatch"] = count
 
+'''
+with h5py.File('file.h5', 'w') as f:
+    for key, value in data.items():
+        f.create_dataset(key, data=value)
 
-# insert number os batches at the end nbatch
-with open('file.json', 'w') as f:
-    json.dump(data, f, indent=4)
+with h5py.File('sample.h5', 'w') as f:
+    for key, value in data.items():
+        f.create_dataset(key, data=value)
 
-with open('sample.json', 'w') as f:
-    json.dump(projhyb, f, indent=4)
- 
 with open("file.json", "r") as read_file:
     file = json.load(read_file) 
+'''
 
-projhyb, trainData = hybtrain(projhyb, file)
+projhyb, trainData = hybtrain(projhyb, data)
 response_data = {
     "message": "Files processed successfully",
     "projhyb": projhyb,  # Assuming this is serializable to JSON

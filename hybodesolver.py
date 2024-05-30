@@ -11,7 +11,7 @@ from torch.autograd import profiler
 
 def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w, batch, projhyb):
     t = t0
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float32).to(device).view(-1, 1)

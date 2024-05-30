@@ -375,7 +375,7 @@ chass.hessian=0;   %1-ON  0- OFF   [only for quasi-Newton]
 chass.derivativecheck='off'; %'on' or 'off' [ONLY FOR LEVENBERG-MARQUARDT]
 chass.niter=100;
 chass.niteroptim=1;
-chass.nstep=10;
+chass.nstep=2;
 chass.display='off';   %'off','Iter'
 chass.bootstrap=0; %1-do bootstrap; 0-no boostrapp
 chass.nensemble=1; %number of models to aggregate >=1; if >1 confidence intervals are computed

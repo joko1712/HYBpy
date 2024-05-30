@@ -9,7 +9,7 @@ class CustomMLP(nn.Module):
     def __init__(self, layer_sizes, layer_types):
         super(CustomMLP, self).__init__()
         self.layers = nn.ModuleList()
-        self.device = torch.device("cpu")  
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  
 
         for i, layer_type in enumerate(layer_types):
             if layer_type == 'tanh':

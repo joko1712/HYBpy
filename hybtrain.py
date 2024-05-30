@@ -19,8 +19,6 @@ import customMLP as mlp
 from sklearn.metrics import mean_squared_error, r2_score
 import types
 
-with open("sample.json", "r") as f:
-    projhyb = json.load(f)
 
 def default_fobj(w):
     raise NotImplementedError(
@@ -28,6 +26,9 @@ def default_fobj(w):
 
 
 def hybtrain(projhyb, file):
+
+    with open("sample.json", "r") as f:
+        projhyb = json.load(f)
 
     fobj = default_fobj
 
@@ -409,7 +410,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
             Sw = np.zeros((nt, nw))
 
             for i in range(1, file[str(l)]["np"]):
-                batch_data = file[str(l+1)]
+                batch_data = file[str(l)]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, w, batch_data, projhyb)

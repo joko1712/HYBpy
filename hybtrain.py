@@ -27,9 +27,6 @@ def default_fobj(w):
 
 def hybtrain(projhyb, file):
 
-    with open("sample.json", "r") as f:
-        projhyb = json.load(f)
-
     fobj = default_fobj
 
     if projhyb is None:
@@ -238,14 +235,14 @@ def hybtrain(projhyb, file):
 
     if projhyb['mode'] == 1:
 
-        evaluator = IndirectFunctionEvaluator(ann, projhyb, resfun_indirect_jac)
+        evaluator = IndirectFunctionEvaluator(ann, projhyb, file, resfun_indirect_jac)
 
 #######################################################################################################################
 
     for istep in range(1, projhyb['nstep']):
         print("TESTING")
         for i in range(1, file['nbatch'] + 1):
-            istrain = file[str(i)]["istrain"]
+            istrain = file[i]["istrain"]
             projhyb['istrain'] = [0] * file['nbatch']
             projhyb['istrain'][i - 1] = istrain
             print(projhyb['istrain'])
@@ -298,7 +295,7 @@ def hybtrain(projhyb, file):
         elif projhyb["method"] == 4:  # ADAM
             optimized_weights = adam_optimizer_train(ann, projhyb, evaluator, num_epochs=num_epochs, lr=lr)
         
-    testing = teststate(ann, projhyb['istrain'], projhyb, optimized_weights, projhyb['method'])
+    testing = teststate(ann, projhyb['istrain'], projhyb, file, optimized_weights, projhyb['method'])
 
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
 
@@ -352,14 +349,12 @@ def convert_numpy(obj):
 #   INDIRECT
 ####
 
-def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
+def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
     print("weights", w)
 
 # LOAD THE WEIGHTS into the ann
     ann.set_weights(w)
     ann.print_weights_and_biases()
-    with open("file.json", "r") as read_file:
-        file = json.load(read_file)
     if not istrain:
         istrain = projhyb["istrain"]
 
@@ -378,7 +373,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
         
     nres = len(isres)
     
-    npall = sum(file[str(i+1)]["np"] for i in range(file["nbatch"]) if file[str(i+1)]["istrain"] == 1)
+    npall = sum(file[i+1]["np"] for i in range(file["nbatch"]) if file[i+1]["istrain"] == 1)
 
     sresall = np.zeros(npall * nres)
 
@@ -392,25 +387,25 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, method=1):
     COUNT = 0
     for l in range(file["nbatch"]):
         l = l + 1
-        if file[str(l)]["istrain"] == 1:
-            tb = file[str(l)]["time"]
-            Y = file[str(l)]["y"]
+        if file[l]["istrain"] == 1:
+            tb = file[l]["time"]
+            Y = file[l]["y"]
             Y = np.array(Y)
             Y = Y.astype(np.float64)
             Y = torch.from_numpy(Y)
             
             batch = str(l)
 
-            sY = file[str(l)]["sy"]
+            sY = file[l]["sy"]
             sY = np.array(sY)
             sY = sY.astype(np.float64)
             sY = torch.from_numpy(sY)
             
-            state = np.array(file[str(l)]["y"][0])
+            state = np.array(file[l]["y"][0])
             Sw = np.zeros((nt, nw))
 
-            for i in range(1, file[str(l)]["np"]):
-                batch_data = file[str(l)]
+            for i in range(1, file[l]["np"]):
+                batch_data = file[l]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
                                             state, Sw, 0, w, batch_data, projhyb)
@@ -488,9 +483,10 @@ def adam_optimizer_train(ann, projhyb, evaluator, num_epochs=100, lr=0.001):
 
 
 class IndirectFunctionEvaluator:
-    def __init__(self, ann, projhyb, evaluation_function):
+    def __init__(self, ann, projhyb, file, evaluation_function):
         self.ann = ann
         self.projhyb = projhyb
+        self.file = file
         self.evaluation_function = evaluation_function
         self.last_weights = None
         self.last_fobj = None
@@ -503,7 +499,7 @@ class IndirectFunctionEvaluator:
             return self.last_fobj, self.last_jac
         else:
             try:
-                self.last_fobj, self.last_jac = self.evaluation_function(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.projhyb['method'])
+                self.last_fobj, self.last_jac = self.evaluation_function(self.ann, weights, self.projhyb['istrain'], self.projhyb, self.file, self.projhyb['method'])
                 self.last_weights = weights
                 self.fobj_history.append(self.last_fobj)
                 self.jac_norm_history.append(np.linalg.norm(self.last_jac))
@@ -565,7 +561,7 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
     plt.show()
 
 
-def teststate(ann, istrain, projhyb, w, method=1):
+def teststate(ann, istrain, projhyb, file, w, method=1):
 
     dictState = {}
     '''
@@ -583,8 +579,6 @@ def teststate(ann, istrain, projhyb, w, method=1):
     # LOAD THE WEIGHTS into the ann
     ann.set_weights(w)
     ann.print_weights_and_biases()
-    with open("file.json", "r") as read_file:
-        file = json.load(read_file)
     
     if not istrain:
         istrain = projhyb["istrain"]
@@ -598,7 +592,7 @@ def teststate(ann, istrain, projhyb, w, method=1):
     
     nres = len(isres)
 
-    npall = sum(file[str(i+1)]["np"] for i in range(file["nbatch"]) if file[str(i+1)]["istrain"] == 1)
+    npall = sum(file[i+1]["np"] for i in range(file["nbatch"]) if file[i+1]["istrain"] == 1)
 
     sresall = np.zeros(npall * nres)
     sjacall = np.zeros((npall * nres, nw))
@@ -606,21 +600,21 @@ def teststate(ann, istrain, projhyb, w, method=1):
     COUNT = 0
     for l in range(file["nbatch"]):
         l = l + 1
-        tb = file[str(l)]["time"]
+        tb = file[l]["time"]
         print("tb", tb)
-        Y = np.array(file[str(l)]["y"]).astype(np.float64)
+        Y = np.array(file[l]["y"]).astype(np.float64)
         Y = torch.from_numpy(Y)
         
         batch = str(l)
 
-        sY = np.array(file[str(l)]["sy"]).astype(np.float64)
+        sY = np.array(file[l]["sy"]).astype(np.float64)
         sY = torch.from_numpy(sY)
         
-        state = np.array(file[str(l)]["y"][0])
+        state = np.array(file[l]["y"][0])
         Sw = np.zeros((nt, nw))
 
-        for i in range(1, file[str(l)]["np"]):
-            batch_data = file[str(l)]
+        for i in range(1, file[l]["np"]):
+            batch_data = file[l]
             _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, None, None, w, batch_data, projhyb)
 
             if l not in dictState:
@@ -636,11 +630,11 @@ def teststate(ann, istrain, projhyb, w, method=1):
         print("dictState", dictState)
         print("batches", projhyb["train_batches"], projhyb["test_batches"])
 
-        actual_train.append(file[str(1)][str(0)]["state"][i])
-        actual_test.append(file[str(1)][str(0)]["state"][i])
-        predicted.append(file[str(projhyb["train_batches"][0])][str(0)]["state"][i])
-        test.append(file[str(projhyb["test_batches"][0])][str(0)]["state"][i])
-        err.append(file[str(1)][str(0)]["sc"][i])
+        actual_train.append(file[1][str(0)]["state"][i])
+        actual_test.append(file[1][str(0)]["state"][i])
+        predicted.append(file[projhyb["train_batches"][0]][str(0)]["state"][i])
+        test.append(file[projhyb["test_batches"][0]][str(0)]["state"][i])
+        err.append(file[1][str(0)]["sc"][i])
 
         for l in range(tb[-1]):
             actual_train.append(file[str(projhyb["train_batches"][0])][str(l+1)]["state"][i]) 
@@ -649,7 +643,7 @@ def teststate(ann, istrain, projhyb, w, method=1):
 
             predicted.append(dictState[projhyb["train_batches"][0]][l+1][i])
             test.append(dictState[projhyb["test_batches"][0]][l+1][i])
-            err.append(file[str(1)][str(l+1)]["sc"][i])
+            err.append(file[1][str(l+1)]["sc"][i])
 
         print("actual", actual_train)
         print("predicted", predicted)

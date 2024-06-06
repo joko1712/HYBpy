@@ -51,11 +51,10 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
         state_symbols.append(sp.Symbol(projhyb["compartment"][str(i)]["id"]))
     
     ### CHANGE THIS!!
-    '''
+    
     feed = 0.1250 * t
     values["D"] = feed / values["V"]
     values["Sin"] = 500
-    '''
 
     if jac is not None:
         jac = torch.tensor(jac, dtype=torch.float64)

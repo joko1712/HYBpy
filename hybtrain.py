@@ -18,6 +18,7 @@ from Control_functions.control_function_chass import control_function
 import customMLP as mlp
 from sklearn.metrics import mean_squared_error, r2_score
 import types
+import os
 
 
 def default_fobj(w):
@@ -26,7 +27,7 @@ def default_fobj(w):
 
 
 def hybtrain(projhyb, file, user_id):
-
+    print("USer ID", user_id)
     fobj = default_fobj
 
     if projhyb is None:
@@ -144,11 +145,19 @@ def hybtrain(projhyb, file, user_id):
         species_min = species['min']
         species_max = species['max']
         species_bounds.append((species_min, species_max))
+    NH = projhyb['mlm']['options']
+    H = len(NH)
+    projhyb["mlm"]['h'] = H
+    projhyb["mlm"]['nl'] = 2 + H
+    projhyb["mlm"]['nh'] = NH[:H]
+    projhyb["mlm"]["ninp"] = projhyb["mlm"]["nx"]
+    projhyb["mlm"]["nout"] = projhyb["mlm"]["ny"]
+    projhyb["mlm"]['nw'] = (projhyb["mlm"]['nx'] + 1) * projhyb["mlm"]['nh'][0]
 
     if projhyb['method'] == 1:
         print("   Optimiser:              Levenberg-Marquardt")
         options = {
-            'xtol': 1e-5, #1e-10
+            'xtol': 1e-8, #1e-10
             'verbose': projhyb['display'],
             'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'],
             'method': 'trf',
@@ -164,32 +173,21 @@ def hybtrain(projhyb, file, user_id):
                 'maxiter':100 * projhyb['niter'] * projhyb['niteroptim']
             } 
         }
-
     elif projhyb['method'] == 3:
         print("   Optimiser:              Simulated Annealing")
         bounds = species_bounds * projhyb['mlm']['nw']
         options = {
             'maxiter': 100 * projhyb['niter'] * projhyb['niteroptim'],
-            'local_search_options': {'method': 'trf'},
             'verbose': projhyb['display']
         }
 
     elif projhyb['method'] == 4:
         print("   Optimiser:              Adam")
-        num_epochs = 100  
+        num_epochs = 1  
         lr = 0.001  
 #######################################################################################################################
 
     print("\n\n")
-
-    NH = projhyb['mlm']['options']
-    H = len(NH)
-    projhyb["mlm"]['h'] = H
-    projhyb["mlm"]['nl'] = 2 + H
-    projhyb["mlm"]['nh'] = NH[:H]
-    projhyb["mlm"]['nw'] = (projhyb["mlm"]['nx'] + 1) * projhyb["mlm"]['nh'][0]
-    projhyb["mlm"]["ninp"] = projhyb["mlm"]["nx"]
-    projhyb["mlm"]["nout"] = projhyb["mlm"]["ny"]
 
     for i in range(1, H):
         projhyb["mlm"]['nw'] += (projhyb["mlm"]['nh']
@@ -238,7 +236,7 @@ def hybtrain(projhyb, file, user_id):
         evaluator = IndirectFunctionEvaluator(ann, projhyb, file, resfun_indirect_jac)
 
 #######################################################################################################################
-
+    
     for istep in range(1, projhyb['nstep']):
         print("TESTING")
         for i in range(1, file['nbatch'] + 1):
@@ -272,6 +270,7 @@ def hybtrain(projhyb, file, user_id):
             print("optios", options)
             print("weights", weights)
             result = least_squares(evaluator.fobj_func, x0=weights, **options)
+            print("result", result.x)
             callback_wrapper(result, TrainRes, projhyb, istep)
             optimized_weights = result.x
 
@@ -286,6 +285,7 @@ def hybtrain(projhyb, file, user_id):
                 result = minimize(evaluator.fobj_func, x0=weights, **options)
             
             optimized_weights = result.x
+            print("result", result.x)
 
 
         elif projhyb["method"] == 3:  # SIMULATED ANNEALING
@@ -293,13 +293,23 @@ def hybtrain(projhyb, file, user_id):
             optimized_weights = result.x
 
         elif projhyb["method"] == 4:  # ADAM
-            optimized_weights = adam_optimizer_train(ann, projhyb, evaluator, num_epochs=num_epochs, lr=lr)
-        
-    testing = teststate(ann, projhyb['istrain'], projhyb, file, optimized_weights, projhyb['method'])
+            optimized_weights = adam_optimizer_train(ann, projhyb, evaluator, num_epochs, lr)
+    
+    '''
+    w = [-1.30284588e-03, -1.14245236e-02, -7.91831059e-04,  4.40199659e-03,
+            1.72756969e-03, -5.00282668e-03, -2.01651446e-03, -3.93168300e-03,
+            9.56139266e-04, -1.25006042e-03, -1.57937766e-03, -2.50723996e-03,
+            1.62134778e-03, -1.16238460e-02, -1.66073496e-04,  5.14919755e-03,
+            2.14947514e-03,  1.17489032e-04, -2.03476453e-03,  1.54795275e-01,
+            1.70781475e-01,  4.07317944e-05,  1.00251807e+00,  9.94084879e-02,
+            6.72249841e-06,  4.22301199e-02]
+    '''
+    optimized_weights = w   
+    testing = teststate(ann, user_id, projhyb, file, optimized_weights, projhyb['method'])
 
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
 
-    return projhyb, trainData
+    return projhyb, optimized_weights
 
 def callback_wrapper(x, TrainRes, projhyb, istep):
     try:
@@ -415,6 +425,9 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
                 state_adjusted = state_tensor[0:nres]
                 Ystate = Y_select - state_adjusted.numpy()
 
+                print("Ystate", Ystate)
+                print("sY", sY)
+                print("iresY", isresY)
                 
                 sresall[COUNT:COUNT + nres] = Ystate / sY[i, isresY].numpy()
 
@@ -454,7 +467,8 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
                      
     return fobj, jac
 
-def adam_optimizer_train(ann, projhyb, evaluator, num_epochs=100, lr=0.001):
+
+def adam_optimizer_train(ann, projhyb, evaluator, num_epochs, lr):
     initial_weights, _ = ann.get_weights()
     initial_weights_tensor = torch.tensor(initial_weights, dtype=torch.float32, requires_grad=True)
 
@@ -463,24 +477,25 @@ def adam_optimizer_train(ann, projhyb, evaluator, num_epochs=100, lr=0.001):
     for epoch in range(num_epochs):
         optimizer.zero_grad()
 
-        objFunc = evaluator.fobj_func(initial_weights)
+        objFunc = evaluator.torch_fobj_func(initial_weights_tensor)
 
-        loss = objFunc.gradient()
-
-        loss.backward()
+        objFunc.backward()
 
         print(f'Gradients after backward pass: {initial_weights_tensor.grad}')
 
         optimizer.step()
 
-        initial_weights = initial_weights_tensor.detach().cpu().numpy()
+        optimized_weights = initial_weights_tensor.detach().cpu().numpy()
+        ann.set_weights(optimized_weights)
+
         if epoch % 10 == 0:
-            print(f'Epoch {epoch+1}/{num_epochs}, Loss: {loss_tensor.item()}')
-            print(f'Weights after epoch {epoch+1}: {initial_weights_tensor.detach().cpu().numpy()}')
+            print(f'Epoch {epoch+1}/{num_epochs}, Loss: {objFunc.item()}')
+            print(f'Weights after epoch {epoch+1}: {optimized_weights}')
+
+        initial_weights_tensor = torch.tensor(optimized_weights, dtype=torch.float32, requires_grad=True)
 
     final_weights = initial_weights_tensor.detach().cpu().numpy()
     return final_weights
-
 
 class IndirectFunctionEvaluator:
     def __init__(self, ann, projhyb, file, evaluation_function):
@@ -519,7 +534,9 @@ class IndirectFunctionEvaluator:
     def torch_fobj_func(self, weights_tensor):
         weights_numpy = weights_tensor.detach().cpu().numpy()
         fobj, _ = self.evaluate(weights_numpy)
+
         fobj_tensor = torch.tensor(fobj, dtype=torch.float32)
+        fobj_tensor.requires_grad_(True)
 
         if fobj_tensor.ndim > 0:
             fobj_tensor = fobj_tensor.sum()
@@ -558,30 +575,15 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
     plt.legend()
 
     plt.tight_layout()
-    plt.show()
 
-
-def teststate(ann, istrain, projhyb, file, w, method=1):
+def teststate(ann, user_id, projhyb, file, w, method=1):
 
     dictState = {}
-    '''
-    w = [ -0.0023416981667583104, -0.00798016620472829, 0.001475018033802915,
-        0.018308415246695117, 0.0005537230970959682, -0.016859571509595633,
-        -0.0012765320495863456, -0.007187604210067335, 0.004390743010624425,
-        -0.0023898069189952557, -0.0003910445082653616, -0.0006485141990209379,
-        0.5635359833079687, 0.09709754252200725, 0.0007099249852643722,
-        -0.38839776775808216, -0.02364415189223726, -7.943344914009417e-5,
-        0.002580055115456103, 0.1456091904235862, 0.18034712946732276, 3.726328488029208e-5,
-        1.0013114092620305, 0.09911907859287576, 6.022093352721663e-6, 0.040492255764239496]
-    '''
     w = np.array(w)
 
     # LOAD THE WEIGHTS into the ann
     ann.set_weights(w)
     ann.print_weights_and_biases()
-    
-    if not istrain:
-        istrain = projhyb["istrain"]
 
     ns = projhyb["nspecies"]
     nt = ns + projhyb["ncompartment"]
@@ -637,16 +639,16 @@ def teststate(ann, istrain, projhyb, file, w, method=1):
         err.append(file[1][str(0)]["sc"][i])
 
         for l in range(tb[-1]):
-            actual_train.append(file[str(projhyb["train_batches"][0])][str(l+1)]["state"][i]) 
-            actual_test.append(file[str(projhyb["test_batches"][0])][str(l+1)]["state"][i]) 
-
+            actual_train.append(file[projhyb["train_batches"][0]][str(l+1)]["state"][i]) 
+            actual_test.append(file[projhyb["test_batches"][0]][str(l+1)]["state"][i]) 
 
             predicted.append(dictState[projhyb["train_batches"][0]][l+1][i])
             test.append(dictState[projhyb["test_batches"][0]][l+1][i])
             err.append(file[1][str(l+1)]["sc"][i])
 
-        print("actual", actual_train)
+        print("actual_train", actual_train)
         print("predicted", predicted)
+        print("actual_test", actual_test)
         print("test", test)
 
         actual_train = np.array(actual_train, dtype=np.float64)
@@ -655,6 +657,14 @@ def teststate(ann, istrain, projhyb, file, w, method=1):
         test = np.array(test, dtype=np.float64)
         err = np.array(err, dtype=np.float64)
 
+        if actual_train.shape != predicted.shape:
+            print(f"Shape mismatch for training data: actual_train {actual_train.shape}, predicted {predicted.shape}")
+            continue
+
+        if actual_test.shape != test.shape:
+            print(f"Shape mismatch for test data: actual_test {actual_test.shape}, test {test.shape}")
+            continue
+        '''
         mse_train = mean_squared_error(actual_train, predicted)
         print(f'Training MSE: {mse_train}')
         mse_test = mean_squared_error(actual_test, test)
@@ -665,7 +675,13 @@ def teststate(ann, istrain, projhyb, file, w, method=1):
         r2_test = r2_score(actual_test, test)
         print(f'Test R²: {r2_test}')
 
-
+        textstr = '\n'.join((
+            f'Training MSE: {mse_train:.4f}',
+            f'Training R²: {r2_train:.4f}',
+            f'Test MSE: {mse_test:.4f}',
+            f'Test R²: {r2_test:.4f}',
+        )) 
+        '''
         z_score = 2.05
         margin = z_score * err
 
@@ -677,7 +693,7 @@ def teststate(ann, istrain, projhyb, file, w, method=1):
                 lower_bound[value] = 0
 
         x = tb
-
+        
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.errorbar(x, actual_train, err, fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
         ax.plot(x, predicted, label="Predicted", color='red', linewidth=1)
@@ -687,21 +703,16 @@ def teststate(ann, istrain, projhyb, file, w, method=1):
         plt.ylabel('Concentration')
         plt.title(f"Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
 
-        textstr = '\n'.join((
-            f'Training MSE: {mse_train:.4f}',
-            f'Training R²: {r2_train:.4f}',
-            f'Test MSE: {mse_test:.4f}',
-            f'Test R²: {r2_test:.4f}',
-        ))
-
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10,
-                verticalalignment='top', bbox=props)
+        #plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10,
+        #        verticalalignment='top', bbox=props)
         
         plt.legend()
-        plt.show()
-        os.makedirs('plots', exist_ok=True)
+        user_dir = os.path.join('plots', user_id)
+        date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
+        os.makedirs(date_dir, exist_ok=True)
+        
         # Save the plot
-        plot_filename = f'{user_id}/plots/metabolite_{projhyb["species"][str(i+1)]["id"]}_{time.strftime("%Y%m%d-%H%M%S")}.png'
+        plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{time.strftime("%H%M%S")}.png')
         plt.savefig(plot_filename, dpi=300)
         plt.close(fig)

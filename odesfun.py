@@ -23,11 +23,11 @@ def computeDFDS(projhyb, fstate, state_symbols, NValues):
         projhyb['mlm']['DFDS'] = DfDs
     else:
         DfDs = projhyb['mlm']['DFDS']
-
     DfDs = DfDs.subs(NValues)
     DfDs = np.array(DfDs).reshape(len(fstate), len(state_symbols))
     if np.iscomplexobj(DfDs):
         DfDs = DfDs.real
+
     DfDs = torch.from_numpy(DfDs.astype(np.float64))
     return DfDs
 
@@ -41,31 +41,35 @@ def computeDFDRANN(projhyb, fstate, rann_symbol, NValues):
     DfDrann = DfDrann.subs(NValues)
     DfDrann = np.array(DfDrann).reshape(len(fstate), projhyb["mlm"]["ny"])
     if np.iscomplexobj(DfDrann):
-        print("DfDrann is complex")
         DfDrann = DfDrann.real
     DfDrann = torch.from_numpy(DfDrann.astype(np.float64))
     return DfDrann
 
 def computeDANNINPDSTATE(projhyb, anninp, state_symbols, NValues):
     if projhyb['mlm']['DANNINPDSTATE'] is None:
+
         DanninpDstate = numerical_diferentiation_torch(anninp, state_symbols, NValues)
         projhyb['mlm']['DANNINPDSTATE'] = DanninpDstate
     else:
         DanninpDstate = projhyb['mlm']['DANNINPDSTATE']
-
     DanninpDstate = DanninpDstate.subs(NValues)
-    DanninpDstate = np.array(DanninpDstate).reshape(len(anninp)+1, len(anninp))
+    DanninpDstate = np.array(DanninpDstate)
+    if len(anninp) > 1:
+        DanninpDstate = DanninpDstate.reshape(len(anninp), len(anninp)+1)
     if np.iscomplexobj(DanninpDstate):
         DanninpDstate = DanninpDstate.real
     DanninpDstate = torch.from_numpy(DanninpDstate.astype(np.float64))
     return DanninpDstate
 
-def computeBackpropagation(ann, anninp_tensor):
-    y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor)
+def computeBackpropagation(ann, anninp_tensor, projhyb):
+    y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor, projhyb['mlm']['ny'])
     return y, DrannDanninp, DrannDw
 
 def computeDRANNDS(DrannDanninp, DanninpDstate):
-    return torch.mm(DrannDanninp, DanninpDstate.t())
+    print("DrannDanninp",DrannDanninp)
+
+    print("DanninpDstate",DanninpDstate.t())
+    return torch.mm(DrannDanninp, DanninpDstate)
 
 def computeDfDrannDrannDw(DfDrann, DrannDw):
     return torch.mm(DfDrann, DrannDw)
@@ -80,7 +84,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
     if projhyb['mode'] == 1:
         NValues = {**values, **state}
-
         # Use cache for expensive computations
         fstate = projhyb_cache.get('FSTATE', sp.sympify(fstate))
         state_symbols = projhyb_cache.get('STATE_SYMBOLS', sp.sympify(state_symbols))
@@ -99,7 +102,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
                 executor.submit(computeDFDS, projhyb, fstate, state_symbols, NValues): 'DfDs',
                 executor.submit(computeDFDRANN, projhyb, fstate, rann_symbol, NValues): 'DfDrann',
                 executor.submit(computeDANNINPDSTATE, projhyb, anninp, state_symbols, NValues): 'DanninpDstate',
-                executor.submit(computeBackpropagation, ann, anninp_tensor): 'backpropagation'
+                executor.submit(computeBackpropagation, ann, anninp_tensor, projhyb): 'backpropagation'
             }
 
             results = {}

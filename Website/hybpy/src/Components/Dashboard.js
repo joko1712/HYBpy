@@ -23,6 +23,8 @@ import { useEffect } from "react";
 import logo from "../Image/HYBpyINVIS_logo.png";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
+import Modal from "@mui/material/Modal";
+
 const drawerWidth = 200;
 
 const AppBar = styled(MuiAppBar, {
@@ -71,6 +73,20 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
 
 const defaultTheme = createTheme();
 
+const style = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "80%",
+    height: "80%",
+    bgcolor: "background.paper",
+    border: "2px solid #000",
+    boxShadow: 24,
+    p: 4,
+    overflow: "auto",
+};
+
 export default function Dashboard() {
     const navigate = useNavigate();
 
@@ -83,7 +99,19 @@ export default function Dashboard() {
     };
 
     const [runs, setRuns] = React.useState([]);
+    const [selectedPlot, setSelectedPlot] = React.useState(null);
+    const [modalOpen, setModalOpen] = React.useState(false);
     const userId = auth.currentUser.uid;
+
+    const handleOpenModal = (url) => {
+        setSelectedPlot(url);
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedPlot(null);
+        setModalOpen(false);
+    };
 
     useEffect(() => {
         const fetchLatestRun = async () => {
@@ -100,10 +128,17 @@ export default function Dashboard() {
                 ...doc.data(),
             }));
             setRuns(latestRun);
+            console.log("Latest Run:", latestRun); // Add this line for debugging
         };
 
         fetchLatestRun();
     }, [userId]);
+
+    useEffect(() => {
+        if (runs.length > 0 && runs[0].plots) {
+            console.log("Plot URLs:", runs[0].plots); // Add this line for debugging
+        }
+    }, [runs]);
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -177,30 +212,8 @@ export default function Dashboard() {
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 4, mb: 4 }}>
                         <Grid container spacing={3}>
-                            {/* Recent Runs */}
-                            <Grid item xs={12} md={8} lg={9}>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        height: 240,
-                                    }}>
-                                    {runs.length > 0 ? (
-                                        <ImageList cols={3} gap={8}>
-                                            {runs[0].plot_urls.map((url) => (
-                                                <ImageListItem key={url}>
-                                                    <img src={url} alt='Run Plot' loading='lazy' />
-                                                </ImageListItem>
-                                            ))}
-                                        </ImageList>
-                                    ) : (
-                                        <Typography>No plots available</Typography>
-                                    )}
-                                </Paper>
-                            </Grid>
                             {/* Recent Run Details */}
-                            <Grid item xs={12} md={4} lg={3}>
+                            <Grid item xs={12}>
                                 <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
                                     {runs.length > 0 ? (
                                         <>
@@ -217,7 +230,54 @@ export default function Dashboard() {
                                     )}
                                 </Paper>
                             </Grid>
+                            {/* Recent Runs */}
+                            <Grid item xs={12}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                    }}>
+                                    {runs.length > 0 && runs[0].plots ? (
+                                        <ImageList cols={3} gap={8} sx={{ width: "100%" }}>
+                                            {runs[0].plots.map((url, index) => (
+                                                <ImageListItem
+                                                    key={index}
+                                                    onClick={() => handleOpenModal(url)}>
+                                                    <img
+                                                        src={url}
+                                                        alt={`Plot ${index}`}
+                                                        loading='lazy'
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "auto",
+                                                            cursor: "pointer",
+                                                        }}
+                                                    />
+                                                </ImageListItem>
+                                            ))}
+                                        </ImageList>
+                                    ) : (
+                                        <Typography>No plots available</Typography>
+                                    )}
+                                </Paper>
+                            </Grid>
                         </Grid>
+                        <Modal
+                            open={modalOpen}
+                            onClose={handleCloseModal}
+                            aria-labelledby='modal-modal-title'
+                            aria-describedby='modal-modal-description'>
+                            <Box sx={style}>
+                                {selectedPlot && (
+                                    <img
+                                        src={selectedPlot}
+                                        alt='Selected Plot'
+                                        style={{ width: "auto", height: "100%" }}
+                                    />
+                                )}
+                            </Box>
+                        </Modal>
                     </Container>
                 </Box>
             </Box>

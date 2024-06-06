@@ -41,11 +41,12 @@ def fstate_func(projhyb,values):
         parametersvariables[symbols(projhyb["parameters"][str(i)]["id"])] = sympify(
             projhyb["parameters"][str(i)]["val"])
 
+    
     ruleassvariables = {}
     for i in range(1, projhyb["nruleAss"]+1):
-        ruleassvariables[symbols(projhyb["ruleAss"][str(i)]["id"])] = sympify(
+        ruleassvariables[symbols(projhyb["ruleAss"][str(i)]["id"])] = sp.Symbol(
             projhyb["ruleAss"][str(i)]["val"])
-
+    
 
     Raterules = []
     fRaterules = []
@@ -73,8 +74,10 @@ def fstate_func(projhyb,values):
         rates_sum = sum(rates[(i-1)*projhyb["nreaction"]:i*projhyb["nreaction"]])
         fSpecies.append(
             rates_sum - (projhyb["species"][str(i)]["dcomp"]/sympify(projhyb["species"]
-                        [str(i)]["compartment"])) * sympify(projhyb["species"][str(i)]["id"])
+                        [str(i)]["compartment"])) * sp.Symbol(projhyb["species"][str(i)]["id"])
         )
+
+
 
     nyparameters= {}
     for i in range(1, projhyb["mlm"]["ny"]+1):

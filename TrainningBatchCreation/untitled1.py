@@ -26,7 +26,7 @@ def combine_files(file_list, rows_to_add, delimiters):
     return combined_df
 
 file_list = ['TrainningBatchCreation\chassbatch1.csv', 'TrainningBatchCreation\chassbatch2.csv', 'TrainningBatchCreation\chassbatch3.csv', 'TrainningBatchCreation\chassbatch4.csv','TrainningBatchCreation\chassbatch5.csv' ]
-rows_to_add = [46, 46, 46, 46, 46]  
+rows_to_add = [16, 16, 16, 16, 16]  
 
 delimiters = [',', ';', ',', ',', ','] 
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { auth } from "../firebase-config";
 import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -19,14 +19,24 @@ import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import PublishIcon from "@mui/icons-material/Publish";
 import Button from "@mui/material/Button";
-import { Input, Select } from "@mui/material";
-import MenuItem from "@mui/material/MenuItem";
-import Tooltip, { TooltipProps, tooltipClasses } from "@mui/material/Tooltip";
+import {
+    Input,
+    Select,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Tabs,
+    Tab,
+    MenuItem,
+    Tooltip,
+    tooltipClasses,
+} from "@mui/material";
 import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
-import { useEffect } from "react";
 import logo from "../Image/HYBpyINVIS_logo.png";
 import { LineChart } from "./LineChart";
+import InfoIcon from "@mui/icons-material/Info";
 
 const drawerWidth = 200;
 
@@ -93,7 +103,7 @@ function FileUpload() {
     const navigateToUpload = () => {
         navigate("/Dashboard");
     };
-    const [open, setOpen] = React.useState(true);
+    const [open, setOpen] = useState(true);
     const toggleDrawer = () => {
         setOpen(!open);
     };
@@ -105,6 +115,9 @@ function FileUpload() {
     const [backendResponse, setBackendResponse] = useState("");
     const [description, setDescription] = useState("");
     const [tooltipDisplay, setTooltipDisplay] = useState("block");
+    const [modalOpen, setModalOpen] = useState(false);
+    const [tabIndex, setTabIndex] = useState(0);
+    const [batchData, setBatchData] = useState([]);
 
     const handleFileChange1 = (event) => {
         setSelectedFile1(event.target.files[0]);
@@ -126,8 +139,35 @@ function FileUpload() {
             const workbook = XLSX.read(e.target.result, { type: "binary" });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            const data = XLSX.utils.sheet_to_json(worksheet);
-            setFile2Content(Array.isArray(data) ? data : []);
+            const data = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+            const separatedBatches = [];
+            let currentBatch = [];
+
+            data.forEach((row, index) => {
+                const timeValue = row["time"];
+                const nextTimeValue = index + 1 < data.length ? data[index + 1]["time"] : null;
+
+                console.log(`Row ${index}:`, row);
+                console.log(`Time ${index}:`, timeValue, `Next Time:`, nextTimeValue);
+
+                if (nextTimeValue !== null && nextTimeValue < timeValue) {
+                    currentBatch.push(row);
+                    separatedBatches.push(currentBatch);
+                    currentBatch = [];
+                } else {
+                    currentBatch.push(row);
+                }
+            });
+
+            if (currentBatch.length > 0) {
+                separatedBatches.push(currentBatch);
+            }
+
+            console.log("Separated Batches:", separatedBatches);
+
+            setFile2Content(data);
+            setBatchData(separatedBatches);
         };
         reader.readAsBinaryString(file);
     };
@@ -167,7 +207,9 @@ function FileUpload() {
         formData.append("description", description);
         formData.append("train_batches", Array.from(train_batches).join(","));
         formData.append("test_batches", Array.from(test_batches).join(","));
+        formData.append("user_id", auth.currentUser.uid);
 
+        console.log("formData:", formData);
         try {
             const response = await fetch("http://localhost:5000/upload", {
                 method: "POST",
@@ -234,6 +276,10 @@ function FileUpload() {
         });
     };
 
+    const handleTabChange = (event, newValue) => {
+        setTabIndex(newValue);
+    };
+
     return (
         <ThemeProvider theme={defaultTheme}>
             <Box sx={{ display: "flex" }}>
@@ -268,7 +314,6 @@ function FileUpload() {
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
-                        {/*Check if there are any runs in progress if so display progress bar if not display nothing */}
                     </Toolbar>
                 </AppBar>
                 <Drawer variant='permanent' open={open}>
@@ -302,7 +347,6 @@ function FileUpload() {
                     }}>
                     <Toolbar />
                     <Container maxWidth='lg' sx={{}}>
-                        {/* ############################################# Start of the Main Page ############################################# */}
                         <div style={{ overflow: "auto", marginTop: 20 }}>
                             <h2 style={{ float: "left", marginTop: 0 }}>Create Run</h2>
                             <Button
@@ -357,125 +401,157 @@ function FileUpload() {
                                     </label>
                                 </Grid>
                             </CustomWidthTooltip>
-                            <CustomWidthTooltip
-                                title={
-                                    tooltipDisplay === "block"
-                                        ? "In this we will ask you to upload the CSV file which is a file containing the information about the batches. After uploading there will be a preview of the file."
-                                        : ""
-                                }
-                                followCursor
-                                arrow>
-                                <Grid item xs={20} columns={20}>
-                                    <Paper
-                                        sx={{
-                                            p: 2,
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            height: 300,
-                                            overflow: "auto",
-                                        }}>
-                                        <Typography level='h1'>CSV</Typography>
-                                        <p>
-                                            {selectedFile2
-                                                ? selectedFile2.name
-                                                : "Insert your CSV file containing the information about the batches here."}
-                                        </p>
-                                        <TableContainer
-                                            component={Paper}
-                                            sx={{ maxHeight: 240, overflow: "auto", fontSize: 1 }}>
-                                            <Table size='small' aria-label='a dense table'>
-                                                <TableHead>
-                                                    <TableRow>
-                                                        {file2Content.length > 0 &&
-                                                            Object.keys(file2Content[0]).map(
-                                                                (key) => (
-                                                                    <TableCell key={key}>
-                                                                        {key}
-                                                                    </TableCell>
-                                                                )
-                                                            )}
+
+                            <Grid item xs={20} columns={20}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        height: 300,
+                                        overflow: "auto",
+                                    }}>
+                                    <div style={{ display: "flex", alignItems: "center" }}>
+                                        <p>CSV</p>
+                                        <Tooltip
+                                            title='In this we will ask you to upload the CSV file which is a file containing the information about the batches. After uploading there will be a preview of the file.'
+                                            arrow>
+                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                                <InfoIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </div>
+                                    <p>
+                                        {selectedFile2
+                                            ? selectedFile2.name
+                                            : "Insert your CSV file containing the information about the batches here."}
+                                    </p>
+                                    <TableContainer
+                                        component={Paper}
+                                        sx={{ maxHeight: 240, overflow: "auto", fontSize: 1 }}>
+                                        <Table size='small' aria-label='a dense table'>
+                                            <TableHead>
+                                                <TableRow>
+                                                    {file2Content.length > 0 &&
+                                                        Object.keys(file2Content[0]).map((key) => (
+                                                            <TableCell key={key}>{key}</TableCell>
+                                                        ))}
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {file2Content.map((row, idx) => (
+                                                    <TableRow key={idx}>
+                                                        {Object.keys(file2Content[0]).map((key) => (
+                                                            <TableCell key={idx + key}>
+                                                                {row[key]}
+                                                            </TableCell>
+                                                        ))}
                                                     </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {file2Content.map((row, idx) => (
-                                                        <TableRow key={idx}>
-                                                            {Object.keys(file2Content[0]).map(
-                                                                (key) => (
-                                                                    <TableCell key={idx + key}>
-                                                                        {row[key]}
-                                                                    </TableCell>
-                                                                )
-                                                            )}
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </TableContainer>
-                                    </Paper>
-                                    <label htmlFor='csv-upload'>
-                                        <Grid item xs={10}>
-                                            <Button
-                                                component='span'
-                                                fullWidth
-                                                variant='contained'
-                                                sx={{ height: "100%" }}>
-                                                <PublishIcon fontSize='large' />
-                                                Upload CSV
-                                            </Button>
-                                            <VisuallyHiddenInput
-                                                type='file'
-                                                id='csv-upload'
-                                                onChange={handleFileChange2}
-                                            />
-                                            <Grid item xs={12}>
-                                                <Paper
-                                                    sx={{
-                                                        p: 2,
-                                                        display: "flex",
-                                                        flexDirection: "column",
-                                                    }}>
-                                                    <Typography variant='h6'>
-                                                        Batch Data Visualization
-                                                    </Typography>
-                                                    {file2Content.length > 0 ? (
-                                                        <LineChart data={file2Content} />
-                                                    ) : (
-                                                        <Typography>No data loaded</Typography>
-                                                    )}
-                                                </Paper>
-                                            </Grid>
-                                        </Grid>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </Paper>
+                                <div style={{ display: "flex", marginTop: "8px" }}>
+                                    <label htmlFor='csv-upload' style={{ flex: 1 }}>
+                                        <Button
+                                            component='span'
+                                            fullWidth
+                                            variant='contained'
+                                            sx={{ height: "100%", marginBottom: 2 }}>
+                                            <PublishIcon fontSize='large' />
+                                            Upload CSV
+                                        </Button>
+                                        <VisuallyHiddenInput
+                                            type='file'
+                                            id='csv-upload'
+                                            onChange={handleFileChange2}
+                                        />
                                     </label>
-                                </Grid>
-                            </CustomWidthTooltip>
-                            <CustomWidthTooltip
-                                title={
-                                    tooltipDisplay === "block"
-                                        ? "In this section you can write a description about the run you are going to create. This is optional."
-                                        : ""
-                                }
-                                followCursor
-                                arrow>
-                                <Grid item xs={20}>
-                                    <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                    <Button
+                                        onClick={() => setModalOpen(true)}
+                                        variant='contained'
+                                        sx={{
+                                            marginLeft: "16px",
+                                            height: "100%",
+                                            marginBottom: 2,
+                                        }}>
+                                        View Batches
+                                    </Button>
+                                </div>
+                                <Dialog
+                                    open={modalOpen}
+                                    onClose={() => setModalOpen(false)}
+                                    maxWidth='lg'
+                                    fullWidth>
+                                    <DialogTitle>Batch Data Visualization</DialogTitle>
+                                    <DialogContent>
+                                        <Tabs
+                                            value={tabIndex}
+                                            onChange={handleTabChange}
+                                            indicatorColor='primary'
+                                            textColor='primary'
+                                            variant='scrollable'
+                                            scrollButtons='auto'>
+                                            {batchData.map((batch, index) => (
+                                                <Tab key={index} label={`Batch ${index + 1}`} />
+                                            ))}
+                                        </Tabs>
+                                        <DialogContent>
+                                            {batchData.map((batch, index) => (
+                                                <div
+                                                    key={index}
+                                                    style={{
+                                                        display:
+                                                            tabIndex === index ? "block" : "none",
+                                                    }}>
+                                                    <LineChart data={batch} />
+                                                </div>
+                                            ))}
+                                        </DialogContent>
+                                    </DialogContent>
+                                    <DialogActions>
+                                        <Button onClick={() => setModalOpen(false)} color='primary'>
+                                            Close
+                                        </Button>
+                                    </DialogActions>
+                                </Dialog>
+                            </Grid>
+                            <Grid item xs={20}>
+                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                    <div style={{ display: "flex", alignItems: "center" }}>
                                         <p>Description</p>
-                                        <Input
-                                            onChange={(e) =>
-                                                setDescription(e.target.value)
-                                            }></Input>
-                                    </Paper>
-                                </Grid>
-                            </CustomWidthTooltip>
+                                        <Tooltip
+                                            title='In this section you can write a description about the run you are going to create. This is optional.'
+                                            arrow>
+                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                                <InfoIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </div>
+                                    <Input
+                                        fullWidth
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                    />
+                                </Paper>
+                            </Grid>
                             <CustomWidthTooltip
                                 title={
                                     tooltipDisplay === "block"
-                                        ? "In this section you can select the batch selection mode. 1 is for selecting train and test batches manualy from a list and 2 is for the selection to be done randomly (with a 2/3; 1/3 split)."
+                                        ? "In this section you can select the batch selection mode. 1 is for selecting train and test batches manually from a list and 2 is for the selection to be done randomly (with a 2/3; 1/3 split)."
                                         : ""
                                 }
                                 followCursor
                                 arrow>
                                 <Grid item xs={7}>
-                                    <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            marginBottom: 2,
+                                        }}>
                                         <p>Mode:</p>
                                         <Select
                                             labelId='Mode'
@@ -533,7 +609,7 @@ function FileUpload() {
                                             variant='contained'
                                             sx={{ height: "100%" }}>
                                             <PublishIcon fontSize='large' />
-                                            Upload Imformation
+                                            Upload Information
                                         </Button>
                                     </Grid>
                                 </>
@@ -556,7 +632,7 @@ function FileUpload() {
                                                     variant='contained'
                                                     sx={{ height: "100%" }}>
                                                     <PublishIcon fontSize='large' />
-                                                    Upload Imformation
+                                                    Upload Information
                                                 </Button>
                                             </Grid>
                                         </CustomWidthTooltip>

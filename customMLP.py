@@ -98,7 +98,7 @@ class CustomMLP(nn.Module):
             weights.extend(b)
         return np.array(weights), self
 
-    def backpropagate(self, x):
+    def backpropagate(self, x, ny):
         activations = [x]
 
         for layer in self.layers:
@@ -146,7 +146,7 @@ class CustomMLP(nn.Module):
         DrannDw = tensorList
 
         DrannDw = torch.cat(DrannDw, dim=1)
-        DrannDw = DrannDw.view(7, tensor_size)
+        DrannDw = DrannDw.view(ny, tensor_size)
 
         return y, DrannDanninp, DrannDw
 

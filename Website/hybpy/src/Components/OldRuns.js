@@ -26,6 +26,9 @@ import { blue } from "@mui/material/colors";
 import { ListItemButton } from "@mui/material";
 import Modal from "@mui/material/Modal";
 import logo from "../Image/HYBpyINVIS_logo.png";
+import ImageList from "@mui/material/ImageList";
+import ImageListItem from "@mui/material/ImageListItem";
+
 const drawerWidth = 200;
 
 const AppBar = styled(MuiAppBar, {
@@ -77,8 +80,8 @@ const style = {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: "70%",
-    height: "70%",
+    width: "80%",
+    height: "80%",
     bgcolor: "background.paper",
     border: "2px solid #000",
     boxShadow: 24,
@@ -87,7 +90,10 @@ const style = {
 };
 
 function DisplayJson({ data, level = 0 }) {
-    if (typeof data !== "object" || data === null) {
+    if (data === null || data === undefined) {
+        return <span>No data available</span>;
+    }
+    if (typeof data !== "object") {
         return <span>{data.toString()}</span>;
     }
 
@@ -125,6 +131,7 @@ export default function OldRuns() {
 
     const [openModal, setOpenModal] = React.useState(false);
     const [selectedRun, setSelectedRun] = React.useState(null);
+    const [selectedPlot, setSelectedPlot] = React.useState(null);
 
     const handleOpen = (run) => {
         setSelectedRun(run);
@@ -133,6 +140,11 @@ export default function OldRuns() {
 
     const handleClose = () => {
         setOpenModal(false);
+        setSelectedPlot(null);
+    };
+
+    const handlePlotClick = (url) => {
+        setSelectedPlot(url);
     };
 
     useEffect(() => {
@@ -188,10 +200,6 @@ export default function OldRuns() {
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
-                        {/*Check if there are any runs in progress if so display progress bar if not display nothing */}
-                        <IconButton color='inherit' size='small'>
-                            <p>Run Progress:</p>
-                        </IconButton>
                     </Toolbar>
                 </AppBar>
                 <Drawer variant='permanent' open={open}>
@@ -262,7 +270,7 @@ export default function OldRuns() {
                                         onClose={handleClose}
                                         aria-labelledby='modal-modal-title'
                                         aria-describedby='modal-modal-description'>
-                                        <Box sx={style}>
+                                        <Box sx={{ ...style, width: "80%", height: "80%" }}>
                                             {selectedRun && (
                                                 <>
                                                     <Typography
@@ -274,6 +282,29 @@ export default function OldRuns() {
                                                     <Typography
                                                         id='modal-modal-description'
                                                         sx={{ mt: 3 }}>
+                                                        Plots:
+                                                        <div>
+                                                            {selectedRun.plots &&
+                                                                selectedRun.plots.map(
+                                                                    (plotUrl, index) => (
+                                                                        <img
+                                                                            key={index}
+                                                                            src={plotUrl}
+                                                                            alt={`Plot ${index}`}
+                                                                            style={{
+                                                                                width: "30%",
+                                                                                marginBottom: 10,
+                                                                                cursor: "pointer",
+                                                                            }}
+                                                                            onClick={() =>
+                                                                                handlePlotClick(
+                                                                                    plotUrl
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                    )
+                                                                )}
+                                                        </div>
                                                         Run ID: {selectedRun.id}
                                                         <br />
                                                         Hmod: {selectedRun.file1_name}
@@ -300,6 +331,32 @@ export default function OldRuns() {
                                                     </Typography>
                                                 </>
                                             )}
+                                        </Box>
+                                    </Modal>
+                                    <Modal
+                                        open={!!selectedPlot}
+                                        onClose={() => setSelectedPlot(null)}
+                                        aria-labelledby='modal-plot-title'
+                                        aria-describedby='modal-plot-description'>
+                                        <Box
+                                            sx={{
+                                                position: "absolute",
+                                                top: "50%",
+                                                left: "50%",
+                                                transform: "translate(-50%, -50%)",
+                                                width: "80%",
+                                                height: "80%",
+                                                bgcolor: "background.paper",
+                                                border: "2px solid #000",
+                                                boxShadow: 24,
+                                                p: 4,
+                                                overflow: "auto",
+                                            }}>
+                                            <img
+                                                src={selectedPlot}
+                                                alt='Selected Plot'
+                                                style={{ width: "100%" }}
+                                            />
                                         </Box>
                                     </Modal>
                                 </Paper>

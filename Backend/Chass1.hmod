@@ -347,7 +347,7 @@ chass.mlm.y(7).id = 'vm5';
 chass.mlm.y(7).val= 'rann7';
 chass.mlm.y(7).min= 0; 
 chass.mlm.y(7).max= 4;
-chass.mlm.options={'hidden nodes', [5 5]};
+chass.mlm.options={'hidden nodes', [1]};
 chass.mlm.layer=1 %1-tanh 2-ReLu
 chass.mlm.xfun=str2func('autoA_hybmod_anninp'); %generated automatically
 chass.mlm.yfun=str2func('autoA_hybmod_rann'); %only used if 'user-defined'
@@ -369,7 +369,7 @@ chass.datafun=@chassdata;
 
 %training configuration
 chass.mode=1;%;    %1-indirect, 2-direct, 3-semidirect
-chass.method=1;    %1-lev-marquardt, 2-quasi-Newton   3- Simulated Annealing
+chass.method=4;    %1-lev-marquardt, 2-quasi-Newton   3- Simulated Annealing
 chass.jacobian=1;  %1-ON, 0- OFF   [ONLY FOR LEVENBERG-MARQUARDT]
 chass.hessian=0;   %1-ON  0- OFF   [only for quasi-Newton]
 chass.derivativecheck='off'; %'on' or 'off' [ONLY FOR LEVENBERG-MARQUARDT]

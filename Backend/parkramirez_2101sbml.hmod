@@ -187,7 +187,7 @@ parkram.event(1).val(1)="u"
 parkram.nreaction=4
 parkram.reaction(1).id="rX"
 parkram.reaction(1).rate="miu*X"
-parkram.reaction(1).Y=["1", "-Y", "0", "0"]
+parkram.reaction(1).Y=["1", "-1", "0", "0"]
 parkram.reaction(2).id="rSin" 
 parkram.reaction(2).rate="D*Sin"
 parkram.reaction(2).Y=["0", "1", "0", "0"]
@@ -227,6 +227,7 @@ parkram.control(2).min=  0;
 parkram.control(2).max=  500;
 parkram.control(2).constant=1;
 parkram.fun_control=@control_function_parkramirez;
+parkram.fun_event=[];
 % 
 % % MLM - Machine Learning Model --------------------------------------------
 parkram.mlm.id = 'mlpnet'; %'user-defined'; %'mlpnet' %mlp1H
@@ -248,7 +249,7 @@ parkram.mlm.y(3).id = 'vPM';
 parkram.mlm.y(3).val= 'rann3';
 parkram.mlm.y(3).min= 0; 
 parkram.mlm.y(3).max= 4;
-parkram.mlm.options={'hidden nodes', [5]}; %user defined
+parkram.mlm.options={'hidden nodes', [1]}; %user defined
 parkram.mlm.layer=1 %1-tanh 2-ReLu %user defined
 parkram.mlm.xfun=str2func('autoA_hybmod_anninp'); %generated automatically
 parkram.mlm.yfun=str2func('autoA_hybmod_rann'); %only used if 'user-defined'

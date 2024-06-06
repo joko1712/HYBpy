@@ -66,9 +66,7 @@ def computeBackpropagation(ann, anninp_tensor, projhyb):
     return y, DrannDanninp, DrannDw
 
 def computeDRANNDS(DrannDanninp, DanninpDstate):
-    print("DrannDanninp",DrannDanninp)
 
-    print("DanninpDstate",DanninpDstate.t())
     return torch.mm(DrannDanninp, DanninpDstate)
 
 def computeDfDrannDrannDw(DfDrann, DrannDw):

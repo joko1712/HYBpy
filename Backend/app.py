@@ -26,9 +26,9 @@ from firebase_admin import credentials, firestore, storage
 
 load_dotenv()
 
-cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
+cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
 firebase_admin.initialize_app(cred, {
-    'storageBucket': os.getenv("STORAGE_BUCKET_NAME")
+    'storageBucket': "hybpy-test.appspot.com"
 })
 
 db = firestore.client()
@@ -40,7 +40,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 def upload_file_to_storage(file, user_id, filename, folder_id):
     file.seek(0)
-    bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
+    bucket = storage.bucket("hybpy-test.appspot.com")
     blob = bucket.blob(f"{user_id}/{folder_id}/{filename}")
     blob.upload_from_file(file, content_type=file.content_type)
     blob.make_public()
@@ -52,7 +52,7 @@ def upload_plots_to_gcs(user_id, folder_id):
     date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
 
     for filename in glob.glob(os.path.join(date_dir, '*.png')):
-        bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
+        bucket = storage.bucket("hybpy-test.appspot.com")
         blob = bucket.blob(f'{user_id}/plots/{folder_id}/{os.path.basename(filename)}')
         blob.upload_from_filename(filename)
         blob.make_public()

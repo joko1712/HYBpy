@@ -98,26 +98,31 @@ def add_state_and_time_to_data(data, projhyb):
         y_matrix = []
         sc_list = []
         sy_matrix = []
+        key_value_list = []
         for time_key, time_data in batch_data.items():
             if isinstance(time_data, dict):
-                state = [float(val) for key, val in time_data.items() if not key.startswith("sd")]
+                state = [float(val) for key, val in time_data.items() if key != "time" and not key.startswith("sd") and not isinstance(val, list)]
+                y_matrix.append(state)
 
-                data[batch_key][time_key]['state'] = state
-                y_matrix.append(state) 
-                
                 sd_values = [float(val) for key, val in time_data.items() if key.startswith("sd")]
-                v_values = [float(time_data[key]) for key in time_data if key.startswith("V")]
-
-                data[batch_key][time_key]['sc'] = sd_values
-                sy_matrix.append(data[batch_key][time_key]['sc'])
+                sy_matrix.append(sd_values)
                 
-                                
-                time_list.append(int(time_key)) 
+                time_list.append(int(time_key))
+                
+                key_value_dict = {}
+                for key, val in time_data.items():
+                    if key != "time" and not key.startswith("sd"):
+                        try:
+                            key_value_dict[key] = float(val)
+                        except (ValueError, TypeError):
+                            key_value_dict[key] = val 
+                key_value_list.append(key_value_dict)
 
         data[batch_key]['time'] = time_list
         data[batch_key]["np"] = len(time_list)
-        data[batch_key]["y"] = y_matrix 
+        data[batch_key]["y"] = y_matrix
         data[batch_key]["sy"] = sy_matrix
+        data[batch_key]["key_value_array"] = key_value_list
 
     return data
 
@@ -144,3 +149,5 @@ with open('sample.json', 'w') as f:
             /(projhyb.batch(i).t(k+1)-projhyb.batch(i).t(k));
     end
 '''
+
+

@@ -236,7 +236,7 @@ def hybtrain(projhyb, file, user_id):
         evaluator = IndirectFunctionEvaluator(ann, projhyb, file, resfun_indirect_jac)
 
 #######################################################################################################################
-    '''
+    
     for istep in range(1, projhyb['nstep']):
         print("TESTING")
         for i in range(1, file['nbatch'] + 1):
@@ -296,9 +296,14 @@ def hybtrain(projhyb, file, user_id):
             optimized_weights = adam_optimizer_train(ann, projhyb, evaluator, num_epochs, lr)
     
     '''
-    w = [ 5.98462998e-02,  7.91298309e-04,  2.30698745e-02,  2.25003473e-04,
-        -8.47288543e-05,  9.82927005e-01,  8.18949818e-04,  4.20832436e-07]
-    
+    w = [-1.30284588e-03, -1.14245236e-02, -7.91831059e-04,  4.40199659e-03,
+            1.72756969e-03, -5.00282668e-03, -2.01651446e-03, -3.93168300e-03,
+            9.56139266e-04, -1.25006042e-03, -1.57937766e-03, -2.50723996e-03,
+            1.62134778e-03, -1.16238460e-02, -1.66073496e-04,  5.14919755e-03,
+            2.14947514e-03,  1.17489032e-04, -2.03476453e-03,  1.54795275e-01,
+            1.70781475e-01,  4.07317944e-05,  1.00251807e+00,  9.94084879e-02,
+            6.72249841e-06,  4.22301199e-02]
+    '''
     optimized_weights = w   
     testing = teststate(ann, user_id, projhyb, file, optimized_weights, projhyb['method'])
 
@@ -410,10 +415,13 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
             Sw = np.zeros((nt, nw))
 
             for i in range(1, file[l]["np"]):
+                statedict = np.array(file[l]["key_value_array"][i-1])
+                print("statedict", statedict)
+
                 batch_data = file[l]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
-                                            state, Sw, 0, w, batch_data, projhyb)
+                                            state, statedict, Sw, 0, w, batch_data, projhyb)
                 
                 Y_select = Y[i, isresY]
                 state_tensor = torch.tensor(state, dtype=torch.float64)
@@ -618,7 +626,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
                 dictState[l] = {}
             dictState[l][i] = state
 
-    for i in range(0, projhyb['nspecies']):
+    for i in range(0, projhyb['mlm']['nx']):
         actual_train = []
         actual_test = []
         predicted = []
@@ -659,7 +667,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         if actual_test.shape != test.shape:
             print(f"Shape mismatch for test data: actual_test {actual_test.shape}, test {test.shape}")
             continue
-        
+        '''
         mse_train = mean_squared_error(actual_train, predicted)
         print(f'Training MSE: {mse_train}')
         mse_test = mean_squared_error(actual_test, test)
@@ -676,7 +684,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
             f'Test MSE: {mse_test:.4f}',
             f'Test R²: {r2_test:.4f}',
         )) 
-        
+        '''
         z_score = 2.05
         margin = z_score * err
 

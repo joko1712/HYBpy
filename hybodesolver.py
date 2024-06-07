@@ -9,9 +9,9 @@ import sympy as sp
 from derivativeXY import numerical_derivativeXY
 
 
-def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w, batch, projhyb):
+def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, jac, hess, w, batch, projhyb):
     t = t0
-    hopt = []
+    hopt = []   
 
     state_symbols = []
 
@@ -50,11 +50,23 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     for i in range(1, projhyb["ncompartment"]+1):
         state_symbols.append(sp.Symbol(projhyb["compartment"][str(i)]["id"]))
     
-    ### CHANGE THIS!!
+    statedict = ensure_dict(statedict)
+
+    state_symbols_upper = {str(symbol).upper() for symbol in state_symbols}
     
+    for key, val in statedict.items():
+        if key.upper() not in state_symbols_upper and key not in values:
+            values[key] = val
+    
+
+    ### CHANGE THIS!!
+    '''
     feed = 0.1250 * t
     values["D"] = feed / values["V"]
     values["Sin"] = 500
+    '''
+    print("dict", state)
+    print("values", values)
 
     if jac is not None:
         jac = torch.tensor(jac, dtype=torch.float64)
@@ -263,3 +275,18 @@ def calculate_state_final_nojac(state, h, k1_state, k2_state, k3_state, k4_state
 
     
     return stateFinal
+
+
+def ensure_dict(statedict):
+    if isinstance(statedict, np.ndarray):
+        if statedict.ndim == 0:
+            statedict = statedict.item()  
+        elif statedict.ndim == 1:
+            raise ValueError("Cannot convert 1-D array to a dictionary without keys.")
+        else:
+            raise ValueError("statedict is an array with unexpected dimensions.")
+    
+    if not isinstance(statedict, dict):
+        raise ValueError("statedict should be a dictionary or a compatible array.")
+    
+    return statedict

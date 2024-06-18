@@ -31,6 +31,9 @@ import {
     MenuItem,
     Tooltip,
     tooltipClasses,
+    Link,
+    TextField,
+    Modal,
 } from "@mui/material";
 import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
@@ -95,7 +98,39 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
         },
     })
 );
+
 const defaultTheme = createTheme();
+const extractValue = (content, key, defaultValue) => {
+    const regex = new RegExp(`${key}=([^;]+);`);
+    const match = content.match(regex);
+    return match ? match[1].trim() : defaultValue;
+};
+
+const TrainingModal = ({ open, handleClose }) => (
+    <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>Training in Progress</DialogTitle>
+        <DialogContent>
+            <Grid container spacing={2} marginTop={2}>
+                <Grid item xs={12}>
+                    <Typography id='modal-modal-title' variant='h6' component='h2'>
+                        Training in Progress
+                    </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                    <Typography id='modal-modal-description' sx={{ mt: 2 }}>
+                        Your training has started. You will be redirected to the dashboard once you
+                        close this modal.
+                    </Typography>
+                </Grid>
+            </Grid>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={handleClose} color='primary'>
+                Close
+            </Button>
+        </DialogActions>
+    </Dialog>
+);
 
 function FileUpload() {
     const navigate = useNavigate();
@@ -118,6 +153,16 @@ function FileUpload() {
     const [modalOpen, setModalOpen] = useState(false);
     const [tabIndex, setTabIndex] = useState(0);
     const [batchData, setBatchData] = useState([]);
+    const [progress, setProgress] = useState(0);
+    const [hmodModalOpen, setHmodModalOpen] = useState(false);
+    const [initialValues, setInitialValues] = useState(null);
+    const [trainingModalOpen, setTrainingModalOpen] = useState(false);
+    const [runInProgress, setRunInProgress] = useState(false);
+
+    const handleCloseTrainingModal = () => {
+        setTrainingModalOpen(false);
+        navigate("/Dashboard");
+    };
 
     const handleFileChange1 = (event) => {
         setSelectedFile1(event.target.files[0]);
@@ -125,10 +170,45 @@ function FileUpload() {
         if (file) {
             const reader = new FileReader();
             reader.onload = function (e) {
-                setFile1Content(e.target.result);
+                const content = e.target.result;
+                setFile1Content(content);
+
+                const regexPrefix = /(\w+)\.nspecies=/g;
+                const uniquePrefixes = new Set();
+                let match;
+                while ((match = regexPrefix.exec(content)) !== null) {
+                    uniquePrefixes.add(match[1]);
+                }
+
+                let initialValues = {};
+                uniquePrefixes.forEach((prefix) => {
+                    const hiddenNodesMatch = content.match(
+                        new RegExp(`${prefix}\\.mlm\\.options=\\{'hidden nodes', \\[(.*?)\\]\\};`)
+                    );
+                    const hiddenNodes = hiddenNodesMatch
+                        ? hiddenNodesMatch[1].replace(/,/g, " ")
+                        : "5 5";
+
+                    initialValues = {
+                        ...initialValues,
+                        hiddenNodes,
+                        layer: parseFloat(extractValue(content, `${prefix}.mlm.layer`)),
+                        tau: parseFloat(extractValue(content, `${prefix}.time.TAU`)),
+                        mode: parseFloat(extractValue(content, `${prefix}.mode`)),
+                        method: parseFloat(extractValue(content, `${prefix}.method`)),
+                        jacobian: parseFloat(extractValue(content, `${prefix}.jacobian`)),
+                        hessian: parseFloat(extractValue(content, `${prefix}.hessian`)),
+                        niter: parseFloat(extractValue(content, `${prefix}.niter`)),
+                        nstep: parseFloat(extractValue(content, `${prefix}.nstep`)),
+                        bootstrap: parseFloat(extractValue(content, `${prefix}.bootstrap`)),
+                    };
+                });
+
+                setInitialValues(initialValues);
             };
             reader.readAsText(file);
         }
+        setProgress(3);
     };
 
     const handleFileChange2 = (event) => {
@@ -148,9 +228,6 @@ function FileUpload() {
                 const timeValue = row["time"];
                 const nextTimeValue = index + 1 < data.length ? data[index + 1]["time"] : null;
 
-                console.log(`Row ${index}:`, row);
-                console.log(`Time ${index}:`, timeValue, `Next Time:`, nextTimeValue);
-
                 if (nextTimeValue !== null && nextTimeValue < timeValue) {
                     currentBatch.push(row);
                     separatedBatches.push(currentBatch);
@@ -164,16 +241,20 @@ function FileUpload() {
                 separatedBatches.push(currentBatch);
             }
 
-            console.log("Separated Batches:", separatedBatches);
-
             setFile2Content(data);
             setBatchData(separatedBatches);
         };
         reader.readAsBinaryString(file);
+        setProgress(2);
     };
 
     const handleModeChange = (event) => {
         setMode(event.target.value);
+        if (event.target.value === "1") {
+            setProgress(4);
+        } else if (event.target.value === "2") {
+            setProgress(5);
+        }
     };
 
     const changeTooltip = () => {
@@ -209,18 +290,43 @@ function FileUpload() {
         formData.append("test_batches", Array.from(test_batches).join(","));
         formData.append("user_id", auth.currentUser.uid);
 
-        console.log("formData:", formData);
+        setTrainingModalOpen(true); // Open the modal when the upload starts
+
         try {
             const response = await fetch("http://localhost:5000/upload", {
                 method: "POST",
                 body: formData,
             });
+
             const data = await response.json();
             setBackendResponse(JSON.stringify(data, null, 2));
+
+            checkRunStatus(); // Start checking the run status
         } catch (error) {
             console.error("Error uploading file:", error);
             setBackendResponse(`Error: ${error.message}`);
         }
+    };
+
+    const checkRunStatus = async () => {
+        const userId = auth.currentUser.uid;
+        const intervalId = setInterval(async () => {
+            try {
+                const response = await fetch(`http://localhost:5000/run-status?user_id=${userId}`);
+                const data = await response.json();
+                if (data.status === "no_runs") {
+                    setRunInProgress(false);
+                } else if (data.status === "in_progress") {
+                    setRunInProgress(true);
+                } else {
+                    clearInterval(intervalId);
+                    setRunInProgress(false);
+                    navigate("/Dashboard");
+                }
+            } catch (error) {
+                console.error("Error checking run status:", error);
+            }
+        }, 5000);
     };
 
     const [availableBatches, setAvailableBatches] = useState([]);
@@ -234,14 +340,12 @@ function FileUpload() {
                     const formData = new FormData();
                     formData.append("file2", selectedFile2);
 
-                    console.log("Making fetch call to get-available-batches");
                     const response = await fetch("http://localhost:5000/get-available-batches", {
                         method: "POST",
                         body: formData,
                     });
 
                     const data = await response.json();
-                    console.log("Received data:", data);
                     setAvailableBatches(data);
                 } catch (error) {
                     console.error("Error fetching batches:", error);
@@ -278,6 +382,54 @@ function FileUpload() {
 
     const handleTabChange = (event, newValue) => {
         setTabIndex(newValue);
+    };
+
+    const handleHmodModalSave = (updatedOptions) => {
+        setHmodModalOpen(false);
+
+        let updatedContent = file1Content;
+
+        const regexPrefix = /(\w+)\.nspecies=/g; // Match the prefix of the HMOD file (e.g. 'model' in 'model.nspecies=3;')
+        // Get all unique prefixes in the HMOD file (e.g. 'model') and store them in a Set to avoid duplicates
+        const uniquePrefixes = new Set();
+        let match;
+        while ((match = regexPrefix.exec(file1Content)) !== null) {
+            uniquePrefixes.add(match[1]);
+        }
+
+        // Create a map of options to update in the HMOD file based on the unique prefixes found in the file. This can be extended to include more options.
+        const optionsMap = {};
+        uniquePrefixes.forEach((prefix) => {
+            optionsMap[
+                `${prefix}\\.mlm\\.options`
+            ] = `${prefix}.mlm.options={'hidden nodes', [${updatedOptions.hiddenNodes.join(
+                " "
+            )}]};`;
+            optionsMap[`${prefix}\\.mlm\\.layer`] = `${prefix}.mlm.layer=${updatedOptions.layer};`;
+            optionsMap[`${prefix}\\.time\\.TAU`] = `${prefix}.time.TAU=${updatedOptions.tau};`;
+            optionsMap[`${prefix}\\.mode`] = `${prefix}.mode=${updatedOptions.mode};`;
+            optionsMap[`${prefix}\\.method`] = `${prefix}.method=${updatedOptions.method};`;
+            optionsMap[`${prefix}\\.jacobian`] = `${prefix}.jacobian=${updatedOptions.jacobian};`;
+            optionsMap[`${prefix}\\.hessian`] = `${prefix}.hessian=${updatedOptions.hessian};`;
+            optionsMap[`${prefix}\\.niter`] = `${prefix}.niter=${updatedOptions.niter};`;
+            optionsMap[`${prefix}\\.nstep`] = `${prefix}.nstep=${updatedOptions.nstep};`;
+            optionsMap[
+                `${prefix}\\.bootstrap`
+            ] = `${prefix}.bootstrap=${updatedOptions.bootstrap};`;
+        });
+
+        for (const [key, value] of Object.entries(optionsMap)) {
+            const regex = new RegExp(`${key}=.*?;`, "g");
+            updatedContent = updatedContent.replace(regex, value);
+        }
+
+        setFile1Content(updatedContent);
+
+        const updatedFile = new Blob([updatedContent], { type: "text/plain" });
+        const updatedFileObject = new File([updatedFile], selectedFile1.name, {
+            type: selectedFile1.type,
+        });
+        setSelectedFile1(updatedFileObject);
     };
 
     return (
@@ -348,59 +500,35 @@ function FileUpload() {
                     <Toolbar />
                     <Container maxWidth='lg' sx={{}}>
                         <div style={{ overflow: "auto", marginTop: 20 }}>
-                            <h2 style={{ float: "left", marginTop: 0 }}>Create Run</h2>
-                            <Button
-                                onClick={() => changeTooltip()}
-                                variant='contained'
-                                sx={{ height: "100%", float: "right" }}>
-                                Toggle Tooltip
-                            </Button>
+                            <h2 style={{ float: "left", marginTop: 0 }}>New Hybrid Model</h2>
                         </div>
                         <Grid container spacing={3} columns={20}>
-                            <CustomWidthTooltip
-                                title={
-                                    tooltipDisplay === "block"
-                                        ? "In this we will ask you to upload the HMOD file which is a file containing the information about the mechanistic model and the settings for the machine learning model. After uploading there will be a preview of the file."
-                                        : ""
-                                }
-                                followCursor
-                                arrow>
-                                <Grid item xs={20} columns={20}>
-                                    <Paper
-                                        sx={{
-                                            p: 2,
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            height: 300,
-                                            overflow: "auto",
-                                        }}>
-                                        <Typography level='h1'>HMOD</Typography>
-                                        <p>
-                                            {selectedFile1
-                                                ? selectedFile1.name
-                                                : "Insert your HMOD file containing the information about the mechanistic model and the settings for the machine learning model here."}
-                                        </p>
-                                        <pre>{file1Content}</pre>{" "}
-                                    </Paper>
-                                    <label htmlFor='hmod-upload'>
-                                        <Grid item xs={10}>
-                                            <Button
-                                                component='span'
-                                                fullWidth
-                                                variant='contained'
-                                                sx={{ height: "100%" }}>
-                                                <PublishIcon fontSize='large' />
-                                                Upload Hmod
-                                            </Button>
-                                            <VisuallyHiddenInput
-                                                type='file'
-                                                id='hmod-upload'
-                                                onChange={handleFileChange1}
-                                            />
-                                        </Grid>
-                                    </label>
-                                </Grid>
-                            </CustomWidthTooltip>
+                            <Grid item xs={20}>
+                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                    <div style={{ display: "flex", alignItems: "center" }}>
+                                        <Typography variant='h5'>Title</Typography>
+                                        <Tooltip
+                                            title='In this section you can write the Title of the Model you are going to create.'
+                                            arrow>
+                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                                <InfoIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </div>
+                                    <Input
+                                        fullWidth
+                                        value={description}
+                                        onChange={(e) => {
+                                            setDescription(e.target.value);
+                                            if (e.target.value) {
+                                                setProgress(1);
+                                            } else {
+                                                setProgress(0);
+                                            }
+                                        }}
+                                    />
+                                </Paper>
+                            </Grid>
 
                             <Grid item xs={20} columns={20}>
                                 <Paper
@@ -408,11 +536,11 @@ function FileUpload() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 300,
+                                        height: 400,
                                         overflow: "auto",
                                     }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
-                                        <p>CSV</p>
+                                        <Typography variant='h5'>CSV</Typography>
                                         <Tooltip
                                             title='In this we will ask you to upload the CSV file which is a file containing the information about the batches. After uploading there will be a preview of the file.'
                                             arrow>
@@ -421,6 +549,11 @@ function FileUpload() {
                                             </IconButton>
                                         </Tooltip>
                                     </div>
+                                    <Typography variant='h7'>
+                                        {" "}
+                                        Step 1: Please select Dataset (.csv). See{" "}
+                                        <Link>Template</Link> and <Link>Example</Link>.{" "}
+                                    </Typography>
                                     <p>
                                         {selectedFile2
                                             ? selectedFile2.name
@@ -455,16 +588,18 @@ function FileUpload() {
                                 <div style={{ display: "flex", marginTop: "8px" }}>
                                     <label htmlFor='csv-upload' style={{ flex: 1 }}>
                                         <Button
-                                            component='span'
                                             fullWidth
                                             variant='contained'
-                                            sx={{ height: "100%", marginBottom: 2 }}>
+                                            sx={{ height: "100%", marginBottom: 2 }}
+                                            disabled={progress < 1}
+                                            component='span'>
                                             <PublishIcon fontSize='large' />
                                             Upload CSV
                                         </Button>
                                         <VisuallyHiddenInput
                                             type='file'
                                             id='csv-upload'
+                                            disabled={progress < 1}
                                             onChange={handleFileChange2}
                                         />
                                     </label>
@@ -475,7 +610,8 @@ function FileUpload() {
                                             marginLeft: "16px",
                                             height: "100%",
                                             marginBottom: 2,
-                                        }}>
+                                        }}
+                                        disabled={progress < 2}>
                                         View Batches
                                     </Button>
                                 </div>
@@ -517,55 +653,101 @@ function FileUpload() {
                                     </DialogActions>
                                 </Dialog>
                             </Grid>
-                            <Grid item xs={20}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+
+                            <Grid item xs={20} columns={20}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        height: 400,
+                                        overflow: "auto",
+                                    }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
-                                        <p>Description</p>
+                                        <Typography variant='h5'>HMOD</Typography>
                                         <Tooltip
-                                            title='In this section you can write a description about the run you are going to create. This is optional.'
+                                            title='Insert your HMOD file containing the information about the mechanistic model and the settings for the machine learning model here.'
                                             arrow>
                                             <IconButton size='small' sx={{ ml: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
                                     </div>
-                                    <Input
-                                        fullWidth
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                    />
+                                    <Typography variant='h7'>
+                                        Step 2. Please select HMOD hybrid/standard model (.hmod).
+                                        The HMOD file is an intermediate format that enables
+                                        communication between the essential components of the
+                                        mechanistic and hybrid models. You can use the{" "}
+                                        <Link>SBML2HYB</Link> tool to create a hybrid HMOD model
+                                        format from any SBML model or see <Link> Example 1</Link>{" "}
+                                        and <Link> Example 2</Link> to edit/create your own standard
+                                        HMOD model.
+                                    </Typography>
+                                    <pre>{file1Content}</pre>{" "}
                                 </Paper>
-                            </Grid>
-                            <CustomWidthTooltip
-                                title={
-                                    tooltipDisplay === "block"
-                                        ? "In this section you can select the batch selection mode. 1 is for selecting train and test batches manually from a list and 2 is for the selection to be done randomly (with a 2/3; 1/3 split)."
-                                        : ""
-                                }
-                                followCursor
-                                arrow>
-                                <Grid item xs={7}>
-                                    <Paper
+                                <div style={{ display: "flex", marginTop: "8px" }}>
+                                    <label htmlFor='hmod-upload' style={{ flex: 1 }}>
+                                        <Button
+                                            component='span'
+                                            fullWidth
+                                            variant='contained'
+                                            sx={{ height: "100%", marginBottom: 2 }}
+                                            disabled={progress < 2}>
+                                            <PublishIcon fontSize='large' />
+                                            Upload Hmod
+                                        </Button>
+                                        <VisuallyHiddenInput
+                                            type='file'
+                                            id='hmod-upload'
+                                            disabled={progress < 2}
+                                            onChange={handleFileChange1}
+                                        />
+                                    </label>
+                                    <Button
+                                        variant='contained'
+                                        onClick={() => setHmodModalOpen(true)}
+                                        disabled={progress < 3}
                                         sx={{
-                                            p: 2,
-                                            display: "flex",
-                                            flexDirection: "column",
+                                            marginLeft: "16px",
+                                            height: "100%",
                                             marginBottom: 2,
                                         }}>
-                                        <p>Mode:</p>
-                                        <Select
-                                            labelId='Mode'
-                                            id='Mode'
-                                            value={mode}
-                                            label='Mode'
-                                            onChange={(e) => setMode(e.target.value)}>
-                                            <MenuItem value={"1"}>1</MenuItem>
-                                            <MenuItem value={"2"}>2</MenuItem>
-                                        </Select>
-                                    </Paper>
-                                </Grid>
-                            </CustomWidthTooltip>
-                            {(mode === "1" && (
+                                        Edit HMOD Options
+                                    </Button>
+                                </div>
+                            </Grid>
+
+                            <Grid item xs={7}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        marginBottom: 2,
+                                    }}>
+                                    <div style={{ display: "flex", alignItems: "center" }}>
+                                        <Typography variant='h5'>Mode</Typography>
+                                        <Tooltip
+                                            title='In this section you can select the batch selection mode. 1 is for selecting train and test batches manually from a list and 2 is for the selection to be done randomly (with a 2/3; 1/3 split).'
+                                            arrow>
+                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                                <InfoIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </div>
+                                    <Select
+                                        labelId='Mode'
+                                        id='Mode'
+                                        value={mode}
+                                        style={{ marginTop: 20 }}
+                                        onChange={handleModeChange}
+                                        disabled={progress < 3}>
+                                        <MenuItem value={"1"}>1</MenuItem>
+                                        <MenuItem value={"2"}>2</MenuItem>
+                                    </Select>
+                                </Paper>
+                            </Grid>
+                            {(mode === "1" && progress >= 4 && (
                                 <>
                                     <Grid item xs={3}>
                                         <h3>Available Batches: {availableBatches.join(", ")}</h3>
@@ -607,14 +789,17 @@ function FileUpload() {
                                             onClick={() => handleUpload()}
                                             fullWidth
                                             variant='contained'
-                                            sx={{ height: "100%" }}>
+                                            sx={{ height: "100%" }}
+                                            disabled={
+                                                train_batches.size === 0 || test_batches.size === 0
+                                            }>
                                             <PublishIcon fontSize='large' />
                                             Upload Information
                                         </Button>
                                     </Grid>
                                 </>
                             )) ||
-                                (mode === "2" && (
+                                (mode === "2" && progress >= 5 && (
                                     <>
                                         <Grid item xs={4}></Grid>
                                         <CustomWidthTooltip
@@ -642,6 +827,7 @@ function FileUpload() {
                     </Container>
                 </Box>
             </Box>
+            <TrainingModal open={trainingModalOpen} handleClose={handleCloseTrainingModal} />
         </ThemeProvider>
     );
 }

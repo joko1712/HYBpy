@@ -130,7 +130,7 @@ parkram.mlm.y(3).id = 'vPM';
 parkram.mlm.y(3).val= 'rann3';
 parkram.mlm.y(3).min= 0;
 parkram.mlm.y(3).max= 4;
-parkram.mlm.options={'hidden nodes', [5 5]}; %user defined
+parkram.mlm.options={'hidden nodes', [1]}; %user defined
 parkram.mlm.layer=1 %1-tanh 2-ReLu %user defined
 parkram.mlm.xfun=str2func('autoA_hybmod_anninp'); %generated automatically
 parkram.mlm.yfun=str2func('autoA_hybmod_rann'); %only used if 'user-defined'
@@ -152,7 +152,7 @@ parkram.datafun=@parkramirezdata;
 
 %training configuration
 parkram.mode=1;%;    %1-indirect, 2-direct, 3-semidirect
-parkram.method=2;    %1-lev-marquardt, 2-quasi-Newton   3- Simulated Annealing
+parkram.method=1;    %1-lev-marquardt, 2-quasi-Newton   3- Simulated Annealing
 parkram.jacobian=1;  %1-ON, 0- OFF   [ONLY FOR LEVENBERG-MARQUARDT]
 parkram.hessian=0;   %1-ON  0- OFF   [only for quasi-Newton]
 parkram.derivativecheck='off'; %'on' or 'off' [ONLY FOR LEVENBERG-MARQUARDT]
@@ -166,4 +166,3 @@ parkram.crossval=1;  %0 - no cross-validation; 1 - do crossvalidation
 
 
 end
-

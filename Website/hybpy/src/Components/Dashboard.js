@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useState, useEffect } from "react";
 import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import MuiDrawer from "@mui/material/Drawer";
@@ -19,7 +19,6 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase-config";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase-config";
-import { useEffect } from "react";
 import logo from "../Image/HYBpyINVIS_logo.png";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
@@ -86,21 +85,22 @@ const style = {
     p: 4,
     overflow: "auto",
 };
-
 export default function Dashboard() {
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
-        navigate("/");
+        navigate("/Dashboard");
     };
-    const [open, setOpen] = React.useState(true);
+    const [open, setOpen] = useState(true);
+    const [runInProgress, setRunInProgress] = useState("");
     const toggleDrawer = () => {
         setOpen(!open);
     };
 
-    const [runs, setRuns] = React.useState([]);
-    const [selectedPlot, setSelectedPlot] = React.useState(null);
-    const [modalOpen, setModalOpen] = React.useState(false);
+    const [runs, setRuns] = useState([]);
+    const [selectedPlot, setSelectedPlot] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [mode, setMode] = useState("Error");
     const userId = auth.currentUser.uid;
 
     const handleOpenModal = (url) => {
@@ -111,6 +111,16 @@ export default function Dashboard() {
     const handleCloseModal = () => {
         setSelectedPlot(null);
         setModalOpen(false);
+    };
+
+    const checkRunStatus = async () => {
+        try {
+            const response = await fetch(`/run-status?user_id=${userId}`);
+            const data = await response.json();
+            setRunInProgress(data.status === "in_progress");
+        } catch (error) {
+            console.error("Error checking run status:", error);
+        }
     };
 
     useEffect(() => {
@@ -128,17 +138,23 @@ export default function Dashboard() {
                 ...doc.data(),
             }));
             setRuns(latestRun);
-            console.log("Latest Run:", latestRun); // Add this line for debugging
+            if (latestRun[0].mode === 1) {
+                setMode("Manual");
+            } else {
+                setMode("Automatic");
+            }
+
+            if (latestRun[0].status === "in_progress") {
+                setRunInProgress("Trainning in progress...");
+            } else {
+                setRunInProgress("Trainning completed");
+            }
+
+            checkRunStatus();
         };
 
         fetchLatestRun();
     }, [userId]);
-
-    useEffect(() => {
-        if (runs.length > 0 && runs[0].plots) {
-            console.log("Plot URLs:", runs[0].plots); // Add this line for debugging
-        }
-    }, [runs]);
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -174,10 +190,11 @@ export default function Dashboard() {
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
-                        {/*Check if there are any runs in progress if so display progress bar if not display nothing */}
-                        <IconButton color='inherit' size='small'>
-                            <p>Run Progress:</p>
-                        </IconButton>
+                        {runInProgress && (
+                            <IconButton color='inherit' size='small'>
+                                <p>Run in progress...</p>
+                            </IconButton>
+                        )}
                     </Toolbar>
                 </AppBar>
                 <Drawer variant='permanent' open={open}>
@@ -217,13 +234,14 @@ export default function Dashboard() {
                                 <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
                                     {runs.length > 0 ? (
                                         <>
-                                            <Typography variant='h6' gutterBottom>
-                                                Run Details
+                                            <Typography variant='h4' gutterBottom>
+                                                Hybrid Model Details
                                             </Typography>
+                                            <Typography variant='h6'>{`Title: ${runs[0].description}`}</Typography>
                                             <Typography>{`HMOD: ${runs[0].file1_name}`}</Typography>
                                             <Typography>{`CSV: ${runs[0].file2_name}`}</Typography>
-                                            <Typography>{`Mode: ${runs[0].mode}`}</Typography>
-                                            <Typography>{`Description: ${runs[0].description}`}</Typography>
+                                            <Typography>{`Mode: ${mode}`}</Typography>
+                                            <Typography>{`Status: ${runInProgress}`}</Typography>
                                         </>
                                     ) : (
                                         <Typography>No recent run details</Typography>

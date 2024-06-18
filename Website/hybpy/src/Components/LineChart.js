@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
     Chart as ChartJS,
@@ -27,8 +27,9 @@ const speciesColors = [
     "rgb(128, 0, 128)",
     "rgb(255, 215, 0)",
 ];
-
 export const LineChart = ({ data }) => {
+    const [hiddenDatasets, setHiddenDatasets] = useState({});
+
     const chartData = useMemo(() => {
         const labels = data.map((item) => item.time);
         const datasets = Object.keys(data[0])
@@ -39,6 +40,7 @@ export const LineChart = ({ data }) => {
                     data: data.map((item) => item[key]),
                     borderColor: speciesColors[index % speciesColors.length],
                     backgroundColor: speciesColors[index % speciesColors.length],
+                    hidden: hiddenDatasets[key] || false,
                 };
             });
 
@@ -46,9 +48,25 @@ export const LineChart = ({ data }) => {
             labels,
             datasets,
         };
-    }, [data]);
+    }, [data, hiddenDatasets]);
 
-    return <Line data={chartData} />;
+    const options = {
+        responsive: true,
+        plugins: {
+            legend: {
+                onClick: (e, legendItem) => {
+                    const index = legendItem.datasetIndex;
+                    const datasetLabel = chartData.datasets[index].label;
+                    setHiddenDatasets((prev) => ({
+                        ...prev,
+                        [datasetLabel]: !prev[datasetLabel],
+                    }));
+                },
+            },
+        },
+    };
+
+    return <Line data={chartData} options={options} />;
 };
 
 export default LineChart;

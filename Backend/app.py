@@ -26,9 +26,9 @@ from firebase_admin import credentials, firestore, storage
 
 load_dotenv()
 
-cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
+cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
 firebase_admin.initialize_app(cred, {
-    'storageBucket': "hybpy-test.appspot.com"
+    'storageBucket': os.getenv("STORAGE_BUCKET_NAME")
 })
 
 db = firestore.client()
@@ -40,7 +40,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 def upload_file_to_storage(file, user_id, filename, folder_id):
     file.seek(0)
-    bucket = storage.bucket("hybpy-test.appspot.com")
+    bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
     blob = bucket.blob(f"{user_id}/{folder_id}/{filename}")
     blob.upload_from_file(file, content_type=file.content_type)
     blob.make_public()
@@ -52,7 +52,7 @@ def upload_plots_to_gcs(user_id, folder_id):
     date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
 
     for filename in glob.glob(os.path.join(date_dir, '*.png')):
-        bucket = storage.bucket("hybpy-test.appspot.com")
+        bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
         blob = bucket.blob(f'{user_id}/plots/{folder_id}/{os.path.basename(filename)}')
         blob.upload_from_filename(filename)
         blob.make_public()
@@ -138,6 +138,20 @@ def upload_file():
         projhyb = hybdata(file1.filename)
         logging.debug("projhyb loaded: %s", projhyb)
 
+        user_ref = db.collection('users').document(user_id)
+        run_ref = user_ref.collection('runs').document()
+        run_ref.set({
+            "userId": user_id,
+            "file1": file1_url,
+            "file2": file2_url,
+            "file1_name": file1.filename,
+            "file2_name": file2.filename,
+            "description": description,
+            "mode": mode,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "status": "in_progress"
+        })
+
         with open(file2.filename, 'r') as f:
             reader = csv.reader(f)
             headers = next(reader)
@@ -195,7 +209,11 @@ def upload_file():
         }
 
         plot_urls = upload_plots_to_gcs(user_id, folder_id)
-        add_run(file1_url, file2_url, file1.filename, file2.filename, response_data, user_id, description, mode, plot_urls)
+        run_ref.update({
+            "response_data": response_data,
+            "status": "completed",
+            "plots": plot_urls
+        })
 
         # Clean up files from local storage
         #os.remove(file1.filename)
@@ -207,36 +225,8 @@ def upload_file():
 
     except Exception as e:
         logging.error("Error during file upload: %s", str(e), exc_info=True)
+        run_ref.update({"status": "failed"})
         return {"error": str(e)}, 500
-
-@app.route('/add-run', methods=['POST'])
-def add_run(file1_url, file2_url, file1, file2, response_data, user_id, description, mode, plot_urls):
-    try:
-        # Ensure `response_data` is serializable
-        response_data_serializable = ensure_json_serializable(response_data)
-
-        run_data = {
-            "userId": user_id,
-            "file1": file1_url,
-            "file2": file2_url,
-            "file1_name": file1,
-            "file2_name": file2,
-            "response_data": response_data_serializable,
-            "description": description,
-            "mode": mode,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "plots": plot_urls,
-        }
-        user_ref = db.collection('users').document(user_id)
-        ren_ref = user_ref.collection('runs').document()
-        ren_ref.set(run_data)
-        return json.dumps(response_data), 200
-        
-    except Exception as e: 
-        logging.error("Error in add_run: %s", str(e), exc_info=True)
-        return {"error": str(e)}, 500
-    
-
 
 @app.route("/get-available-batches", methods=['POST'])
 def get_available_batches():
@@ -277,6 +267,28 @@ def get_available_batches():
     except Exception as e:
         logging.error("Error in get_available_batches: %s", str(e), exc_info=True)
         return {"error": str(e)}, 500
+
+@app.route('/run-status', methods=['GET'])
+def run_status():
+    user_id = request.args.get('user_id')
+    try:
+        user_ref = db.collection('users').document(user_id)
+        run_ref = user_ref.collection('runs').order_by('createdAt', direction=firestore.Query.DESCENDING).limit(1)
+        latest_run = list(run_ref.stream())
+
+        if latest_run:
+            run_data = latest_run[0].to_dict()
+            if run_data.get('status') == 'in_progress':
+                return json.dumps({"status": "in_progress"}), 200
+            elif run_data.get('status') == 'completed':
+                return json.dumps({"status": "completed"}), 200
+            else:
+                return json.dumps({"status": "unknown"}), 200
+        return json.dumps({"status": "no_runs"}), 200
+    except Exception as e:
+        logging.error("Error in run_status: %s", str(e), exc_info=True)
+        return {"error": str(e)}, 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)

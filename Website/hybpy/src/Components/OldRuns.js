@@ -242,7 +242,6 @@ export default function OldRuns() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 350,
                                     }}>
                                     <List>
                                         {runs.map((run) => (

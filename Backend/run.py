@@ -12,12 +12,12 @@ from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, manual_label, random_label, add_state_and_time_to_data
 
-projhyb = hybdata("Backend/parkramirez_2101sbml(1).hmod")
+projhyb = hybdata("Backend/Chass1.hmod")
 print(projhyb)
 
 
 
-with open("Backend/PARK_COMBINED.csv", 'r') as f:
+with open("Backend/combined_chass.csv", 'r') as f:
     reader = csv.reader(f)
     headers = next(reader)
 
@@ -45,6 +45,9 @@ data = add_state_and_time_to_data(data, projhyb)
 count = len(data)
 data["nbatch"] = count
 
+with open("file.json", "w") as write_file:
+    json.dump(data, write_file)
+    
 '''
 with h5py.File('file.h5', 'w') as f:
     for key, value in data.items():

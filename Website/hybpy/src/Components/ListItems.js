@@ -19,45 +19,47 @@ const logout = (navigate) => {
             console.error("Logout error:", error);
         });
 };
+
 export const mainListItems = (navigate) => (
     <React.Fragment>
         <ListItemButton onClick={() => navigate("/Dashboard")}>
             <ListItemIcon>
                 <HomeIcon />
             </ListItemIcon>
-            <ListItemText primary='Dashboard' />
-        </ListItemButton>
-        <ListItemButton onClick={() => navigate("/")}>
-            <ListItemIcon>
-                <FlightLandIcon />
-            </ListItemIcon>
-            <ListItemText primary='Landing Page' />
-        </ListItemButton>
-
-        <ListItemButton onClick={() => navigate("/upload")}>
-            <ListItemIcon>
-                <BackupIcon />
-            </ListItemIcon>
-            <ListItemText primary='Create Run' />
+            <ListItemText primary='Home' />
         </ListItemButton>
 
         <ListItemButton onClick={() => navigate("/old-runs")}>
             <ListItemIcon>
                 <InventoryIcon />
             </ListItemIcon>
-            <ListItemText primary='Old Runs' />
+            <ListItemText primary='Data' />
         </ListItemButton>
+
+        <ListItemButton onClick={() => navigate("/upload")}>
+            <ListItemIcon>
+                <BackupIcon />
+            </ListItemIcon>
+            <ListItemText primary='Models' />
+        </ListItemButton>
+
         <ListItemButton onClick={() => navigate("/")}>
             <ListItemIcon>
-                <FaceIcon />
+                <FlightLandIcon />
             </ListItemIcon>
-            <ListItemText primary={auth.currentUser.displayName || auth.currentUser.email} />
+            <ListItemText primary='Help' />
         </ListItemButton>
     </React.Fragment>
 );
 
 export const secondaryListItems = (navigate) => (
     <React.Fragment>
+        <ListItemButton>
+            <ListItemIcon>
+                <FaceIcon />
+            </ListItemIcon>
+            <ListItemText primary={auth.currentUser.displayName || auth.currentUser.email} />
+        </ListItemButton>
         <ListItemButton onClick={() => logout(navigate)}>
             <ListItemIcon>
                 <LogoutIcon />

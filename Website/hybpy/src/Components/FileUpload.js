@@ -40,6 +40,7 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from
 import logo from "../Image/HYBpyINVIS_logo.png";
 import { LineChart } from "./LineChart";
 import InfoIcon from "@mui/icons-material/Info";
+import { set } from "firebase/database";
 
 const drawerWidth = 200;
 
@@ -132,6 +133,178 @@ const TrainingModal = ({ open, handleClose }) => (
     </Dialog>
 );
 
+const HmodModal = ({ open, handleClose, handleSave, initialValues }) => {
+    const [hiddenNodes, setHiddenNodes] = useState(initialValues ? initialValues.hiddenNodes : "");
+    const [layer, setLayer] = useState(initialValues ? initialValues.layer : 1);
+    const [tau, setTau] = useState(initialValues ? initialValues.tau : 0.25);
+    const [mode, setMode] = useState(initialValues ? initialValues.mode : 1);
+    const [method, setMethod] = useState(initialValues ? initialValues.method : 2);
+    const [jacobian, setJacobian] = useState(initialValues ? initialValues.jacobian : 1);
+    const [hessian, setHessian] = useState(initialValues ? initialValues.hessian : 0);
+    const [niter, setNiter] = useState(initialValues ? initialValues.niter : 400);
+    const [nstep, setNstep] = useState(initialValues ? initialValues.nstep : 2);
+    const [bootstrap, setBootstrap] = useState(initialValues ? initialValues.bootstrap : 0);
+    const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+
+    const toggleAdvancedSettings = () => {
+        setShowAdvancedSettings(!showAdvancedSettings);
+    };
+
+    const handleSaveChanges = () => {
+        const updatedOptions = {
+            hiddenNodes: hiddenNodes.split(" ").map(Number),
+            layer,
+            tau,
+            mode,
+            method,
+            jacobian,
+            hessian,
+            niter,
+            nstep,
+            bootstrap,
+        };
+        handleSave(updatedOptions);
+    };
+
+    useEffect(() => {
+        if (initialValues) {
+            setHiddenNodes(initialValues.hiddenNodes);
+            setLayer(initialValues.layer);
+            setTau(initialValues.tau);
+            setMode(initialValues.mode);
+            setMethod(initialValues.method);
+            setJacobian(initialValues.jacobian);
+            setHessian(initialValues.hessian);
+            setNiter(initialValues.niter);
+            setNstep(initialValues.nstep);
+            setBootstrap(initialValues.bootstrap);
+        }
+    }, [initialValues]);
+
+    return (
+        <Dialog open={open} onClose={handleClose}>
+            <DialogTitle>Update HMOD Options</DialogTitle>
+            <DialogContent>
+                <Grid container spacing={2} marginTop={2}>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label='Hidden Nodes'
+                            value={hiddenNodes}
+                            onChange={(e) => setHiddenNodes(e.target.value)}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label='Layer'
+                            type='number'
+                            value={layer}
+                            onChange={(e) => setLayer(Number(e.target.value))}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label='Method'
+                            type='number'
+                            value={method}
+                            onChange={(e) => setMethod(Number(e.target.value))}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label='Jacobian'
+                            type='number'
+                            value={jacobian}
+                            onChange={(e) => setJacobian(Number(e.target.value))}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label='Hessian'
+                            type='number'
+                            value={hessian}
+                            onChange={(e) => setHessian(Number(e.target.value))}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label='Niter'
+                            type='number'
+                            value={niter}
+                            onChange={(e) => setNiter(Number(e.target.value))}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label='Nstep'
+                            type='number'
+                            value={nstep}
+                            onChange={(e) => setNstep(Number(e.target.value))}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Button
+                            fullWidth
+                            variant='contained'
+                            onClick={toggleAdvancedSettings}
+                            sx={{ marginBottom: 2 }}>
+                            {showAdvancedSettings
+                                ? "Hide Advanced Settings"
+                                : "Show Advanced Settings"}
+                        </Button>
+                    </Grid>
+
+                    {showAdvancedSettings && (
+                        <>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label='TAU'
+                                    type='number'
+                                    value={tau}
+                                    onChange={(e) => setTau(Number(e.target.value))}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label='Mode'
+                                    type='number'
+                                    value={mode}
+                                    onChange={(e) => setMode(Number(e.target.value))}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label='Bootstrap'
+                                    type='number'
+                                    value={bootstrap}
+                                    onChange={(e) => setBootstrap(Number(e.target.value))}
+                                />
+                            </Grid>
+                        </>
+                    )}
+                </Grid>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleSaveChanges} color='primary'>
+                    Save
+                </Button>
+                <Button onClick={handleClose} color='primary'>
+                    Cancel
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
 function FileUpload() {
     const navigate = useNavigate();
 
@@ -208,7 +381,7 @@ function FileUpload() {
             };
             reader.readAsText(file);
         }
-        setProgress(3);
+        if (progress < 3) setProgress(3);
     };
 
     const handleFileChange2 = (event) => {
@@ -245,20 +418,139 @@ function FileUpload() {
             setBatchData(separatedBatches);
         };
         reader.readAsBinaryString(file);
-        setProgress(2);
+        if (progress < 2) setProgress(2);
     };
 
     const handleModeChange = (event) => {
         setMode(event.target.value);
         if (event.target.value === "1") {
-            setProgress(4);
+            if (progress < 4) setProgress(4);
         } else if (event.target.value === "2") {
-            setProgress(5);
+            if (progress < 5) setProgress(5);
         }
     };
 
-    const changeTooltip = () => {
-        setTooltipDisplay(tooltipDisplay === "block" ? "none" : "block");
+    const getTemplate = () => {
+        fetch("http://localhost:5000/get-template-csv", {
+            method: "GET",
+        })
+            .then((response) => response.blob())
+            .then((blob) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const fileContent = reader.result;
+                    setFile2Content(fileContent);
+                };
+                reader.readAsText(blob);
+
+                const updatedFileObject = new File([blob], "template.csv", {
+                    type: "text/plain",
+                });
+                setSelectedFile2(updatedFileObject);
+                const file = selectedFile2;
+                reader.onload = (e) => {
+                    const workbook = XLSX.read(e.target.result, { type: "binary" });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const data = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    const separatedBatches = [];
+                    let currentBatch = [];
+
+                    data.forEach((row, index) => {
+                        const timeValue = row["time"];
+                        const nextTimeValue =
+                            index + 1 < data.length ? data[index + 1]["time"] : null;
+
+                        if (nextTimeValue !== null && nextTimeValue < timeValue) {
+                            currentBatch.push(row);
+                            separatedBatches.push(currentBatch);
+                            currentBatch = [];
+                        } else {
+                            currentBatch.push(row);
+                        }
+                    });
+
+                    if (currentBatch.length > 0) {
+                        separatedBatches.push(currentBatch);
+                    }
+
+                    setFile2Content(data);
+                    setBatchData(separatedBatches);
+                };
+                reader.readAsBinaryString(file);
+                if (progress < 2) setProgress(2);
+            })
+            .catch((error) => {
+                console.error("Error fetching template:", error);
+            });
+
+        fetch("http://localhost:5000/get-template-hmod", {
+            method: "GET",
+        })
+            .then((response) => response.blob())
+            .then((blob) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const fileContent = reader.result;
+                    setFile1Content(fileContent);
+                };
+                reader.readAsText(blob);
+
+                const updatedFileObject = new File([blob], "template.hmod", {
+                    type: "text/plain",
+                });
+                setSelectedFile1(updatedFileObject);
+
+                const file = selectedFile1;
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const content = e.target.result;
+                        setFile1Content(content);
+
+                        const regexPrefix = /(\w+)\.nspecies=/g;
+                        const uniquePrefixes = new Set();
+                        let match;
+                        while ((match = regexPrefix.exec(content)) !== null) {
+                            uniquePrefixes.add(match[1]);
+                        }
+
+                        let initialValues = {};
+                        uniquePrefixes.forEach((prefix) => {
+                            const hiddenNodesMatch = content.match(
+                                new RegExp(
+                                    `${prefix}\\.mlm\\.options=\\{'hidden nodes', \\[(.*?)\\]\\};`
+                                )
+                            );
+                            const hiddenNodes = hiddenNodesMatch
+                                ? hiddenNodesMatch[1].replace(/,/g, " ")
+                                : "5 5";
+
+                            initialValues = {
+                                ...initialValues,
+                                hiddenNodes,
+                                layer: parseFloat(extractValue(content, `${prefix}.mlm.layer`)),
+                                tau: parseFloat(extractValue(content, `${prefix}.time.TAU`)),
+                                mode: parseFloat(extractValue(content, `${prefix}.mode`)),
+                                method: parseFloat(extractValue(content, `${prefix}.method`)),
+                                jacobian: parseFloat(extractValue(content, `${prefix}.jacobian`)),
+                                hessian: parseFloat(extractValue(content, `${prefix}.hessian`)),
+                                niter: parseFloat(extractValue(content, `${prefix}.niter`)),
+                                nstep: parseFloat(extractValue(content, `${prefix}.nstep`)),
+                                bootstrap: parseFloat(extractValue(content, `${prefix}.bootstrap`)),
+                            };
+                        });
+
+                        setInitialValues(initialValues);
+                    };
+                    reader.readAsText(file);
+                }
+                if (progress < 3) setProgress(3);
+            })
+            .catch((error) => {
+                console.error("Error fetching template:", error);
+            });
     };
 
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
@@ -501,6 +793,12 @@ function FileUpload() {
                     <Container maxWidth='lg' sx={{}}>
                         <div style={{ overflow: "auto", marginTop: 20 }}>
                             <h2 style={{ float: "left", marginTop: 0 }}>New Hybrid Model</h2>
+                            <Button
+                                onClick={getTemplate}
+                                variant='contained'
+                                style={{ float: "right", marginTop: 0 }}>
+                                Use Template Model
+                            </Button>
                         </div>
                         <Grid container spacing={3} columns={20}>
                             <Grid item xs={20}>
@@ -521,7 +819,9 @@ function FileUpload() {
                                         onChange={(e) => {
                                             setDescription(e.target.value);
                                             if (e.target.value) {
-                                                setProgress(1);
+                                                if (progress < 1) {
+                                                    setProgress(1);
+                                                }
                                             } else {
                                                 setProgress(0);
                                             }
@@ -791,7 +1091,9 @@ function FileUpload() {
                                             variant='contained'
                                             sx={{ height: "100%" }}
                                             disabled={
-                                                train_batches.size === 0 || test_batches.size === 0
+                                                train_batches.size === 0 ||
+                                                test_batches.size === 0 ||
+                                                description === ""
                                             }>
                                             <PublishIcon fontSize='large' />
                                             Upload Information
@@ -815,7 +1117,8 @@ function FileUpload() {
                                                     onClick={() => handleUpload()}
                                                     fullWidth
                                                     variant='contained'
-                                                    sx={{ height: "100%" }}>
+                                                    sx={{ height: "100%" }}
+                                                    disabled={description === ""}>
                                                     <PublishIcon fontSize='large' />
                                                     Upload Information
                                                 </Button>
@@ -827,6 +1130,12 @@ function FileUpload() {
                     </Container>
                 </Box>
             </Box>
+            <HmodModal
+                open={hmodModalOpen}
+                handleClose={() => setHmodModalOpen(false)}
+                handleSave={handleHmodModalSave}
+                initialValues={initialValues}
+            />
             <TrainingModal open={trainingModalOpen} handleClose={handleCloseTrainingModal} />
         </ThemeProvider>
     );

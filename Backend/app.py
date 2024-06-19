@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, send_file
 from flask_cors import CORS
 import sys
 import os
@@ -195,7 +195,7 @@ def upload_file():
 
         logging.debug("Data prepared for training: %s", data)
 
-        projhyb, trainData = hybtrain(projhyb, data, user_id)
+        projhyb, trainData, metrics = hybtrain(projhyb, data, user_id)
 
         logging.debug("Training complete: projhyb=%s, trainData=%s", projhyb, trainData)
 
@@ -205,7 +205,8 @@ def upload_file():
         response_data = {
             "message": "Files processed successfully",
             "projhyb": projhyb_serializable,
-            "trainData": trainData_serializable
+            "trainData": trainData_serializable,
+            "metrics": metrics
         }
 
         plot_urls = upload_plots_to_gcs(user_id, folder_id)
@@ -288,6 +289,41 @@ def run_status():
     except Exception as e:
         logging.error("Error in run_status: %s", str(e), exc_info=True)
         return {"error": str(e)}, 500
+        
+
+@app.route('/get-template-hmod', methods=['GET'])
+def get_template_hmod():
+    bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
+    
+    try:
+        blob_hmod = bucket.blob("Template/Hmod/template.hmod")
+        hmod_file_path = "template.hmod"
+        blob_hmod.download_to_filename(hmod_file_path)
+        
+    
+        return send_file(hmod_file_path, as_attachment=True)
+    
+    except Exception as e:
+        logging.error("Error in get_template: %s", str(e), exc_info=True)
+        return {"error": str(e)}, 500
+
+@app.route('/get-template-csv', methods=['GET'])
+def get_template_csv():
+    bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
+    
+    try:
+        blob_csv = bucket.blob("Template/Csv/template.csv")
+        csv_file_path = "template.csv"
+        blob_csv.download_to_filename(csv_file_path)
+        
+        return send_file(csv_file_path, as_attachment=True)
+        
+    
+    except Exception as e:
+        logging.error("Error in get_template: %s", str(e), exc_info=True)
+        return {"error": str(e)}, 500
+
+
 
 
 if __name__ == '__main__':

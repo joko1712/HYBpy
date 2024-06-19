@@ -89,29 +89,44 @@ const style = {
     overflow: "auto",
 };
 
-function DisplayJson({ data, level = 0 }) {
-    if (data === null || data === undefined) {
-        return <span>No data available</span>;
-    }
-    if (typeof data !== "object") {
-        return <span>{data.toString()}</span>;
+const DisplayJson = ({ data }) => {
+    console.log(data);
+
+    const isArrayOfObjects = data.length > 0 && typeof data[0] === "object";
+
+    if (!isArrayOfObjects) {
+        return (
+            <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                {JSON.stringify(data)}
+            </div>
+        );
     }
 
     return (
-        <ul style={{ marginLeft: level * 20, paddingTop: -20 }}>
-            {Object.entries(data).map(([key, value]) => (
-                <li key={key}>
-                    <strong>{key}:</strong>{" "}
-                    {typeof value === "object" ? (
-                        <DisplayJson data={value} level={level + 1} />
-                    ) : (
-                        value.toString()
-                    )}
-                </li>
-            ))}
-        </ul>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+                <tr>
+                    {Object.keys(data[0]).map((key) => (
+                        <th key={key} style={{ border: "1px solid black", padding: "5px" }}>
+                            {key}
+                        </th>
+                    ))}
+                </tr>
+            </thead>
+            <tbody>
+                {data.map((item, index) => (
+                    <tr key={index}>
+                        {Object.values(item).map((value, i) => (
+                            <td key={i} style={{ border: "1px solid black", padding: "5px" }}>
+                                {value}
+                            </td>
+                        ))}
+                    </tr>
+                ))}
+            </tbody>
+        </table>
     );
-}
+};
 
 const defaultTheme = createTheme();
 
@@ -128,6 +143,7 @@ export default function OldRuns() {
 
     const [runs, setRuns] = React.useState([]);
     const userId = auth.currentUser.uid;
+    const [mode, setMode] = React.useState("Error");
 
     const [openModal, setOpenModal] = React.useState(false);
     const [selectedRun, setSelectedRun] = React.useState(null);
@@ -161,6 +177,11 @@ export default function OldRuns() {
                 ...doc.data(),
             }));
             setRuns(latestRun);
+            if (latestRun[0].mode === 1) {
+                setMode("Manual");
+            } else {
+                setMode("Automatic");
+            }
         };
 
         fetchLatestRun();
@@ -250,7 +271,7 @@ export default function OldRuns() {
                                                 onClick={() => handleOpen(run)}>
                                                 <ListItemText
                                                     primary={`Run ID: ${run.id}`}
-                                                    secondary={`Hmod: ${run.file1_name} - CSV: ${run.file2_name} -Mode: ${run.mode}`}
+                                                    secondary={`Hmod: ${run.file1_name} - CSV: ${run.file2_name} -Mode: ${mode}`}
                                                 />
                                                 <p>View Run: </p>
                                                 <IconButton
@@ -281,6 +302,8 @@ export default function OldRuns() {
                                                     <Typography
                                                         id='modal-modal-description'
                                                         sx={{ mt: 3 }}>
+                                                        Title: {selectedRun.description}
+                                                        <br />
                                                         Plots:
                                                         <div>
                                                             {selectedRun.plots &&
@@ -304,29 +327,22 @@ export default function OldRuns() {
                                                                     )
                                                                 )}
                                                         </div>
+                                                        Metrics: {selectedRun.response_data.metrics}
+                                                        <br />
+                                                        Trained Data:
+                                                        <DisplayJson
+                                                            data={
+                                                                selectedRun.response_data.trainData
+                                                            }
+                                                        />
+                                                        <br />
                                                         Run ID: {selectedRun.id}
                                                         <br />
                                                         Hmod: {selectedRun.file1_name}
                                                         <br />
                                                         CSV: {selectedRun.file2_name}
                                                         <br />
-                                                        Mode: {selectedRun.mode}
-                                                        <br />
-                                                        Description: {selectedRun.description}
-                                                        <br />
-                                                        Response:{" "}
-                                                        {selectedRun.response_data.message}
-                                                        <br />
-                                                        Projhyb:
-                                                        <DisplayJson
-                                                            data={selectedRun.response_data.projhyb}
-                                                        />
-                                                        <br />
-                                                        <DisplayJson
-                                                            data={
-                                                                selectedRun.response_data.trainData
-                                                            }
-                                                        />
+                                                        Mode: {mode}
                                                     </Typography>
                                                 </>
                                             )}

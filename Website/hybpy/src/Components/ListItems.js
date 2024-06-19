@@ -29,18 +29,18 @@ export const mainListItems = (navigate) => (
             <ListItemText primary='Home' />
         </ListItemButton>
 
-        <ListItemButton onClick={() => navigate("/old-runs")}>
-            <ListItemIcon>
-                <InventoryIcon />
-            </ListItemIcon>
-            <ListItemText primary='Data' />
-        </ListItemButton>
-
         <ListItemButton onClick={() => navigate("/upload")}>
             <ListItemIcon>
                 <BackupIcon />
             </ListItemIcon>
             <ListItemText primary='Models' />
+        </ListItemButton>
+
+        <ListItemButton onClick={() => navigate("/old-runs")}>
+            <ListItemIcon>
+                <InventoryIcon />
+            </ListItemIcon>
+            <ListItemText primary='Data' />
         </ListItemButton>
 
         <ListItemButton onClick={() => navigate("/")}>

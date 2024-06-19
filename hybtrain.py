@@ -309,7 +309,7 @@ def hybtrain(projhyb, file, user_id):
 
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
 
-    return projhyb, optimized_weights
+    return projhyb, optimized_weights, testing
 
 def callback_wrapper(x, TrainRes, projhyb, istep):
     try:
@@ -632,7 +632,14 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
                 dictState[l] = {}
             dictState[l][i] = state
 
-    for i in range(0, projhyb['mlm']['nx']):
+    overall_metrics = {
+        'mse_train': [],
+        'mse_test': [],
+        'r2_train': [],
+        'r2_test': []
+    }
+
+    for i in range(projhyb['mlm']['nx']):
         actual_train = []
         actual_test = []
         predicted_train = []
@@ -674,13 +681,18 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
             continue
         
         mse_train = mean_squared_error(actual_train, predicted_train)
-        print(f'Training MSE: {mse_train}')
         mse_test = mean_squared_error(actual_test, predicted_test)
-        print(f'Test MSE: {mse_test}')
-
         r2_train = r2_score(actual_train, predicted_train)
-        print(f'Training R²: {r2_train}')
         r2_test = r2_score(actual_test, predicted_test)
+
+        overall_metrics['mse_train'].append(mse_train)
+        overall_metrics['mse_test'].append(mse_test)
+        overall_metrics['r2_train'].append(r2_train)
+        overall_metrics['r2_test'].append(r2_test)
+
+        print(f'Training MSE: {mse_train}')
+        print(f'Test MSE: {mse_test}')
+        print(f'Training R²: {r2_train}')
         print(f'Test R²: {r2_test}')
 
         mse_train = abs(mse_train)
@@ -705,7 +717,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
             if lower_bound[value] < 0:
                 lower_bound[value] = 0
 
-        x = file[train_batches[0]]["time"]  # Assuming time is the same for all batches
+        x = file[train_batches[0]]["time"]
         
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.errorbar(x, actual_train[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
@@ -725,7 +737,13 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
         os.makedirs(date_dir, exist_ok=True)
         
-        # Save the plot
         plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{time.strftime("%H%M%S")}.png')
         plt.savefig(plot_filename, dpi=300)
         plt.close(fig)
+
+    overall_mse_train = np.mean(overall_metrics['mse_train'])
+    overall_mse_test = np.mean(overall_metrics['mse_test'])
+    overall_r2_train = np.mean(overall_metrics['r2_train'])
+    overall_r2_test = np.mean(overall_metrics['r2_test'])
+
+    return { 'mse_train': overall_mse_train, 'mse_test': overall_mse_test, 'r2_train': overall_r2_train, 'r2_test': overall_r2_test }

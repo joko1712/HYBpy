@@ -255,7 +255,7 @@ export default function OldRuns() {
                     }}>
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
-                        <h2>Old Runs</h2>
+                        <h2>Data</h2>
                         <Grid container spacing={3}>
                             <Grid item xs={20}>
                                 <Paper
@@ -297,7 +297,7 @@ export default function OldRuns() {
                                                         id='modal-modal-title'
                                                         variant='h6'
                                                         component='h2'>
-                                                        Run Details
+                                                        Details
                                                     </Typography>
                                                     <Typography
                                                         id='modal-modal-description'
@@ -329,7 +329,7 @@ export default function OldRuns() {
                                                         </div>
                                                         Metrics: {selectedRun.response_data.metrics}
                                                         <br />
-                                                        Trained Data:
+                                                        Trained weights:
                                                         <DisplayJson
                                                             data={
                                                                 selectedRun.response_data.trainData

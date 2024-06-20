@@ -113,11 +113,6 @@ const TrainingModal = ({ open, handleClose }) => (
         <DialogContent>
             <Grid container spacing={2} marginTop={2}>
                 <Grid item xs={12}>
-                    <Typography id='modal-modal-title' variant='h6' component='h2'>
-                        Training in Progress
-                    </Typography>
-                </Grid>
-                <Grid item xs={12}>
                     <Typography id='modal-modal-description' sx={{ mt: 2 }}>
                         Your training has started. You will be redirected to the dashboard once you
                         close this modal.

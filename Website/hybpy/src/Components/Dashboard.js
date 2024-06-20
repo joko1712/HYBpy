@@ -190,11 +190,6 @@ export default function Dashboard() {
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
-                        {runInProgress && (
-                            <IconButton color='inherit' size='small'>
-                                <p>Run in progress...</p>
-                            </IconButton>
-                        )}
                     </Toolbar>
                 </AppBar>
                 <Drawer variant='permanent' open={open}>

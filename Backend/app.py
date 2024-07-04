@@ -26,11 +26,12 @@ from firebase_admin import credentials, firestore, storage
 
 load_dotenv()
 
-#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
-cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
+cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
+#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
 firebase_admin.initialize_app(cred, {
     'storageBucket': os.getenv("STORAGE_BUCKET_NAME")
 })
+
 
 db = firestore.client()
 
@@ -51,9 +52,9 @@ def upload_plots_to_gcs(user_id, folder_id):
     plot_urls = []
     user_dir = os.path.join('plots', user_id)
     date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
+    bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
 
     for filename in glob.glob(os.path.join(date_dir, '*.png')):
-        bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
         blob = bucket.blob(f'{user_id}/plots/{folder_id}/{os.path.basename(filename)}')
         blob.upload_from_filename(filename)
         blob.make_public()
@@ -73,7 +74,6 @@ def upload_plots_to_gcs(user_id, folder_id):
     
     for base_name, blobs in seen_files.items():
         if len(blobs) > 1:
-            # More than one file with the same base name, keep only one
             blobs_to_keep = [blobs[0]]
             blobs_to_delete = blobs[1:]
             
@@ -105,21 +105,33 @@ def ensure_json_serializable(data):
 def delete_directory(directory_path):
     try:
         shutil.rmtree(directory_path)
-        print(f"Deleted directory: {directory_path}")
+        logging.info(f"Deleted directory: {directory_path}")
     except Exception as e:
-        print(f"Error deleting directory {directory_path}: {str(e)}")
+        logging.error(f"Error deleting directory {directory_path}: {str(e)}")
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
+        logging.debug("Form data received: %s", request.form)
+        
         file1 = request.files.get('file1')
         file2 = request.files.get('file2')
         mode = request.form.get('mode')
         user_id = request.form.get('userId')
         description = request.form.get('description')
-        train_batches = request.form.get('train_batches').split(",")
-        test_batches = request.form.get('test_batches').split(",")
-        user_id = request.form.get('user_id')
+        train_batches = request.form.get('train_batches').split(",") if request.form.get('train_batches') else []
+        test_batches = request.form.get('test_batches').split(",") if request.form.get('test_batches') else []
+        
+        HiddenNodes = request.form.get('HiddenNodes')
+        Layer = request.form.get('Layer')
+        Tau = request.form.get('Tau')
+        Mode = request.form.get('Mode')
+        Method = request.form.get('Method')
+        Jacobian = request.form.get('Jacobian')
+        Hessian = request.form.get('Hessian')
+        Niter = request.form.get('Niter')
+        Nstep = request.form.get('Nstep')
+        Bootstrap = request.form.get('Bootstrap')
 
         if not file1 or not file2:
             return {"error": "Both files are required"}, 400
@@ -134,6 +146,9 @@ def upload_file():
         file1_url = upload_file_to_storage(file1, user_id, file1.filename, folder_id)
         file2_url = upload_file_to_storage(file2, user_id, file2.filename, folder_id)
 
+        if not file1_url or not file2_url:
+            return {"error": "Failed to upload files to storage"}, 500
+        
         logging.debug("Files uploaded: file1_url=%s, file2_url=%s", file1_url, file2_url)
 
         projhyb = hybdata(file1.filename)
@@ -150,10 +165,20 @@ def upload_file():
             "description": description,
             "mode": mode,
             "createdAt": firestore.SERVER_TIMESTAMP,
+            "MachineLearning": {
+                "HiddenNodes": HiddenNodes,
+                "Layer": Layer,
+                "Tau": Tau,
+                "Mode": Mode,
+                "Method": Method,
+                "Jacobian": Jacobian,
+                "Hessian": Hessian,
+                "Niter": Niter,
+                "Nstep": Nstep,
+                "Bootstrap": Bootstrap
+            },
             "status": "in_progress"
         })
-
-        
 
         with open(file2.filename, 'r') as f:
             reader = csv.reader(f)
@@ -220,16 +245,14 @@ def upload_file():
         })
 
         # Clean up files from local storage
-        #os.remove(file1.filename)
-        #os.remove(file2.filename)
-        delete_directory(os.path.join('plots'))
-
+        delete_directory(os.path.join('plots', user_id))
 
         return json.dumps(response_data), 200
 
     except Exception as e:
         logging.error("Error during file upload: %s", str(e), exc_info=True)
-        run_ref.update({"status": "failed"})
+        if 'run_ref' in locals():
+            run_ref.update({"status": "failed"})
         return {"error": str(e)}, 500
 
 @app.route("/get-available-batches", methods=['POST'])
@@ -292,7 +315,6 @@ def run_status():
     except Exception as e:
         logging.error("Error in run_status: %s", str(e), exc_info=True)
         return {"error": str(e)}, 500
-        
 
 @app.route('/get-template-hmod', methods=['GET'])
 def get_template_hmod():
@@ -325,9 +347,6 @@ def get_template_csv():
     except Exception as e:
         logging.error("Error in get_template: %s", str(e), exc_info=True)
         return {"error": str(e)}, 500
-
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)

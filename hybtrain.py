@@ -19,6 +19,7 @@ import customMLP as mlp
 from sklearn.metrics import mean_squared_error, r2_score
 import types
 import os
+import uuid
 
 
 def default_fobj(w):
@@ -173,7 +174,7 @@ def hybtrain(projhyb, file, user_id):
                 'maxiter':100 * projhyb['niter'] * projhyb['niteroptim']
             } 
         }
-    elif projhyb['method'] == 3:
+    elif projhyb['method'] == 4:
         print("   Optimiser:              Simulated Annealing")
         bounds = species_bounds * projhyb['mlm']['nw']
         options = {
@@ -181,7 +182,7 @@ def hybtrain(projhyb, file, user_id):
             'verbose': projhyb['display']
         }
 
-    elif projhyb['method'] == 4:
+    elif projhyb['method'] == 3:
         print("   Optimiser:              Adam")
         num_epochs = 1  
         lr = 0.001  
@@ -258,14 +259,14 @@ def hybtrain(projhyb, file, user_id):
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
-        
+    
         if projhyb['jacobian'] == 1:
             options['jac'] = evaluator.jac_func
 
         if projhyb['hessian'] == 1:
             options['hess'] = evaluator.hess_func
         
-        
+    '''
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
             print("optios", options)
             print("weights", weights)
@@ -304,7 +305,7 @@ def hybtrain(projhyb, file, user_id):
             6.72249841e-06,  4.22301199e-02]
     
     optimized_weights = w   
-    '''
+    
     testing = teststate(ann, user_id, projhyb, file, optimized_weights, projhyb['method'])
 
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
@@ -586,7 +587,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
     dictState = {}
     w = np.array(w)
 
-    # LOAD THE WEIGHTS into the ann
+    # Load the weights into the ann
     ann.set_weights(w)
     ann.print_weights_and_biases()
 
@@ -630,6 +631,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
 
             if l not in dictState:
                 dictState[l] = {}
+                dictState[l][0] = file[l]["y"][0]
             dictState[l][i] = state
 
     overall_metrics = {
@@ -651,18 +653,18 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
 
         for batch in train_batches:
             for t in range(1, file[batch]["np"]):
-                actual_train.append(np.array(file[batch]["y"][t][i]))
+                actual_train.append(np.array(file[batch]["y"][t-1][i]))
                 if batch in dictState and t in dictState[batch]:
-                    predicted_train.append(dictState[batch][t][i])
+                    predicted_train.append(dictState[batch][t-1][i])
                 else:
                     print(f"Missing prediction for train batch {batch}, time {t}")
 
         for batch in test_batches:
             for t in range(1, file[batch]["np"]):
-                actual_test.append(np.array(file[batch]["y"][t][i]))
+                actual_test.append(np.array(file[batch]["y"][t-1][i]))
                 if batch in dictState and t in dictState[batch]:
-                    predicted_test.append(dictState[batch][t][i])
-                    err.append(file[batch]["sy"][t][i])
+                    predicted_test.append(dictState[batch][t-1][i])
+                    err.append(file[batch]["sy"][t-1][i])
                 else:
                     print(f"Missing prediction for test batch {batch}, time {t}")
 
@@ -671,6 +673,12 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         predicted_train = np.array(predicted_train, dtype=np.float64)
         predicted_test = np.array(predicted_test, dtype=np.float64)
         err = np.array(err, dtype=np.float64)
+    
+        print("actual_train", actual_train)
+        print("actual_test", actual_test)
+        print("predicted_train", predicted_train)
+        print("predicted_test", predicted_test)
+        print("err", err)        
 
         if actual_train.shape != predicted_train.shape:
             print(f"Shape mismatch for training data: actual_train {actual_train.shape}, predicted_train {predicted_train.shape}")
@@ -679,7 +687,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         if actual_test.shape != predicted_test.shape:
             print(f"Shape mismatch for test data: actual_test {actual_test.shape}, predicted_test {predicted_test.shape}")
             continue
-        
+
         mse_train = mean_squared_error(actual_train, predicted_train)
         mse_test = mean_squared_error(actual_test, predicted_test)
         r2_train = r2_score(actual_train, predicted_train)
@@ -718,10 +726,12 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
                 lower_bound[value] = 0
 
         x = file[train_batches[0]]["time"]
+
         
+        # Time series plot
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.errorbar(x, actual_train[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
-        ax.plot(x, predicted_train[:len(x)], label="Predicted", color='red', linewidth=1)
+        ax.errorbar(x, actual_test[:len(x)-1], err[:len(x)-1], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
+        ax.plot(x, predicted_test[:len(x)-1], label="Predicted", color='red', linewidth=1)
         ax.fill_between(x, lower_bound[:len(x)], upper_bound[:len(x)], color='gray', label="Confidence Interval", alpha=0.5)
 
         plt.xlabel('Time (s)')
@@ -729,16 +739,28 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         plt.title(f"Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10,
-                 verticalalignment='top', bbox=props)
+        plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)
         
         plt.legend()
         user_dir = os.path.join('plots', user_id)
         date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
         os.makedirs(date_dir, exist_ok=True)
         
-        plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{time.strftime("%H%M%S")}.png')
-        plt.savefig(plot_filename, dpi=300)
+        time_series_plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
+        plt.savefig(time_series_plot_filename, dpi=300)
+        plt.close(fig)
+
+        # Predicted vs Actual plot
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.scatter(predicted_train, actual_train, color='blue', label='Train', alpha=0.5)
+        ax.scatter(predicted_test, actual_test, color='red', label='Test', alpha=0.5)
+        plt.xlabel('Predicted')
+        plt.ylabel('Actual')
+        plt.title(f"Predicted vs Actual for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+        plt.legend()
+        
+        predicted_vs_actual_plot_filename = os.path.join(date_dir, f'predicted_vs_actual_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
+        plt.savefig(predicted_vs_actual_plot_filename, dpi=300)
         plt.close(fig)
 
     overall_mse_train = np.mean(overall_metrics['mse_train'])
@@ -746,4 +768,4 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
     overall_r2_train = np.mean(overall_metrics['r2_train'])
     overall_r2_test = np.mean(overall_metrics['r2_test'])
 
-    return { 'mse_train': overall_mse_train, 'mse_test': overall_mse_test, 'r2_train': overall_r2_train, 'r2_test': overall_r2_test }
+    return {'mse_train': overall_mse_train, 'mse_test': overall_mse_test, 'r2_train': overall_r2_train, 'r2_test': overall_r2_test}

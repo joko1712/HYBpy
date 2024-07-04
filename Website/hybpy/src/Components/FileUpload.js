@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { auth } from "../firebase-config";
 import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -32,15 +32,16 @@ import {
     Tooltip,
     tooltipClasses,
     Link,
-    TextField,
-    Modal,
 } from "@mui/material";
 import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import logo from "../Image/HYBpyINVIS_logo.png";
 import { LineChart } from "./LineChart";
 import InfoIcon from "@mui/icons-material/Info";
-import { set } from "firebase/database";
+import TrainingModal from "./Modals/TrainingModal";
+import HmodModal from "./Modals/HmodModal";
+import MlmModal from "./Modals/MlmModal";
+import ControlModalSelection from "./Modals/ControlModalSelection";
 
 const drawerWidth = 200;
 
@@ -107,202 +108,8 @@ const extractValue = (content, key, defaultValue) => {
     return match ? match[1].trim() : defaultValue;
 };
 
-const TrainingModal = ({ open, handleClose }) => (
-    <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>Training in Progress</DialogTitle>
-        <DialogContent>
-            <Grid container spacing={2} marginTop={2}>
-                <Grid item xs={12}>
-                    <Typography id='modal-modal-description' sx={{ mt: 2 }}>
-                        Your training has started. You will be redirected to the dashboard once you
-                        close this modal.
-                    </Typography>
-                </Grid>
-            </Grid>
-        </DialogContent>
-        <DialogActions>
-            <Button onClick={handleClose} color='primary'>
-                Close
-            </Button>
-        </DialogActions>
-    </Dialog>
-);
-
-const HmodModal = ({ open, handleClose, handleSave, initialValues }) => {
-    const [hiddenNodes, setHiddenNodes] = useState(initialValues ? initialValues.hiddenNodes : "");
-    const [layer, setLayer] = useState(initialValues ? initialValues.layer : 1);
-    const [tau, setTau] = useState(initialValues ? initialValues.tau : 0.25);
-    const [mode, setMode] = useState(initialValues ? initialValues.mode : 1);
-    const [method, setMethod] = useState(initialValues ? initialValues.method : 2);
-    const [jacobian, setJacobian] = useState(initialValues ? initialValues.jacobian : 1);
-    const [hessian, setHessian] = useState(initialValues ? initialValues.hessian : 0);
-    const [niter, setNiter] = useState(initialValues ? initialValues.niter : 400);
-    const [nstep, setNstep] = useState(initialValues ? initialValues.nstep : 2);
-    const [bootstrap, setBootstrap] = useState(initialValues ? initialValues.bootstrap : 0);
-    const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
-
-    const toggleAdvancedSettings = () => {
-        setShowAdvancedSettings(!showAdvancedSettings);
-    };
-
-    const handleSaveChanges = () => {
-        const updatedOptions = {
-            hiddenNodes: hiddenNodes.split(" ").map(Number),
-            layer,
-            tau,
-            mode,
-            method,
-            jacobian,
-            hessian,
-            niter,
-            nstep,
-            bootstrap,
-        };
-        handleSave(updatedOptions);
-    };
-
-    useEffect(() => {
-        if (initialValues) {
-            setHiddenNodes(initialValues.hiddenNodes);
-            setLayer(initialValues.layer);
-            setTau(initialValues.tau);
-            setMode(initialValues.mode);
-            setMethod(initialValues.method);
-            setJacobian(initialValues.jacobian);
-            setHessian(initialValues.hessian);
-            setNiter(initialValues.niter);
-            setNstep(initialValues.nstep);
-            setBootstrap(initialValues.bootstrap);
-        }
-    }, [initialValues]);
-
-    return (
-        <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>Update HMOD Options</DialogTitle>
-            <DialogContent>
-                <Grid container spacing={2} marginTop={2}>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label='Hidden Nodes'
-                            value={hiddenNodes}
-                            onChange={(e) => setHiddenNodes(e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label='Layer'
-                            type='number'
-                            value={layer}
-                            onChange={(e) => setLayer(Number(e.target.value))}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label='Method'
-                            type='number'
-                            value={method}
-                            onChange={(e) => setMethod(Number(e.target.value))}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label='Jacobian'
-                            type='number'
-                            value={jacobian}
-                            onChange={(e) => setJacobian(Number(e.target.value))}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label='Hessian'
-                            type='number'
-                            value={hessian}
-                            onChange={(e) => setHessian(Number(e.target.value))}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label='Niter'
-                            type='number'
-                            value={niter}
-                            onChange={(e) => setNiter(Number(e.target.value))}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label='Nstep'
-                            type='number'
-                            value={nstep}
-                            onChange={(e) => setNstep(Number(e.target.value))}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Button
-                            fullWidth
-                            variant='contained'
-                            onClick={toggleAdvancedSettings}
-                            sx={{ marginBottom: 2 }}>
-                            {showAdvancedSettings
-                                ? "Hide Advanced Settings"
-                                : "Show Advanced Settings"}
-                        </Button>
-                    </Grid>
-
-                    {showAdvancedSettings && (
-                        <>
-                            <Grid item xs={12}>
-                                <TextField
-                                    fullWidth
-                                    label='TAU'
-                                    type='number'
-                                    value={tau}
-                                    onChange={(e) => setTau(Number(e.target.value))}
-                                />
-                            </Grid>
-                            <Grid item xs={12}>
-                                <TextField
-                                    fullWidth
-                                    label='Mode'
-                                    type='number'
-                                    value={mode}
-                                    onChange={(e) => setMode(Number(e.target.value))}
-                                />
-                            </Grid>
-                            <Grid item xs={12}>
-                                <TextField
-                                    fullWidth
-                                    label='Bootstrap'
-                                    type='number'
-                                    value={bootstrap}
-                                    onChange={(e) => setBootstrap(Number(e.target.value))}
-                                />
-                            </Grid>
-                        </>
-                    )}
-                </Grid>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={handleSaveChanges} color='primary'>
-                    Save
-                </Button>
-                <Button onClick={handleClose} color='primary'>
-                    Cancel
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
-};
-
 function FileUpload() {
     const navigate = useNavigate();
-
     const navigateToUpload = () => {
         navigate("/Dashboard");
     };
@@ -326,53 +133,352 @@ function FileUpload() {
     const [initialValues, setInitialValues] = useState(null);
     const [trainingModalOpen, setTrainingModalOpen] = useState(false);
     const [runInProgress, setRunInProgress] = useState(false);
+    const [hmodOptions, setHmodOptions] = useState({});
+    const [headerModalOpen, setHeaderModalOpen] = useState(false);
+    const [selectedHeaders, setSelectedHeaders] = useState([]);
+    const [headerModalConfig, setHeaderModalConfig] = useState({
+        headers: [],
+        onSave: () => {},
+        handleClose: () => {},
+    });
+    const [mlmModalOpen, setMlmModalOpen] = useState(false);
+    const [speciesOptions, setSpeciesOptions] = useState([]);
+    const [controlOptions, setControlOptions] = useState([]);
+    const [parameterOptions, setParameterOptions] = useState([]);
+
+    const [mlmOptions, setMlmOptions] = useState({});
+
+    const handleMlmModalSave = (options) => {
+        setMlmModalOpen(false);
+        setMlmOptions(options);
+    };
+
+    const extractOptionsFromHmod = (content, type) => {
+        console.log(`Extracting options for type: ${type}`);
+        let regex;
+        if (type === "species") {
+            regex = /(\w+)\.species\(\d+\)\.id\s*=\s*["']([^"']+)["']/g;
+        } else if (type === "control") {
+            regex = /(\w+)\.control\(\d+\)\.id\s*=\s*["']([^"']+)["']/g;
+        } else if (type === "parameters") {
+            regex = /(\w+)\.parameters\(\d+\)\.id\s*=\s*["']([^"']+)["']/g;
+        } else {
+            return [];
+        }
+
+        const options = [];
+        let match;
+        while ((match = regex.exec(content)) !== null) {
+            options.push(match[2]);
+        }
+        return options;
+    };
+
+    const openMlmModal = () => {
+        return new Promise((resolve) => {
+            const saveMlmHandler = (options) => {
+                console.log("MLM Options in saveMlmHandler: ", options); // Ensure logging within the save handler
+                setMlmOptions(options);
+                resolve(options);
+            };
+
+            const closeModalHandler = () => {
+                setMlmModalOpen(false);
+                resolve({});
+            };
+
+            setMlmModalOpen({
+                open: true,
+                speciesOptions,
+                controlOptions,
+                parameterOptions,
+                onSave: saveMlmHandler,
+                handleClose: closeModalHandler,
+            });
+        });
+    };
 
     const handleCloseTrainingModal = () => {
         setTrainingModalOpen(false);
         navigate("/Dashboard");
     };
 
-    const handleFileChange1 = (event) => {
+    const handleOpenHeaderModal = (headers) => {
+        return new Promise((resolve) => {
+            const saveHeadersHandler = (headers) => {
+                setSelectedHeaders(headers);
+                resolve(headers);
+            };
+
+            const closeModalHandler = () => {
+                setHeaderModalOpen(false);
+                resolve([]);
+            };
+
+            setHeaderModalOpen(true);
+            setHeaderModalConfig({
+                headers,
+                onSave: saveHeadersHandler,
+                handleClose: closeModalHandler,
+            });
+        });
+    };
+
+    const extractLayerValue = (content, prefix, defaultValue) => {
+        const regex = new RegExp(`${prefix}\\.mlm\\.layer=([0-9]+);`);
+        const match = content.match(regex);
+        return match ? match[1].trim() : defaultValue;
+    };
+
+    const ensureHmodSections = async (
+        content,
+        batchData,
+        headers,
+        openHeaderModal,
+        selectedHeaders
+    ) => {
+        console.log("Ensuring HMOD sections...");
+        console.log("Content: ", content);
+        const regexPrefix = /(\w+)\.nspecies=/g;
+        const uniquePrefixes = new Set();
+
+        let match;
+
+        while ((match = regexPrefix.exec(content)) !== null) {
+            uniquePrefixes.add(match[1]);
+        }
+
+        let maxTime = 0;
+        batchData.forEach((row) => {
+            if (row.time > maxTime) {
+                maxTime = row.time;
+            }
+        });
+
+        let numBatches = new Set(batchData.map((row) => row.batchId)).size;
+        let timeMax = maxTime * numBatches;
+        let timeTAU = timeMax / 50;
+        let tspan = `0:1:${timeMax}`;
+
+        let updatedContent = content.replace(/\bend\b\s*$/, "");
+
+        let controlExists = updatedContent.includes("% control---------------------------");
+        let configExists = updatedContent.includes("% %model configuration");
+        let mlmExists = updatedContent.includes(
+            "% % MLM - Machine Learning Model --------------------------------------------"
+        );
+
+        if (headers.length > 0) {
+            if (!controlExists) {
+                console.log("Control section does not exist, opening header modal...");
+                if (selectedHeaders.length === 0) {
+                    const newSelectedHeaders = await openHeaderModal(headers);
+                    setSelectedHeaders(newSelectedHeaders);
+                    selectedHeaders = newSelectedHeaders;
+                }
+            }
+        }
+
+        if (selectedHeaders.length > 0 && !controlExists) {
+            let controlSection = `% control---------------------------\n`;
+            controlSection += `${uniquePrefixes.values().next().value}.ncontrol=${
+                selectedHeaders.length
+            };\n`;
+
+            selectedHeaders.forEach((header, index) => {
+                let maxHeaderValue = Math.max(...batchData.map((row) => row[header]));
+                controlSection += `${uniquePrefixes.values().next().value}.control(${
+                    index + 1
+                }).id= '${header}';\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${
+                    index + 1
+                }).val= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${
+                    index + 1
+                }).min= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${
+                    index + 1
+                }).max= ${maxHeaderValue};\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${
+                    index + 1
+                }).constant= 1;\n`;
+            });
+
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.fun_control=@control_function_${uniquePrefixes.values().next().value};\n`;
+            controlSection += `${uniquePrefixes.values().next().value}.fun_event=[];\n`;
+
+            updatedContent += `\n${controlSection}`;
+            controlExists = true;
+        }
+
+        uniquePrefixes.forEach((prefix) => {
+            if (!configExists) {
+                updatedContent += `\n% %model configuration\n${prefix}.time.min=0;\n${prefix}.time.max=${timeMax};\n${prefix}.time.id='t[h]';\n${prefix}.time.TAU=${timeTAU};\n${prefix}.time.tspan=${tspan};\n`;
+                configExists = true;
+            }
+        });
+
+        if (!mlmExists) {
+            const speciesOptions = extractOptionsFromHmod(updatedContent, "species");
+            const controlOptions = extractOptionsFromHmod(updatedContent, "control");
+            const parameterOptions = extractOptionsFromHmod(updatedContent, "parameters");
+
+            setSpeciesOptions(speciesOptions);
+            setControlOptions(controlOptions);
+            setParameterOptions(parameterOptions);
+
+            const mlmOptions = await openMlmModal();
+            if (Object.keys(mlmOptions).length > 0) {
+                let mlmSection = `% % MLM - Machine Learning Model --------------------------------------------\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.mlm.id = 'mlpnet';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.mlm.nx = ${
+                    mlmOptions.nx
+                };\n`;
+
+                mlmOptions.xOptions.forEach((x, index) => {
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
+                        index + 1
+                    }).id = 'anninp${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
+                        index + 1
+                    }).val= '${x.val}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
+                        index + 1
+                    }).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
+                        index + 1
+                    }).max= ${Math.max(...batchData.map((row) => row[x.val]))};\n`;
+                });
+
+                mlmSection += `${uniquePrefixes.values().next().value}.mlm.ny = ${
+                    mlmOptions.ny
+                };\n`;
+
+                mlmOptions.yOptions.forEach((y, index) => {
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
+                        index + 1
+                    }).id = '${y.id}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
+                        index + 1
+                    }).val= 'rann${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
+                        index + 1
+                    }).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
+                        index + 1
+                    }).max= ${Math.max(...batchData.map((row) => row[y.id]))};\n`;
+                });
+
+                // Add the additional parameters here
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.options={'hidden nodes', [1]};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.mlm.layer=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.symbolic='full-symbolic';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.symbolic='semi-symbolic';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.datasource=3;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.datafun=@${
+                    uniquePrefixes.values().next().value
+                };\n`;
+
+                mlmSection += `%training configuration\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.mode=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.method=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.jacobian=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.hessian=0;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.derivativecheck='off';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.niter=400;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.niteroptim=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.nstep=2;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.display='off';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.bootstrap=0;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.nensemble=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.crossval=1;\n`;
+
+                updatedContent += `\n${mlmSection}`;
+                mlmExists = true;
+            }
+        }
+
+        updatedContent += `\nend`;
+
+        console.log("Updated Content inside ensureHmodSections: ", updatedContent);
+        console.log("Config exists: ", configExists, " Control exists: ", controlExists);
+        if (controlExists && configExists && mlmExists) return updatedContent;
+    };
+
+    const handleFileChange1 = async (event) => {
         setSelectedFile1(event.target.files[0]);
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = async function (e) {
                 const content = e.target.result;
-                setFile1Content(content);
+                console.log("File content loaded, ensuring HMOD sections...");
+                const updatedContent = await ensureHmodSections(
+                    content,
+                    file2Content,
+                    Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+                    handleOpenHeaderModal,
+                    selectedHeaders
+                );
+
+                if (updatedContent) {
+                    console.log("Updated Content: ", updatedContent);
+                    setFile1Content(updatedContent);
+                } else {
+                    console.log("Updated content not set because ensureHmodSections returned null");
+                }
 
                 const regexPrefix = /(\w+)\.nspecies=/g;
                 const uniquePrefixes = new Set();
                 let match;
-                while ((match = regexPrefix.exec(content)) !== null) {
+                while ((match = regexPrefix.exec(updatedContent)) !== null) {
                     uniquePrefixes.add(match[1]);
                 }
 
                 let initialValues = {};
                 uniquePrefixes.forEach((prefix) => {
-                    const hiddenNodesMatch = content.match(
+                    const hiddenNodesMatch = updatedContent.match(
                         new RegExp(`${prefix}\\.mlm\\.options=\\{'hidden nodes', \\[(.*?)\\]\\};`)
                     );
+
+                    if (hiddenNodesMatch) {
+                        console.log("Hidden Nodes Found: ", hiddenNodesMatch[1]);
+                    } else {
+                        console.log("Hidden Nodes Not Found for prefix: ", prefix);
+                    }
+
                     const hiddenNodes = hiddenNodesMatch
-                        ? hiddenNodesMatch[1].replace(/,/g, " ")
-                        : "5 5";
+                        ? hiddenNodesMatch[1].trim().replace(/,/g, " ")
+                        : "";
 
                     initialValues = {
                         ...initialValues,
-                        hiddenNodes,
-                        layer: parseFloat(extractValue(content, `${prefix}.mlm.layer`)),
-                        tau: parseFloat(extractValue(content, `${prefix}.time.TAU`)),
-                        mode: parseFloat(extractValue(content, `${prefix}.mode`)),
-                        method: parseFloat(extractValue(content, `${prefix}.method`)),
-                        jacobian: parseFloat(extractValue(content, `${prefix}.jacobian`)),
-                        hessian: parseFloat(extractValue(content, `${prefix}.hessian`)),
-                        niter: parseFloat(extractValue(content, `${prefix}.niter`)),
-                        nstep: parseFloat(extractValue(content, `${prefix}.nstep`)),
-                        bootstrap: parseFloat(extractValue(content, `${prefix}.bootstrap`)),
+                        hiddenNodes, // Correctly setting hidden nodes
+                        layer: extractLayerValue(updatedContent, prefix, ""),
+                        tau: extractValue(updatedContent, `${prefix}.time.TAU`, ""),
+                        mode: extractValue(updatedContent, `${prefix}.mode`, ""),
+                        method: extractValue(updatedContent, `${prefix}.method`, ""),
+                        jacobian: extractValue(updatedContent, `${prefix}.jacobian`, ""),
+                        hessian: extractValue(updatedContent, `${prefix}.hessian`, ""),
+                        niter: extractValue(updatedContent, `${prefix}.niter`, ""),
+                        nstep: extractValue(updatedContent, `${prefix}.nstep`, ""),
+                        bootstrap: extractValue(updatedContent, `${prefix}.bootstrap`, ""),
                     };
                 });
 
+                console.log("Initial Values: ", initialValues);
                 setInitialValues(initialValues);
+                setHmodOptions(initialValues);
             };
             reader.readAsText(file);
         }
@@ -425,6 +531,7 @@ function FileUpload() {
         }
     };
 
+    // Fetch the template HMOD and CSV files from the server
     const getTemplate = () => {
         fetch("http://localhost:5000/get-template-csv", {
             method: "GET",
@@ -488,21 +595,40 @@ function FileUpload() {
                 const reader = new FileReader();
                 reader.onload = () => {
                     const fileContent = reader.result;
-                    setFile1Content(fileContent);
+
+                    const updatedContent = ensureHmodSections(
+                        fileContent,
+                        file2Content,
+                        Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+                        handleOpenHeaderModal,
+                        selectedHeaders
+                    );
+
+                    setFile1Content(updatedContent);
                 };
                 reader.readAsText(blob);
 
                 const updatedFileObject = new File([blob], "template.hmod", {
                     type: "text/plain",
                 });
+
                 setSelectedFile1(updatedFileObject);
 
-                const file = selectedFile1;
+                const file = updatedFileObject;
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = function (e) {
+                    reader.onload = async function (e) {
                         const content = e.target.result;
-                        setFile1Content(content);
+
+                        const updatedContent = await ensureHmodSections(
+                            content,
+                            file2Content,
+                            Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+                            handleOpenHeaderModal,
+                            selectedHeaders
+                        );
+
+                        setFile1Content(updatedContent);
 
                         const regexPrefix = /(\w+)\.nspecies=/g;
                         const uniquePrefixes = new Set();
@@ -518,25 +644,34 @@ function FileUpload() {
                                     `${prefix}\\.mlm\\.options=\\{'hidden nodes', \\[(.*?)\\]\\};`
                                 )
                             );
+
+                            if (hiddenNodesMatch) {
+                                console.log("Hidden Nodes Found: ", hiddenNodesMatch[1]);
+                            } else {
+                                console.log("Hidden Nodes Not Found for prefix: ", prefix);
+                            }
+
                             const hiddenNodes = hiddenNodesMatch
-                                ? hiddenNodesMatch[1].replace(/,/g, " ")
-                                : "5 5";
+                                ? hiddenNodesMatch[1].trim().replace(/,/g, " ")
+                                : "";
 
                             initialValues = {
                                 ...initialValues,
-                                hiddenNodes,
-                                layer: parseFloat(extractValue(content, `${prefix}.mlm.layer`)),
-                                tau: parseFloat(extractValue(content, `${prefix}.time.TAU`)),
-                                mode: parseFloat(extractValue(content, `${prefix}.mode`)),
-                                method: parseFloat(extractValue(content, `${prefix}.method`)),
-                                jacobian: parseFloat(extractValue(content, `${prefix}.jacobian`)),
-                                hessian: parseFloat(extractValue(content, `${prefix}.hessian`)),
-                                niter: parseFloat(extractValue(content, `${prefix}.niter`)),
-                                nstep: parseFloat(extractValue(content, `${prefix}.nstep`)),
-                                bootstrap: parseFloat(extractValue(content, `${prefix}.bootstrap`)),
+                                hiddenNodes, // Correctly setting hidden nodes
+                                layer: extractLayerValue(content, prefix, ""),
+                                tau: extractValue(content, `${prefix}.time.TAU`, ""),
+                                mode: extractValue(content, `${prefix}.mode`, ""),
+                                method: extractValue(content, `${prefix}.method`, ""),
+                                jacobian: extractValue(content, `${prefix}.jacobian}`, ""),
+                                hessian: extractValue(content, `${prefix}.hessian}`, ""),
+                                niter: extractValue(content, `${prefix}.niter}`, ""),
+                                nstep: extractValue(content, `${prefix}.nstep}`, ""),
+                                bootstrap: extractValue(content, `${prefix}.bootstrap}`, ""),
                             };
                         });
 
+                        console.log("Initial Values: ", initialValues);
+                        setHmodOptions(initialValues);
                         setInitialValues(initialValues);
                     };
                     reader.readAsText(file);
@@ -577,7 +712,23 @@ function FileUpload() {
         formData.append("test_batches", Array.from(test_batches).join(","));
         formData.append("user_id", auth.currentUser.uid);
 
-        setTrainingModalOpen(true); // Open the modal when the upload starts
+        console.log("Form Data: ", hmodOptions);
+        formData.append("HiddenNodes", hmodOptions.hiddenNodes);
+        formData.append("Layer", hmodOptions.layer);
+        formData.append("Tau", hmodOptions.tau);
+        formData.append("Mode", hmodOptions.mode);
+        formData.append("Method", hmodOptions.method);
+        formData.append("Jacobian", hmodOptions.jacobian);
+        formData.append("Hessian", hmodOptions.hessian);
+        formData.append("Niter", hmodOptions.niter);
+        formData.append("Nstep", hmodOptions.nstep);
+        formData.append("Bootstrap", hmodOptions.bootstrap);
+
+        formData.append("hiddenOptions", JSON.stringify(hmodOptions));
+
+        console.log("Form Data: ", formData);
+
+        setTrainingModalOpen(true);
 
         try {
             const response = await fetch("http://localhost:5000/upload", {
@@ -1130,8 +1281,25 @@ function FileUpload() {
                 handleClose={() => setHmodModalOpen(false)}
                 handleSave={handleHmodModalSave}
                 initialValues={initialValues}
+                setHmodOptions={setHmodOptions}
             />
             <TrainingModal open={trainingModalOpen} handleClose={handleCloseTrainingModal} />
+
+            <ControlModalSelection
+                open={headerModalOpen}
+                headers={headerModalConfig.headers}
+                handleClose={headerModalConfig.handleClose}
+                onSave={headerModalConfig.onSave}
+            />
+
+            <MlmModal
+                open={mlmModalOpen.open}
+                handleClose={mlmModalOpen.handleClose}
+                handleSave={mlmModalOpen.onSave}
+                speciesOptions={speciesOptions}
+                controlOptions={controlOptions}
+                parameterOptions={parameterOptions}
+            />
         </ThemeProvider>
     );
 }

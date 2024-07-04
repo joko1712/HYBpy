@@ -327,14 +327,24 @@ export default function OldRuns() {
                                                                     )
                                                                 )}
                                                         </div>
-                                                        Metrics: {selectedRun.response_data.metrics}
-                                                        <br />
-                                                        Trained weights:
-                                                        <DisplayJson
-                                                            data={
-                                                                selectedRun.response_data.trainData
-                                                            }
-                                                        />
+                                                        {selectedRun.response_data ? (
+                                                            <>
+                                                                Metrics:{" "}
+                                                                {selectedRun.response_data.metrics}
+                                                                <br />
+                                                                Trained weights:
+                                                                <DisplayJson
+                                                                    data={
+                                                                        selectedRun.response_data
+                                                                            .trainData
+                                                                    }
+                                                                />
+                                                            </>
+                                                        ) : (
+                                                            <Typography color='error'>
+                                                                Error: No response data available
+                                                            </Typography>
+                                                        )}
                                                         <br />
                                                         Run ID: {selectedRun.id}
                                                         <br />
@@ -343,6 +353,32 @@ export default function OldRuns() {
                                                         CSV: {selectedRun.file2_name}
                                                         <br />
                                                         Mode: {mode}
+                                                        <br />
+                                                        <Typography variant='h6' marginTop={3}>
+                                                            Machine Learning Options:
+                                                        </Typography>
+                                                        {selectedRun.MachineLearning ? (
+                                                            <div style={{ marginLeft: 20 }}>
+                                                                {Object.keys(
+                                                                    selectedRun.MachineLearning
+                                                                ).map((key) => (
+                                                                    <div key={key}>
+                                                                        <h7>{key}: </h7>
+                                                                        {
+                                                                            selectedRun
+                                                                                .MachineLearning[
+                                                                                key
+                                                                            ]
+                                                                        }
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <Typography color='error'>
+                                                                Error: No Machine Learning Options
+                                                                available
+                                                            </Typography>
+                                                        )}
                                                     </Typography>
                                                 </>
                                             )}

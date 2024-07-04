@@ -13,6 +13,8 @@ import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import MenuIcon from "@mui/icons-material/Menu";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +25,10 @@ import logo from "../Image/HYBpyINVIS_logo.png";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
 import Modal from "@mui/material/Modal";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Checkbox from "@mui/material/Checkbox";
+import ListItemText from "@mui/material/ListItemText";
 
 const drawerWidth = 200;
 
@@ -77,20 +83,24 @@ const style = {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: "80%",
+    width: "60%",
     height: "80%",
     bgcolor: "background.paper",
     border: "2px solid #000",
     boxShadow: 24,
     p: 4,
     overflow: "auto",
+    alignItems: "center",
+    justifyContent: "center",
 };
+
 export default function Dashboard() {
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
         navigate("/Dashboard");
     };
+
     const [open, setOpen] = useState(true);
     const [runInProgress, setRunInProgress] = useState("");
     const toggleDrawer = () => {
@@ -102,10 +112,43 @@ export default function Dashboard() {
     const [modalOpen, setModalOpen] = useState(false);
     const [mode, setMode] = useState("Error");
     const userId = auth.currentUser.uid;
+    const [currentPlotIndex, setCurrentPlotIndex] = useState(0);
+    const [selectedPlots, setSelectedPlots] = useState([]);
 
-    const handleOpenModal = (url) => {
-        setSelectedPlot(url);
+    const handlePlotSelectionChange = (event) => {
+        const {
+            target: { value },
+        } = event;
+        setSelectedPlots(typeof value === "string" ? value.split(",") : value);
+    };
+
+    const getPlotName = (url) => url.split("metabolite_")[1].split(".png")[0];
+
+    const handleOpenModal = (index) => {
+        setCurrentPlotIndex(index);
+        const filteredPlots = runs[0]?.plots?.filter(
+            (url) => selectedPlots.length === 0 || selectedPlots.includes(url)
+        );
+        setSelectedPlot(filteredPlots[index]);
         setModalOpen(true);
+    };
+
+    const handleNextPlot = () => {
+        const filteredPlots = runs[0]?.plots?.filter(
+            (url) => selectedPlots.length === 0 || selectedPlots.includes(url)
+        );
+        const nextIndex = (currentPlotIndex + 1) % filteredPlots.length;
+        setCurrentPlotIndex(nextIndex);
+        setSelectedPlot(filteredPlots[nextIndex]);
+    };
+
+    const handlePrevPlot = () => {
+        const filteredPlots = runs[0]?.plots?.filter(
+            (url) => selectedPlots.length === 0 || selectedPlots.includes(url)
+        );
+        const prevIndex = (currentPlotIndex - 1 + filteredPlots.length) % filteredPlots.length;
+        setCurrentPlotIndex(prevIndex);
+        setSelectedPlot(filteredPlots[prevIndex]);
     };
 
     const handleCloseModal = () => {
@@ -138,19 +181,21 @@ export default function Dashboard() {
                 ...doc.data(),
             }));
             setRuns(latestRun);
-            if (latestRun[0].mode === 1) {
-                setMode("Manual");
-            } else {
-                setMode("Automatic");
-            }
+            if (latestRun.length > 0) {
+                if (latestRun[0].mode === 1) {
+                    setMode("Manual");
+                } else {
+                    setMode("Automatic");
+                }
 
-            if (latestRun[0].status === "in_progress") {
-                setRunInProgress("Trainning in progress...");
-            } else {
-                setRunInProgress("Trainning completed");
-            }
+                if (latestRun[0].status === "in_progress") {
+                    setRunInProgress("Training in progress...");
+                } else {
+                    setRunInProgress("Training completed");
+                }
 
-            checkRunStatus();
+                checkRunStatus();
+            }
         };
 
         fetchLatestRun();
@@ -253,26 +298,72 @@ export default function Dashboard() {
                                     }}>
                                     {runs.length > 0 && runs[0].plots ? (
                                         <ImageList cols={3} gap={8} sx={{ width: "100%" }}>
-                                            {runs[0].plots.map((url, index) => (
-                                                <ImageListItem
-                                                    key={index}
-                                                    onClick={() => handleOpenModal(url)}>
-                                                    <img
-                                                        src={url}
-                                                        alt={`Plot ${index}`}
-                                                        loading='lazy'
-                                                        style={{
-                                                            width: "100%",
-                                                            height: "auto",
-                                                            cursor: "pointer",
-                                                        }}
-                                                    />
-                                                </ImageListItem>
-                                            ))}
+                                            {runs[0].plots
+                                                .filter(
+                                                    (url) =>
+                                                        selectedPlots.length === 0 ||
+                                                        selectedPlots.includes(url)
+                                                )
+                                                .map((url, index) => {
+                                                    const filteredPlots = runs[0].plots.filter(
+                                                        (url) =>
+                                                            selectedPlots.length === 0 ||
+                                                            selectedPlots.includes(url)
+                                                    );
+                                                    const filteredIndex =
+                                                        filteredPlots.indexOf(url);
+                                                    return (
+                                                        <ImageListItem
+                                                            key={index}
+                                                            onClick={() =>
+                                                                handleOpenModal(filteredIndex)
+                                                            }>
+                                                            <img
+                                                                src={url}
+                                                                alt={url}
+                                                                loading='lazy'
+                                                                style={{
+                                                                    width: "100%",
+                                                                    height: "auto",
+                                                                    cursor: "pointer",
+                                                                }}
+                                                            />
+                                                        </ImageListItem>
+                                                    );
+                                                })}
                                         </ImageList>
                                     ) : (
                                         <Typography>No plots available</Typography>
                                     )}
+                                </Paper>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                    <Typography variant='h6'>Select Plots to Display</Typography>
+                                    <Select
+                                        multiple
+                                        value={selectedPlots}
+                                        onChange={handlePlotSelectionChange}
+                                        renderValue={(selected) =>
+                                            selected.length === 0
+                                                ? "All Plots"
+                                                : selected.map(getPlotName).join(", ")
+                                        }>
+                                        {runs.length > 0 &&
+                                            runs[0].plots?.map((url, index) => {
+                                                const plotName = url;
+                                                return (
+                                                    <MenuItem key={index} value={url}>
+                                                        <Checkbox
+                                                            checked={
+                                                                selectedPlots.indexOf(url) > -1
+                                                            }
+                                                        />
+                                                        <ListItemText primary={plotName} />
+                                                    </MenuItem>
+                                                );
+                                            })}
+                                    </Select>
                                 </Paper>
                             </Grid>
                         </Grid>
@@ -281,13 +372,49 @@ export default function Dashboard() {
                             onClose={handleCloseModal}
                             aria-labelledby='modal-modal-title'
                             aria-describedby='modal-modal-description'>
-                            <Box sx={style}>
+                            <Box
+                                sx={{
+                                    ...style,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    position: "relative",
+                                }}>
                                 {selectedPlot && (
-                                    <img
-                                        src={selectedPlot}
-                                        alt='Selected Plot'
-                                        style={{ width: "auto", height: "100%" }}
-                                    />
+                                    <>
+                                        <IconButton
+                                            onClick={handlePrevPlot}
+                                            sx={{
+                                                position: "absolute",
+                                                top: "50%",
+                                                left: "16px",
+                                                transform: "translateY(-50%)",
+                                                zIndex: 1,
+                                            }}>
+                                            <ArrowBackIcon />
+                                        </IconButton>
+                                        <img
+                                            src={selectedPlot}
+                                            alt='Selected Plot'
+                                            style={{
+                                                maxWidth: "100%",
+                                                maxHeight: "90%",
+                                                display: "block",
+                                                margin: "0 auto",
+                                            }}
+                                        />
+                                        <IconButton
+                                            onClick={handleNextPlot}
+                                            sx={{
+                                                position: "absolute",
+                                                top: "50%",
+                                                right: "16px",
+                                                transform: "translateY(-50%)",
+                                                zIndex: 1,
+                                            }}>
+                                            <ArrowForwardIcon />
+                                        </IconButton>
+                                    </>
                                 )}
                             </Box>
                         </Modal>

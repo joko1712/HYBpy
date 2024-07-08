@@ -29,6 +29,7 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Checkbox from "@mui/material/Checkbox";
 import ListItemText from "@mui/material/ListItemText";
+import Button from "@mui/material/Button";
 
 const drawerWidth = 200;
 
@@ -114,6 +115,7 @@ export default function Dashboard() {
     const userId = auth.currentUser.uid;
     const [currentPlotIndex, setCurrentPlotIndex] = useState(0);
     const [selectedPlots, setSelectedPlots] = useState([]);
+    const [showMetabolites, setShowMetabolites] = useState(true);
 
     const handlePlotSelectionChange = (event) => {
         const {
@@ -122,33 +124,46 @@ export default function Dashboard() {
         setSelectedPlots(typeof value === "string" ? value.split(",") : value);
     };
 
-    const getPlotName = (url) => url.split("metabolite_")[1].split(".png")[0];
+    const getPlotTitle = (url) => {
+        const parts = url.split("/");
+        const fileName = parts[parts.length - 1];
+        if (url.includes("predicted_vs_actual")) {
+            const species = fileName.split("_")[3].toUpperCase();
+            return `PREDICTED VS ACTUAL - ${species}`;
+        } else {
+            const species = fileName.split("_")[1].toUpperCase();
+            return `${species}`;
+        }
+    };
 
     const handleOpenModal = (index) => {
+        const filteredPlots = getFilteredPlots();
         setCurrentPlotIndex(index);
-        const filteredPlots = runs[0]?.plots?.filter(
-            (url) => selectedPlots.length === 0 || selectedPlots.includes(url)
-        );
         setSelectedPlot(filteredPlots[index]);
         setModalOpen(true);
     };
 
     const handleNextPlot = () => {
-        const filteredPlots = runs[0]?.plots?.filter(
-            (url) => selectedPlots.length === 0 || selectedPlots.includes(url)
-        );
+        const filteredPlots = getFilteredPlots();
         const nextIndex = (currentPlotIndex + 1) % filteredPlots.length;
         setCurrentPlotIndex(nextIndex);
         setSelectedPlot(filteredPlots[nextIndex]);
     };
 
     const handlePrevPlot = () => {
-        const filteredPlots = runs[0]?.plots?.filter(
-            (url) => selectedPlots.length === 0 || selectedPlots.includes(url)
-        );
+        const filteredPlots = getFilteredPlots();
         const prevIndex = (currentPlotIndex - 1 + filteredPlots.length) % filteredPlots.length;
         setCurrentPlotIndex(prevIndex);
         setSelectedPlot(filteredPlots[prevIndex]);
+    };
+
+    const getFilteredPlots = () => {
+        const plots = runs[0]?.plots || [];
+        if (showMetabolites) {
+            return plots.filter((url) => url.includes("metabolite"));
+        } else {
+            return plots.filter((url) => url.includes("predicted_vs_actual"));
+        }
     };
 
     const handleCloseModal = () => {
@@ -164,6 +179,10 @@ export default function Dashboard() {
         } catch (error) {
             console.error("Error checking run status:", error);
         }
+    };
+
+    const toggleShowMetabolites = () => {
+        setShowMetabolites(!showMetabolites);
     };
 
     useEffect(() => {
@@ -296,16 +315,24 @@ export default function Dashboard() {
                                         display: "flex",
                                         flexDirection: "column",
                                     }}>
-                                    {runs.length > 0 && runs[0].plots ? (
+                                    <Button
+                                        variant='contained'
+                                        onClick={toggleShowMetabolites}
+                                        sx={{ mb: 2 }}>
+                                        {showMetabolites
+                                            ? "Show Predicted vs Actual Plots"
+                                            : "Show Metabolite Plots"}
+                                    </Button>
+                                    {getFilteredPlots().length > 0 ? (
                                         <ImageList cols={3} gap={8} sx={{ width: "100%" }}>
-                                            {runs[0].plots
+                                            {getFilteredPlots()
                                                 .filter(
                                                     (url) =>
                                                         selectedPlots.length === 0 ||
                                                         selectedPlots.includes(url)
                                                 )
                                                 .map((url, index) => {
-                                                    const filteredPlots = runs[0].plots.filter(
+                                                    const filteredPlots = getFilteredPlots().filter(
                                                         (url) =>
                                                             selectedPlots.length === 0 ||
                                                             selectedPlots.includes(url)
@@ -347,22 +374,19 @@ export default function Dashboard() {
                                         renderValue={(selected) =>
                                             selected.length === 0
                                                 ? "All Plots"
-                                                : selected.map(getPlotName).join(", ")
+                                                : selected.map(getPlotTitle).join(", ")
                                         }>
-                                        {runs.length > 0 &&
-                                            runs[0].plots?.map((url, index) => {
-                                                const plotName = url;
-                                                return (
-                                                    <MenuItem key={index} value={url}>
-                                                        <Checkbox
-                                                            checked={
-                                                                selectedPlots.indexOf(url) > -1
-                                                            }
-                                                        />
-                                                        <ListItemText primary={plotName} />
-                                                    </MenuItem>
-                                                );
-                                            })}
+                                        {getFilteredPlots().map((url, index) => {
+                                            const plotTitle = getPlotTitle(url);
+                                            return (
+                                                <MenuItem key={index} value={url}>
+                                                    <Checkbox
+                                                        checked={selectedPlots.indexOf(url) > -1}
+                                                    />
+                                                    <ListItemText primary={plotTitle} />
+                                                </MenuItem>
+                                            );
+                                        })}
                                     </Select>
                                 </Paper>
                             </Grid>

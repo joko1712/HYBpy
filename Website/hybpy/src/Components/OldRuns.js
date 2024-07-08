@@ -270,7 +270,7 @@ export default function OldRuns() {
                                                 key={run.id}
                                                 onClick={() => handleOpen(run)}>
                                                 <ListItemText
-                                                    primary={`Run ID: ${run.id}`}
+                                                    primary={`Run ID: ${run.description}`}
                                                     secondary={`Hmod: ${run.file1_name} - CSV: ${run.file2_name} -Mode: ${mode}`}
                                                 />
                                                 <p>View Run: </p>
@@ -346,7 +346,7 @@ export default function OldRuns() {
                                                             </Typography>
                                                         )}
                                                         <br />
-                                                        Run ID: {selectedRun.id}
+                                                        Run ID: {selectedRun.description}
                                                         <br />
                                                         Hmod: {selectedRun.file1_name}
                                                         <br />

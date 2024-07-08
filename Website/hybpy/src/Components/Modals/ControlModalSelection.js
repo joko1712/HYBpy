@@ -27,7 +27,7 @@ const ControlModalSelection = ({ open, headers, handleClose, onSave }) => {
     };
 
     const handleSave = () => {
-        console.log("Selected Headers: ", localSelectedHeaders); // Log selected headers
+        console.log("Selected Headers: ", localSelectedHeaders);
         onSave(localSelectedHeaders);
         handleClose();
     };

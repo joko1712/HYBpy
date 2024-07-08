@@ -184,7 +184,7 @@ def hybtrain(projhyb, file, user_id):
 
     elif projhyb['method'] == 3:
         print("   Optimiser:              Adam")
-        num_epochs = 1  
+        num_epochs = 100  
         lr = 0.001  
 #######################################################################################################################
 
@@ -266,7 +266,6 @@ def hybtrain(projhyb, file, user_id):
         if projhyb['hessian'] == 1:
             options['hess'] = evaluator.hess_func
         
-    '''
         if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
             print("optios", options)
             print("weights", weights)
@@ -303,6 +302,7 @@ def hybtrain(projhyb, file, user_id):
             2.14947514e-03,  1.17489032e-04, -2.03476453e-03,  1.54795275e-01,
             1.70781475e-01,  4.07317944e-05,  1.00251807e+00,  9.94084879e-02,
             6.72249841e-06,  4.22301199e-02]
+    '''
     
     optimized_weights = w   
     
@@ -476,33 +476,24 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 
 
 def adam_optimizer_train(ann, projhyb, evaluator, num_epochs, lr):
-    initial_weights, _ = ann.get_weights()
-    initial_weights_tensor = torch.tensor(initial_weights, dtype=torch.float32, requires_grad=True)
+    weights, _ = ann.get_weights()
+    weights_tensor = torch.tensor(weights, dtype=torch.float32, requires_grad=True)
 
-    optimizer = torch.optim.Adam([initial_weights_tensor], lr=lr)
+    optimizer = optim.Adam([weights_tensor], lr=lr)
 
     for epoch in range(num_epochs):
         optimizer.zero_grad()
 
-        objFunc = evaluator.torch_fobj_func(initial_weights_tensor)
-
-        objFunc.backward()
-
-        print(f'Gradients after backward pass: {initial_weights_tensor.grad}')
-
+        fobj = evaluator.torch_fobj_func(weights_tensor)
+        
+        fobj.backward()
+        
         optimizer.step()
 
-        optimized_weights = initial_weights_tensor.detach().cpu().numpy()
-        ann.set_weights(optimized_weights)
+        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {fobj.item()}')
 
-        if epoch % 10 == 0:
-            print(f'Epoch {epoch+1}/{num_epochs}, Loss: {objFunc.item()}')
-            print(f'Weights after epoch {epoch+1}: {optimized_weights}')
-
-        initial_weights_tensor = torch.tensor(optimized_weights, dtype=torch.float32, requires_grad=True)
-
-    final_weights = initial_weights_tensor.detach().cpu().numpy()
-    return final_weights
+    optimized_weights = weights_tensor.detach().cpu().numpy()
+    return optimized_weights
 
 class IndirectFunctionEvaluator:
     def __init__(self, ann, projhyb, file, evaluation_function):
@@ -725,13 +716,12 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
             if lower_bound[value] < 0:
                 lower_bound[value] = 0
 
-        x = file[train_batches[0]]["time"]
-
+        x = file[train_batches[0]]["time"][:-1]
         
         # Time series plot
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.errorbar(x, actual_test[:len(x)-1], err[:len(x)-1], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
-        ax.plot(x, predicted_test[:len(x)-1], label="Predicted", color='red', linewidth=1)
+        ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
+        ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
         ax.fill_between(x, lower_bound[:len(x)], upper_bound[:len(x)], color='gray', label="Confidence Interval", alpha=0.5)
 
         plt.xlabel('Time (s)')

@@ -417,6 +417,9 @@ function FileUpload() {
 
     const handleFileChange1 = async (event) => {
         setSelectedFile1(event.target.files[0]);
+        setInitialValues(null);
+        setHmodOptions({});
+
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
@@ -613,7 +616,8 @@ function FileUpload() {
                 });
 
                 setSelectedFile1(updatedFileObject);
-
+                setInitialValues(null);
+                setHmodOptions({});
                 const file = updatedFileObject;
                 if (file) {
                     const reader = new FileReader();
@@ -699,6 +703,30 @@ function FileUpload() {
 
         if (mode !== "1" && mode !== "2") {
             alert("Please select a mode (1 or 2)!");
+            return;
+        }
+
+        const requiredFields = [
+            "hiddenNodes",
+            "layer",
+            "tau",
+            "mode",
+            "method",
+            "jacobian",
+            "hessian",
+            "niter",
+            "nstep",
+            "bootstrap",
+        ];
+        const missingFields = requiredFields.filter((field) => !hmodOptions[field]);
+
+        if (missingFields.length > 0) {
+            alert(
+                `The following fields are missing or invalid from the HMOD: ${missingFields.join(
+                    ", "
+                )}`
+            );
+            setHmodModalOpen(true);
             return;
         }
 

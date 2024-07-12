@@ -1,4 +1,4 @@
-# HYBpy: a Python tool for hybrid modeling
+# HYBpy
 
 ## Overview
 HYBpy is a python-based tool for hybrid modeling of bioprocesses.

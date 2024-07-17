@@ -132,8 +132,8 @@ parkram.mlm.y(3).id = 'vPM';
 parkram.mlm.y(3).val= 'rann3';
 parkram.mlm.y(3).min= 0; 
 parkram.mlm.y(3).max= 4;
-parkram.mlm.options={'hidden nodes', [1]}; %user defined
-parkram.mlm.layer=1 %1-tanh 2-ReLu %user defined
+parkram.mlm.options={'hidden nodes', [10 10]}; %user defined
+parkram.mlm.layer=1; %1-tanh 2-ReLu %user defined
 parkram.mlm.xfun=str2func('autoA_hybmod_anninp'); %generated automatically
 parkram.mlm.yfun=str2func('autoA_hybmod_rann'); %only used if 'user-defined'
 parkram.symbolic='full-symbolic';
@@ -154,17 +154,24 @@ parkram.datafun=@parkramirezdata;
 
 %training configuration
 parkram.mode=1;%;    %1-indirect, 2-direct, 3-semidirect
-parkram.method=1;    %1-lev-marquardt, 2-quasi-Newton   3- Simulated Annealing
+parkram.method=2;    %1-lev-marquardt, 2-quasi-Newton   3- Simulated Annealing
 parkram.jacobian=1;  %1-ON, 0- OFF   [ONLY FOR LEVENBERG-MARQUARDT]
 parkram.hessian=0;   %1-ON  0- OFF   [only for quasi-Newton]
 parkram.derivativecheck='off'; %'on' or 'off' [ONLY FOR LEVENBERG-MARQUARDT]
 parkram.niter=400;
 parkram.niteroptim=1;
-parkram.nstep=30;
+parkram.nstep=2;
 parkram.display='off';   %'off','Iter'
 parkram.bootstrap=0; %1-do bootstrap; 0-no boostrapp
-parkram.nensemble=3; %number of models to aggregate >=1; if >1 confidence intervals are computed
+parkram.nensemble=1; %number of models to aggregate >=1; if >1 confidence intervals are computed
 parkram.crossval=1;  %0 - no cross-validation; 1 - do crossvalidation
+
+
+
+
+
+
+
 
 
 

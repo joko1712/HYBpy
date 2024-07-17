@@ -270,7 +270,7 @@ export default function OldRuns() {
                                                 key={run.id}
                                                 onClick={() => handleOpen(run)}>
                                                 <ListItemText
-                                                    primary={`Run ID: ${run.description}`}
+                                                    primary={`Title: ${run.description}`}
                                                     secondary={`Hmod: ${run.file1_name} - CSV: ${run.file2_name} -Mode: ${mode}`}
                                                 />
                                                 <p>View Run: </p>
@@ -330,7 +330,14 @@ export default function OldRuns() {
                                                         {selectedRun.response_data ? (
                                                             <>
                                                                 Metrics:{" "}
-                                                                {selectedRun.response_data.metrics}
+                                                                <pre>
+                                                                    {JSON.stringify(
+                                                                        selectedRun.response_data
+                                                                            .metrics,
+                                                                        null,
+                                                                        2
+                                                                    )}
+                                                                </pre>
                                                                 <br />
                                                                 Trained weights:
                                                                 <DisplayJson
@@ -363,7 +370,7 @@ export default function OldRuns() {
                                                                     selectedRun.MachineLearning
                                                                 ).map((key) => (
                                                                     <div key={key}>
-                                                                        <h7>{key}: </h7>
+                                                                        <strong>{key}: </strong>
                                                                         {
                                                                             selectedRun
                                                                                 .MachineLearning[

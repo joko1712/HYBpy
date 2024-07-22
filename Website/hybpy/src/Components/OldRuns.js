@@ -163,6 +163,19 @@ export default function OldRuns() {
         setSelectedPlot(url);
     };
 
+    const getDisplayValue = (key, value) => {
+        const mappings = {
+            Jacobian: { 1: "On", 0: "Off" },
+            Hessian: { 1: "On", 0: "Off" },
+            Bootstrap: { 1: "On", 0: "Off" },
+            Method: { 1: "TRF", 2: "Trust-Constr", 3: "Simulated Annealing", 4: "ADAM" },
+            Mode: { 1: "Indirect", 2: "Direct", 3: "Indirect" },
+            Layer: { 1: "Tanh", 2: "ReLU", 3: "LSTM" },
+        };
+
+        return mappings[key] && mappings[key][value] ? mappings[key][value] : value;
+    };
+
     useEffect(() => {
         const fetchLatestRun = async () => {
             const runsCollectionRef = collection(db, "users", userId, "runs");
@@ -255,7 +268,9 @@ export default function OldRuns() {
                     }}>
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
-                        <h2>Data</h2>
+                        <h1>
+                            <strong>Data</strong>
+                        </h1>
                         <Grid container spacing={3}>
                             <Grid item xs={20}>
                                 <Paper
@@ -290,14 +305,14 @@ export default function OldRuns() {
                                         onClose={handleClose}
                                         aria-labelledby='modal-modal-title'
                                         aria-describedby='modal-modal-description'>
-                                        <Box sx={{ ...style, width: "80%", height: "80%" }}>
+                                        <Box sx={{ ...style, width: "80%", height: "90%" }}>
                                             {selectedRun && (
                                                 <>
                                                     <Typography
                                                         id='modal-modal-title'
-                                                        variant='h6'
+                                                        variant='h4'
                                                         component='h2'>
-                                                        Details
+                                                        <strong>Details</strong>
                                                     </Typography>
                                                     <Typography
                                                         id='modal-modal-description'
@@ -353,7 +368,7 @@ export default function OldRuns() {
                                                             </Typography>
                                                         )}
                                                         <br />
-                                                        Run ID: {selectedRun.description}
+                                                        Run ID: {selectedRun.file1}
                                                         <br />
                                                         Hmod: {selectedRun.file1_name}
                                                         <br />
@@ -371,12 +386,13 @@ export default function OldRuns() {
                                                                 ).map((key) => (
                                                                     <div key={key}>
                                                                         <strong>{key}: </strong>
-                                                                        {
+                                                                        {getDisplayValue(
+                                                                            key,
                                                                             selectedRun
                                                                                 .MachineLearning[
                                                                                 key
                                                                             ]
-                                                                        }
+                                                                        )}
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -403,7 +419,7 @@ export default function OldRuns() {
                                                 left: "50%",
                                                 transform: "translate(-50%, -50%)",
                                                 width: "80%",
-                                                height: "80%",
+                                                height: "90%",
                                                 bgcolor: "background.paper",
                                                 border: "2px solid #000",
                                                 boxShadow: 24,

@@ -94,7 +94,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
         })
 
         rann_symbol = [sp.sympify(projhyb["mlm"]["y"][str(i)]["id"]) for i in range(1, projhyb["mlm"]["ny"]+1)]
-
         with ThreadPoolExecutor(max_workers=8) as executor:
             future_to_function = {
                 executor.submit(computeDFDS, projhyb, fstate, state_symbols, NValues): 'DfDs',
@@ -131,7 +130,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
         fjac = torch.mm(DfDsDfDrannDrannDs, jac) + DfDrannDrannDw
 
         fstate = [expr.subs(NValues) for expr in fstate]
-        print(fstate)
+
         return fstate, fjac
 
     elif projhyb['mode'] == 3:

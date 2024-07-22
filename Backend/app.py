@@ -26,8 +26,8 @@ from firebase_admin import credentials, firestore, storage
 
 load_dotenv()
 
-cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
-#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
+#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
+cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
 firebase_admin.initialize_app(cred, {
     'storageBucket': os.getenv("STORAGE_BUCKET_NAME")
 })
@@ -133,6 +133,15 @@ def upload_file():
         Nstep = request.form.get('Nstep')
         Bootstrap = request.form.get('Bootstrap')
 
+        trainedWeights = request.form.get('trainedWeights')
+        if trainedWeights:
+            trainedWeights = trainedWeights
+        else:
+            trainedWeights = None
+
+        
+        print("tranedWeights", trainedWeights)
+
         if not file1 or not file2:
             return {"error": "Both files are required"}, 400
         
@@ -163,6 +172,7 @@ def upload_file():
             "file1_name": file1.filename,
             "file2_name": file2.filename,
             "description": description,
+            "trained_weights": trainedWeights,
             "mode": mode,
             "createdAt": firestore.SERVER_TIMESTAMP,
             "MachineLearning": {
@@ -223,7 +233,7 @@ def upload_file():
 
         logging.debug("Data prepared for training: %s", data)
 
-        projhyb, trainData, metrics = hybtrain(projhyb, data, user_id)
+        projhyb, trainData, metrics = hybtrain(projhyb, data, user_id, trainedWeights)
 
         logging.debug("Training complete: projhyb=%s, trainData=%s", projhyb, trainData)
 
@@ -308,6 +318,7 @@ def run_status():
             if run_data.get('status') == 'in_progress':
                 return json.dumps({"status": "in_progress"}), 200
             elif run_data.get('status') == 'completed':
+                #ADD DATA
                 return json.dumps({"status": "completed"}), 200
             else:
                 return json.dumps({"status": "unknown"}), 200

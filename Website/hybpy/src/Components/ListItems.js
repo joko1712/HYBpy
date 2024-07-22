@@ -8,6 +8,7 @@ import FaceIcon from "@mui/icons-material/Face";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import FlightLandIcon from "@mui/icons-material/FlightLand";
 import HomeIcon from "@mui/icons-material/Home";
+import BatchPredictionIcon from "@mui/icons-material/BatchPrediction";
 import { auth } from "../firebase-config";
 
 const logout = (navigate) => {
@@ -34,6 +35,13 @@ export const mainListItems = (navigate) => (
                 <BackupIcon />
             </ListItemIcon>
             <ListItemText primary='Models' />
+        </ListItemButton>
+
+        <ListItemButton onClick={() => navigate("/simulations")}>
+            <ListItemIcon>
+                <BatchPredictionIcon />
+            </ListItemIcon>
+            <ListItemText primary='Simulations' />
         </ListItemButton>
 
         <ListItemButton onClick={() => navigate("/old-runs")}>

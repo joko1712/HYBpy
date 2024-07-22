@@ -8,6 +8,7 @@ import Login from "./Components/Login";
 import Dashboard from "./Components/Dashboard";
 import LandingPage from "./Components/LandingPage";
 import { auth } from "./firebase-config";
+import Simulations from "./Components/Simulations";
 
 function App() {
     const [currentUser, setCurrentUser] = useState(null);
@@ -48,6 +49,7 @@ function App() {
                             <Route path='/dashboard' element={<Dashboard />} />
                             <Route path='/upload' element={<FileUpload />} />
                             <Route path='/old-runs' element={<OldRuns />} />
+                            <Route path='/simulations' element={<Simulations />} />
                         </>
                     ) : (
                         <>

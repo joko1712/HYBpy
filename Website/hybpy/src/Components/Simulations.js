@@ -108,7 +108,7 @@ const extractValue = (content, key, defaultValue) => {
     return match ? match[1].trim() : defaultValue;
 };
 
-function FileUpload() {
+function Simulations() {
     const navigate = useNavigate();
     const navigateToUpload = () => {
         navigate("/Dashboard");
@@ -124,6 +124,7 @@ function FileUpload() {
     const [mode, setMode] = useState("");
     const [backendResponse, setBackendResponse] = useState("");
     const [description, setDescription] = useState("");
+    const [trainedWeights, setTrainedWeights] = useState("");
     const [tooltipDisplay, setTooltipDisplay] = useState("block");
     const [modalOpen, setModalOpen] = useState(false);
     const [tabIndex, setTabIndex] = useState(0);
@@ -736,6 +737,7 @@ function FileUpload() {
         formData.append("mode", mode);
         formData.append("userId", auth.currentUser.uid);
         formData.append("description", description);
+        formData.append("trained_weights", Array.from(trainedWeights).join(","));
         formData.append("train_batches", Array.from(train_batches).join(","));
         formData.append("test_batches", Array.from(test_batches).join(","));
         formData.append("user_id", auth.currentUser.uid);
@@ -966,7 +968,7 @@ function FileUpload() {
                     <Toolbar />
                     <Container maxWidth='lg' sx={{}}>
                         <div style={{ overflow: "auto", marginTop: 20 }}>
-                            <h2 style={{ float: "left", marginTop: 0 }}>New Hybrid Model</h2>
+                            <h2 style={{ float: "left", marginTop: 0 }}>New Simulation</h2>
                             <Button
                                 onClick={getTemplate}
                                 variant='contained'
@@ -992,6 +994,35 @@ function FileUpload() {
                                         value={description}
                                         onChange={(e) => {
                                             setDescription(e.target.value);
+                                            if (e.target.value) {
+                                                if (progress < 1) {
+                                                    setProgress(1);
+                                                }
+                                            } else {
+                                                setProgress(0);
+                                            }
+                                        }}
+                                    />
+                                </Paper>
+                            </Grid>
+
+                            <Grid item xs={20}>
+                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                    <div style={{ display: "flex", alignItems: "center" }}>
+                                        <Typography variant='h5'>Trained Weights</Typography>
+                                        <Tooltip
+                                            title='In this section you can upload the trained weights of the model you are going to simulate.'
+                                            arrow>
+                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                                <InfoIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </div>
+                                    <Input
+                                        fullWidth
+                                        value={trainedWeights}
+                                        onChange={(e) => {
+                                            setTrainedWeights(e.target.value);
                                             if (e.target.value) {
                                                 if (progress < 1) {
                                                     setProgress(1);
@@ -1332,4 +1363,4 @@ function FileUpload() {
     );
 }
 
-export default FileUpload;
+export default Simulations;

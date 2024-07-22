@@ -27,7 +27,7 @@ def default_fobj(w):
         "Objective function fobj is not properly defined.")
 
 
-def hybtrain(projhyb, file, user_id):
+def hybtrain(projhyb, file, user_id, trainedWeights):
     print("USer ID", user_id)
     fobj = default_fobj
 
@@ -162,7 +162,7 @@ def hybtrain(projhyb, file, user_id):
     if projhyb['method'] == 1:
         print("   Optimiser:              Trust Region Reflective")
         options = {
-            'xtol': 1e-15, #1e-10
+            'xtol': 1e-8, #1e-10
             'verbose': projhyb['display'],
             'max_nfev': 100 * projhyb['niter'] * projhyb['niteroptim'],
             'method': 'trf',
@@ -277,36 +277,48 @@ def hybtrain(projhyb, file, user_id):
 
         if projhyb['hessian'] == 1:
             options['hess'] = evaluator.hess_func
-    '''
-        if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
-            print("optios", options)
-            print("weights", weights)
-            result = least_squares(evaluator.fobj_func, x0=weights, **options)
-            print("result", result.x)
-            optimized_weights = result.x
 
-
-        elif projhyb["method"] == 2:  # QUASI-NEWTON
-            print("optios", options)
-            print("weights", weights)
-
-            if options.get('method', None) == 'trust-constr':
-                result = minimize(evaluator.fobj_func, x0=weights, hess=None, **options)
-            else:
-                result = minimize(evaluator.fobj_func, x0=weights, **options)
-            
-            optimized_weights = result.x
-            print("result", result.x)
-
-
-        elif projhyb["method"] == 3:  # SIMULATED ANNEALING
-            result = dual_annealing(evaluator.fobj_func, bounds=bounds, **options)
-            optimized_weights = result.x
-
-        elif projhyb["method"] == 4:  # ADAM
-            optimized_weights = adam_optimizer_train(ann, projhyb, evaluator, num_epochs, lr)
+        if trainedWeights == None:
     
-    '''
+            if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
+                print("optios", options)
+                print("weights", weights)
+                result = least_squares(evaluator.fobj_func, x0=weights, **options)
+                print("result", result.x)
+                optimized_weights = result.x
+
+
+            elif projhyb["method"] == 2:  # QUASI-NEWTON
+                print("optios", options)
+                print("weights", weights)
+
+                if options.get('method', None) == 'trust-constr':
+                    result = minimize(evaluator.fobj_func, x0=weights, hess=None, **options)
+                else:
+                    result = minimize(evaluator.fobj_func, x0=weights, **options)
+                
+                optimized_weights = result.x
+                print("result", result.x)
+
+
+            elif projhyb["method"] == 3:  # SIMULATED ANNEALING
+                result = dual_annealing(evaluator.fobj_func, bounds=bounds, **options)
+                optimized_weights = result.x
+
+            elif projhyb["method"] == 4:  # ADAM
+                optimized_weights = adam_optimizer_train(ann, projhyb, evaluator, num_epochs, lr)
+
+            testing = teststate(ann, user_id, projhyb, file, optimized_weights, projhyb['method'])
+
+            plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
+
+            return projhyb, optimized_weights, testing
+        
+        else:
+            testing = teststate(ann, user_id, projhyb, file, trainedWeights, projhyb['method'])
+
+            return projhyb, trainedWeights, testing
+    
     '''
     w = [-1.30284588e-03, -1.14245236e-02, -7.91831059e-04,  4.40199659e-03,
             1.72756969e-03, -5.00282668e-03, -2.01651446e-03, -3.93168300e-03,
@@ -316,7 +328,7 @@ def hybtrain(projhyb, file, user_id):
             1.70781475e-01,  4.07317944e-05,  1.00251807e+00,  9.94084879e-02,
             6.72249841e-06,  4.22301199e-02]
     '''
-    
+    '''
     w = [ 1.51872094e-03, -1.59585915e-03, -7.12253433e-04,  1.24342755e-04,
             7.74540120e-04,  1.99441788e-02, -1.26969915e-02, -3.67767926e-03,
             -1.40537984e-03, -5.17297002e-03, -1.85277002e-03,  1.74874954e-03,
@@ -351,20 +363,14 @@ def hybtrain(projhyb, file, user_id):
             4.96333638e-05,  1.54874169e-01,  1.70770553e-01,  3.46536551e-05,
             1.00330855e+00,  9.96498529e-02,  6.14672585e-06,  4.25715988e-02]
     '''
+    '''
     w =  [9.84452500e-04, 3.50165149e-05, 1.15788796e-02, 2.94717984e-04,
             2.61447847e-04, 3.10083638e-01, 9.53791945e-02, 3.72253961e-01]
 
     '''
-
+    '''
     optimized_weights = w   
-
-    
-    
-    testing = teststate(ann, user_id, projhyb, file, optimized_weights, projhyb['method'])
-
-    plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
-
-    return projhyb, optimized_weights, testing
+    '''
 
 def callback_wrapper(x, TrainRes, projhyb, istep):
     try:
@@ -862,7 +868,8 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         'r2_test': []
     }
     print("ranfe", projhyb['mlm']['nx'])
-    for i in range(projhyb['mlm']['nx']):
+    print("Species", projhyb['species'])
+    for i in range(projhyb["nspecies"]):
         actual_train = []
         actual_test = []
         predicted_train = []

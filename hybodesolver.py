@@ -7,6 +7,7 @@ import torch
 from sympy import *
 import sympy as sp
 from derivativeXY import numerical_derivativeXY
+import json 
 
 
 def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, jac, hess, w, batch, projhyb):
@@ -31,6 +32,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
 
     state = extract_species_values(projhyb, state)
     values = {}
+
     for range_y in range(0, len(rann_results)):
         values["rann"+str(range_y+1)] = rann_results[range_y].item()
 
@@ -50,24 +52,34 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     for i in range(1, projhyb["ncompartment"]+1):
         state_symbols.append(sp.Symbol(projhyb["compartment"][str(i)]["id"]))
     
+    
     statedict = ensure_dict(statedict)
 
+    print("statedict", statedict)
+    print("state", state)
+    print("State_Symbols", state_symbols)
+
+    '''
     state_symbols_upper = {str(symbol).upper() for symbol in state_symbols}
     
     for key, val in statedict.items():
         if key.upper() not in state_symbols_upper and key not in values:
             values[key] = val
-    
+    '''
 
     ### CHANGE THIS!!
+    
     '''
-    feed = 0.1250 * t
+    feed = statedict["Feed"]
+    
     values["D"] = feed / values["V"]
-    values["Sin"] = 500
+    values["Sin"] = 20
     '''
-    print("dict", state)
-    print("values", values)
 
+    for key, val in statedict.items():
+        values[key] = val
+
+    
     if jac is not None:
         jac = torch.tensor(jac, dtype=torch.float64)
     fstate = fstate_func(projhyb, values)
@@ -89,7 +101,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
         else:
             ucontrol1 = []
         
-
+        print("values", values)
         if jac != None:
             k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
         else:
@@ -268,7 +280,7 @@ def calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state):
 
 def calculate_state_final_nojac(state, h, k1_state, k2_state, k3_state, k4_state):
     stateFinal = []
-    
+
     for i, value in enumerate(state.values()):
         new_value = value + h * (k1_state[i] / 6 + k2_state[i] / 3 + k3_state[i] / 3 + k4_state[i] / 6)
         stateFinal.append(new_value)

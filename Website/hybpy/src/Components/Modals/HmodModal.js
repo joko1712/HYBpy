@@ -63,7 +63,7 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
 
     return (
         <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>Update HMOD Options</DialogTitle>
+            <DialogTitle>Update Machine Learning Options</DialogTitle>
             <DialogContent>
                 <Grid container spacing={2} marginTop={2}>
                     <Grid item xs={12}>
@@ -93,7 +93,7 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                             helperText='Activation function'>
                             <MenuItem value={1}>Tanh</MenuItem>
                             <MenuItem value={2}>ReLu</MenuItem>
-                            <MenuItem value={3}>LSTMLayer</MenuItem>
+                            <MenuItem value={3}>LSTM</MenuItem>
                         </TextField>
                         <Tooltip
                             title='Tanh: Effective in neural networks for its ability to center data around zero. ReLU: Effective in avoiding the vanishing gradient problem make it ideal for deep networks. LSTMLayer: Powerful for tasks involving sequences, such as time-series prediction by introducing a memory cell that can maintain its state over long periods.'

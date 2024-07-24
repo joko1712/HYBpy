@@ -166,9 +166,22 @@ export default function OldRuns() {
     const [selectedPlot, setSelectedPlot] = React.useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [runToDelete, setRunToDelete] = React.useState(null);
+    const [fileUrls, setFileUrls] = React.useState({
+        file1_url: "",
+        file2_url: "",
+        new_hmod_url: "",
+    });
 
-    const handleOpen = (run) => {
+    const [isloading, setIsLoading] = React.useState(false);
+
+    const handleOpen = async (run) => {
         setSelectedRun(run);
+        try {
+            const urls = await fetchFileUrls(userId, run.id);
+            setFileUrls(urls);
+        } catch (error) {
+            console.error("Error fetching file URLs:", error);
+        }
         setOpenModal(true);
     };
 
@@ -191,7 +204,20 @@ export default function OldRuns() {
         setDeleteDialogOpen(false);
     };
 
+    const fetchFileUrls = async (userId, runId) => {
+        const response = await fetch(
+            `http://localhost:5000/get-file-urls?user_id=${userId}&run_id=${runId}`
+        );
+        const data = await response.json();
+        if (response.ok) {
+            return data;
+        } else {
+            throw new Error(data.error);
+        }
+    };
+
     const deleteRun = async () => {
+        setIsLoading(true);
         try {
             const file1Url = runToDelete.file1;
             const folderPath = file1Url.split("/").slice(4, -1).join("/");
@@ -218,6 +244,7 @@ export default function OldRuns() {
         } catch (error) {
             console.error("Error deleting run:", error);
         }
+        setIsLoading(false);
     };
 
     const getDisplayValue = (key, value) => {
@@ -432,6 +459,7 @@ export default function OldRuns() {
                                                     <Typography
                                                         id='modal-modal-description'
                                                         sx={{ mt: 3 }}>
+                                                        <br />
                                                         Title: {selectedRun.description}
                                                         <br />
                                                         Plots:
@@ -483,11 +511,12 @@ export default function OldRuns() {
                                                             </Typography>
                                                         )}
                                                         <br />
-                                                        Run ID: {selectedRun.file1}
-                                                        <br />
                                                         Hmod: {selectedRun.file1_name}
                                                         <br />
                                                         CSV: {selectedRun.file2_name}
+                                                        <br />
+                                                        NewHmod:{" "}
+                                                        {selectedRun.response_data.new_hmod}
                                                         <br />
                                                         Mode: {mode}
                                                         <br />
@@ -517,6 +546,30 @@ export default function OldRuns() {
                                                                 available
                                                             </Typography>
                                                         )}
+                                                        <Button
+                                                            variant='contained'
+                                                            href={fileUrls.file1_url}
+                                                            target='_blank'
+                                                            download
+                                                            style={{ margin: "10px" }}>
+                                                            Download HMOD
+                                                        </Button>
+                                                        <Button
+                                                            variant='contained'
+                                                            href={fileUrls.file2_url}
+                                                            target='_blank'
+                                                            download
+                                                            style={{ margin: "10px" }}>
+                                                            Download CSV
+                                                        </Button>
+                                                        <Button
+                                                            variant='contained'
+                                                            href={fileUrls.new_hmod_url}
+                                                            target='_blank'
+                                                            download
+                                                            style={{ margin: "10px" }}>
+                                                            Download New HMOD
+                                                        </Button>
                                                     </Typography>
                                                 </>
                                             )}
@@ -570,13 +623,11 @@ export default function OldRuns() {
                                                 Cancel
                                             </Button>
                                             <Button
-                                                onClick={() => {
-                                                    console.log("Delete button clicked");
-                                                    deleteRun();
-                                                }}
+                                                onClick={deleteRun}
                                                 color='primary'
-                                                autoFocus>
-                                                Delete
+                                                autoFocus
+                                                disabled={isloading}>
+                                                {isloading ? "Deleting..." : "Delete"}
                                             </Button>
                                         </DialogActions>
                                     </Dialog>

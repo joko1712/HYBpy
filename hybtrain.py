@@ -338,12 +338,12 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
         '''
         optimized_weights = w   
         '''
-
+        '''
         w =  [9.84452500e-04, 3.50165149e-05, 1.15788796e-02, 2.94717984e-04,
             2.61447847e-04, 3.10083638e-01, 9.53791945e-02, 3.72253961e-01]
 
         trainedWeights = w
-
+        '''
 
         if trainedWeights == None:
     
@@ -377,13 +377,14 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
 
             save_model_to_h5(ann, "trained_model.h5")
             
-            saveNN("trained_model.h5", projhyb["inputs"], projhyb["outputs"], hmod, "Newhomd.hmod", optimized_weights, ann)
+            saveNN("trained_model.h5", projhyb["inputs"], projhyb["outputs"], hmod, "Newhmod.hmod", optimized_weights, ann)
+            newHmodFile = "Newhmod.hmod"
 
             testing = teststate(ann, user_id, projhyb, file, optimized_weights, projhyb['method'])
 
             plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
 
-            return projhyb, optimized_weights, testing
+            return projhyb, optimized_weights, testing, newHmodFile
         
         else:
             print("ANN", ann)
@@ -398,14 +399,15 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
 
             save_model_to_h5(ann, "trained_model.h5")
 
-            saveNN("trained_model.h5", projhyb["inputs"], projhyb["outputs"], hmod, "Newhomd.hmod", trainedWeights, ann)
+            saveNN("trained_model.h5", projhyb["inputs"], projhyb["outputs"], hmod, "Newhmod.hmod", trainedWeights, ann)
+            newHmodFile = "Newhmod.hmod"
 
-            #testing = teststate(ann, user_id, projhyb, file, trainedWeights, projhyb['method'])
+            testing = teststate(ann, user_id, projhyb, file, trainedWeights, projhyb['method'])
 
-            #plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
+            plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
 
 
-            return projhyb, trainedWeights, testing
+            return projhyb, trainedWeights, testing, newHmodFile
     
 
 def convert_numpy(obj):

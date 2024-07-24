@@ -32,6 +32,7 @@ import {
     Tooltip,
     tooltipClasses,
     Link,
+    Checkbox,
 } from "@mui/material";
 import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
@@ -177,7 +178,7 @@ function FileUpload() {
     const openMlmModal = () => {
         return new Promise((resolve) => {
             const saveMlmHandler = (options) => {
-                console.log("MLM Options in saveMlmHandler: ", options); // Ensure logging within the save handler
+                console.log("MLM Options in saveMlmHandler: ", options);
                 setMlmOptions(options);
                 resolve(options);
             };
@@ -371,7 +372,6 @@ function FileUpload() {
                     }).max= ${Math.max(...batchData.map((row) => row[y.id]))};\n`;
                 });
 
-                // Add the additional parameters here
                 mlmSection += `${
                     uniquePrefixes.values().next().value
                 }.mlm.options={'hidden nodes', [1]};\n`;
@@ -466,7 +466,7 @@ function FileUpload() {
 
                     initialValues = {
                         ...initialValues,
-                        hiddenNodes, // Correctly setting hidden nodes
+                        hiddenNodes,
                         layer: extractLayerValue(updatedContent, prefix, ""),
                         tau: extractValue(updatedContent, `${prefix}.time.TAU`, ""),
                         mode: extractValue(updatedContent, `${prefix}.mode`, ""),
@@ -661,7 +661,7 @@ function FileUpload() {
 
                             initialValues = {
                                 ...initialValues,
-                                hiddenNodes, // Correctly setting hidden nodes
+                                hiddenNodes,
                                 layer: extractLayerValue(content, prefix, ""),
                                 tau: extractValue(content, `${prefix}.time.TAU`, ""),
                                 mode: extractValue(content, `${prefix}.mode`, ""),
@@ -767,7 +767,7 @@ function FileUpload() {
             const data = await response.json();
             setBackendResponse(JSON.stringify(data, null, 2));
 
-            checkRunStatus(); // Start checking the run status
+            checkRunStatus();
         } catch (error) {
             console.error("Error uploading file:", error);
             setBackendResponse(`Error: ${error.message}`);
@@ -1059,12 +1059,17 @@ function FileUpload() {
                                         </Table>
                                     </TableContainer>
                                 </Paper>
-                                <div style={{ display: "flex", marginTop: "8px" }}>
-                                    <label htmlFor='csv-upload' style={{ flex: 1 }}>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        marginTop: "8px",
+                                        justifyContent: "flex-end",
+                                    }}>
+                                    <label htmlFor='csv-upload'>
                                         <Button
                                             fullWidth
                                             variant='contained'
-                                            sx={{ height: "100%", marginBottom: 2 }}
+                                            sx={{ height: "60%", marginBottom: 2 }}
                                             disabled={progress < 1}
                                             component='span'>
                                             <PublishIcon fontSize='large' />
@@ -1094,7 +1099,7 @@ function FileUpload() {
                                     onClose={() => setModalOpen(false)}
                                     maxWidth='lg'
                                     fullWidth>
-                                    <DialogTitle>Batch Data Visualization</DialogTitle>
+                                    <DialogTitle>Experimental Data Visualization</DialogTitle>
                                     <DialogContent>
                                         <Tabs
                                             value={tabIndex}
@@ -1134,8 +1139,7 @@ function FileUpload() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 400,
-                                        overflow: "auto",
+                                        height: 600,
                                     }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
                                         <Typography variant='h5'>HMOD</Typography>
@@ -1147,25 +1151,39 @@ function FileUpload() {
                                             </IconButton>
                                         </Tooltip>
                                     </div>
-                                    <Typography variant='h7'>
+                                    <Typography variant='subtitle1' sx={{ mt: 2 }}>
                                         Step 2. Please select HMOD hybrid/standard model (.hmod).
                                         The HMOD file is an intermediate format that enables
                                         communication between the essential components of the
                                         mechanistic and hybrid models. You can use the{" "}
-                                        <Link>SBML2HYB</Link> tool to create a hybrid HMOD model
-                                        format from any SBML model or see <Link> Example 1</Link>{" "}
-                                        and <Link> Example 2</Link> to edit/create your own standard
-                                        HMOD model.
+                                        <Link href='#'>SBML2HYB</Link> tool to create a hybrid HMOD
+                                        model format from any SBML model or see{" "}
+                                        <Link href='#'> Example 1</Link> and{" "}
+                                        <Link href='#'> Example 2</Link> to edit/create your own
+                                        standard HMOD model.
                                     </Typography>
-                                    <pre>{file1Content}</pre>{" "}
+                                    <Typography variant='body1' sx={{ mt: 2 }}>
+                                        {selectedFile1
+                                            ? selectedFile1.name
+                                            : "Insert your HMOD file containing the information about the mechanistic model and the settings for the machine learning model here."}
+                                    </Typography>
+                                    <div style={{ overflowY: "auto", flex: 1 }}>
+                                        <pre>{file1Content}</pre>
+                                    </div>
                                 </Paper>
-                                <div style={{ display: "flex", marginTop: "8px" }}>
-                                    <label htmlFor='hmod-upload' style={{ flex: 1 }}>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        marginTop: "8px",
+                                        justifyContent: "flex-end",
+                                    }}>
+                                    <label htmlFor='hmod-upload'>
                                         <Button
                                             component='span'
                                             fullWidth
                                             variant='contained'
-                                            sx={{ height: "100%", marginBottom: 2 }}
+                                            sx={{ height: "60%", marginBottom: 2 }}
                                             disabled={progress < 2}>
                                             <PublishIcon fontSize='large' />
                                             Upload Hmod
@@ -1191,93 +1209,97 @@ function FileUpload() {
                                 </div>
                             </Grid>
 
-                            <Grid item xs={7}>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        marginBottom: 2,
-                                    }}>
-                                    <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'>Batch Selection</Typography>
-                                        <Tooltip
-                                            title='In this section you can select the batch selection mode. Manual is for selecting train and test batches manually from a list and Automatic is for the selection to be done randomly (with a 2/3; 1/3 split).'
-                                            arrow>
-                                            <IconButton size='small' sx={{ ml: 1 }}>
-                                                <InfoIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </div>
-                                    <Select
-                                        labelId='Mode'
-                                        id='Mode'
-                                        value={mode}
-                                        style={{ marginTop: 20 }}
-                                        onChange={handleModeChange}
-                                        disabled={progress < 3}>
-                                        <MenuItem value={"1"}>Manual</MenuItem>
-                                        <MenuItem value={"2"}>Automatic</MenuItem>
-                                    </Select>
-                                </Paper>
-                            </Grid>
-                            {(mode === "1" && progress >= 4 && (
-                                <>
-                                    <Grid item xs={3}>
-                                        <h3>Available Batches: {availableBatches.join(", ")}</h3>
-                                    </Grid>
-                                    <Grid item xs={3}>
-                                        <h3>Select Train Batches: </h3>
-                                        {availableBatches.map((batch) => (
-                                            <div key={batch}>
-                                                <input
-                                                    type='checkbox'
-                                                    checked={Array.from(train_batches).includes(
-                                                        batch
-                                                    )}
-                                                    onChange={() =>
-                                                        handleTrainBatchSelection(batch)
-                                                    }
-                                                />
-                                                {batch}
-                                            </div>
-                                        ))}
-                                    </Grid>
-                                    <Grid item xs={3}>
-                                        <h3>Select Test Batches: </h3>
-                                        {availableBatches.map((batch) => (
-                                            <div key={batch}>
-                                                <input
-                                                    type='checkbox'
-                                                    checked={Array.from(test_batches).includes(
-                                                        batch
-                                                    )}
-                                                    onChange={() => handleTestBatchSelection(batch)}
-                                                />
-                                                {batch}
-                                            </div>
-                                        ))}
-                                    </Grid>
-                                    <Grid item xs={4}>
-                                        <Button
-                                            onClick={() => handleUpload()}
-                                            fullWidth
-                                            variant='contained'
-                                            sx={{ height: "100%" }}
-                                            disabled={
-                                                train_batches.size === 0 ||
-                                                test_batches.size === 0 ||
-                                                description === ""
-                                            }>
-                                            <PublishIcon fontSize='large' />
-                                            Upload Information
-                                        </Button>
-                                    </Grid>
-                                </>
-                            )) ||
-                                (mode === "2" && progress >= 5 && (
+                            <Grid container spacing={2}>
+                                <Grid item xs={7}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            marginBottom: 2,
+                                        }}>
+                                        <div style={{ display: "flex", alignItems: "center" }}>
+                                            <Typography variant='h5'>Batch Selection</Typography>
+                                            <Tooltip
+                                                title='The experimental dataset selections can be manually adjust or automatically split into training/test sets (2/3 of the data split for the trainning).'
+                                                arrow>
+                                                <IconButton size='small' sx={{ ml: 1 }}>
+                                                    <InfoIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </div>
+                                        <Select
+                                            labelId='Mode'
+                                            id='Mode'
+                                            value={mode}
+                                            sx={{ mt: 2 }}
+                                            onChange={handleModeChange}
+                                            disabled={progress < 3}>
+                                            <MenuItem value={"1"}>Manual</MenuItem>
+                                            <MenuItem value={"2"}>Automatic</MenuItem>
+                                        </Select>
+                                    </Paper>
+                                </Grid>
+
+                                {mode === "1" && progress >= 4 && (
                                     <>
-                                        <Grid item xs={4}></Grid>
+                                        <Grid item xs={12}>
+                                            <Typography variant='h6'>
+                                                Available Batches: {availableBatches.join(", ")}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                            <Typography variant='h6'>
+                                                Select Train Batches:{" "}
+                                            </Typography>
+                                            {availableBatches.map((batch) => (
+                                                <div key={batch}>
+                                                    <Checkbox
+                                                        checked={train_batches.has(batch)}
+                                                        onChange={() =>
+                                                            handleTrainBatchSelection(batch)
+                                                        }
+                                                    />
+                                                    {batch}
+                                                </div>
+                                            ))}
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                            <Typography variant='h6'>
+                                                Select Test Batches:{" "}
+                                            </Typography>
+                                            {availableBatches.map((batch) => (
+                                                <div key={batch}>
+                                                    <Checkbox
+                                                        checked={test_batches.has(batch)}
+                                                        onChange={() =>
+                                                            handleTestBatchSelection(batch)
+                                                        }
+                                                    />
+                                                    {batch}
+                                                </div>
+                                            ))}
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <Button
+                                                onClick={handleUpload}
+                                                fullWidth
+                                                variant='contained'
+                                                sx={{ mt: 2 }}
+                                                disabled={
+                                                    train_batches.size === 0 ||
+                                                    test_batches.size === 0 ||
+                                                    description === ""
+                                                }>
+                                                <PublishIcon fontSize='large' />
+                                                Upload Information
+                                            </Button>
+                                        </Grid>
+                                    </>
+                                )}
+
+                                {mode === "2" && progress >= 5 && (
+                                    <Grid item xs={12}>
                                         <CustomWidthTooltip
                                             title={
                                                 tooltipDisplay === "block"
@@ -1286,20 +1308,19 @@ function FileUpload() {
                                             }
                                             followCursor
                                             arrow>
-                                            <Grid item xs={6}>
-                                                <Button
-                                                    onClick={() => handleUpload()}
-                                                    fullWidth
-                                                    variant='contained'
-                                                    sx={{ height: "100%" }}
-                                                    disabled={description === ""}>
-                                                    <PublishIcon fontSize='large' />
-                                                    Upload Information
-                                                </Button>
-                                            </Grid>
+                                            <Button
+                                                onClick={handleUpload}
+                                                fullWidth
+                                                variant='contained'
+                                                sx={{ mt: 2 }}
+                                                disabled={description === ""}>
+                                                <PublishIcon fontSize='large' />
+                                                Upload Information
+                                            </Button>
                                         </CustomWidthTooltip>
-                                    </>
-                                ))}
+                                    </Grid>
+                                )}
+                            </Grid>
                         </Grid>
                     </Container>
                 </Box>

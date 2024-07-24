@@ -17,17 +17,29 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase-config";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { useEffect } from "react";
 import ListItemText from "@mui/material/ListItemText";
 import ListIcon from "@mui/icons-material/List";
-import { blue } from "@mui/material/colors";
-import { ListItemButton } from "@mui/material";
+import { blue, red } from "@mui/material/colors";
 import Modal from "@mui/material/Modal";
 import logo from "../Image/HYBpyINVIS_logo.png";
-import ImageList from "@mui/material/ImageList";
-import ImageListItem from "@mui/material/ImageListItem";
+import DeleteIcon from "@mui/icons-material/Delete";
+import {
+    ListItemButton,
+    TextField,
+    MenuItem,
+    Select,
+    FormControl,
+    InputLabel,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Button,
+} from "@mui/material";
 
 const drawerWidth = 200;
 
@@ -142,12 +154,18 @@ export default function OldRuns() {
     };
 
     const [runs, setRuns] = React.useState([]);
+    const [searchQuery, setSearchQuery] = React.useState("");
+    const [filterMode, setFilterMode] = React.useState("");
+    const [filterFile, setFilterFile] = React.useState("");
     const userId = auth.currentUser.uid;
     const [mode, setMode] = React.useState("Error");
+    const [date, setDate] = React.useState("Error");
 
     const [openModal, setOpenModal] = React.useState(false);
     const [selectedRun, setSelectedRun] = React.useState(null);
     const [selectedPlot, setSelectedPlot] = React.useState(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [runToDelete, setRunToDelete] = React.useState(null);
 
     const handleOpen = (run) => {
         setSelectedRun(run);
@@ -161,6 +179,45 @@ export default function OldRuns() {
 
     const handlePlotClick = (url) => {
         setSelectedPlot(url);
+    };
+
+    const handleDeleteDialogOpen = (run) => {
+        setRunToDelete(run);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteDialogClose = () => {
+        setRunToDelete(null);
+        setDeleteDialogOpen(false);
+    };
+
+    const deleteRun = async () => {
+        try {
+            const file1Url = runToDelete.file1;
+            const folderPath = file1Url.split("/").slice(4, -1).join("/");
+
+            const response = await fetch("http://localhost:5000/delete-run", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    run_id: runToDelete.id,
+                    folder_path: folderPath,
+                }),
+            });
+            const result = await response.json();
+            console.log("Delete response:", result);
+            if (response.ok) {
+                setRuns((prevRuns) => prevRuns.filter((run) => run.id !== runToDelete.id));
+                handleDeleteDialogClose();
+            } else {
+                console.error("Error deleting run:", result.error);
+            }
+        } catch (error) {
+            console.error("Error deleting run:", error);
+        }
     };
 
     const getDisplayValue = (key, value) => {
@@ -190,15 +247,25 @@ export default function OldRuns() {
                 ...doc.data(),
             }));
             setRuns(latestRun);
-            if (latestRun[0].mode === 1) {
-                setMode("Manual");
-            } else {
-                setMode("Automatic");
+            if (latestRun.length > 0) {
+                setMode(latestRun[0].mode === 1 ? "Manual" : "Automatic");
+                setDate(latestRun[0].createdAt.toDate().toLocaleString());
             }
         };
 
         fetchLatestRun();
     }, [userId]);
+
+    const filteredRuns = runs.filter((run) => {
+        return (
+            (searchQuery === "" ||
+                run.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
+            (filterMode === "" || run.mode.toString() === filterMode) &&
+            (filterFile === "" ||
+                run.file1_name.toLowerCase().includes(filterFile.toLowerCase()) ||
+                run.file2_name.toLowerCase().includes(filterFile.toLowerCase()))
+        );
+    });
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -269,10 +336,42 @@ export default function OldRuns() {
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
                         <h1>
-                            <strong>Data</strong>
+                            <strong>List of Projects</strong>
                         </h1>
+                        <Box sx={{ mb: 2 }}>
+                            <TextField
+                                label='Search by Description'
+                                variant='outlined'
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                fullWidth
+                                sx={{ mb: 2 }}
+                            />
+                            <FormControl fullWidth sx={{ mb: 2 }}>
+                                <InputLabel id='filter-mode-label'>Filter by Mode</InputLabel>
+                                <Select
+                                    labelId='filter-mode-label'
+                                    value={filterMode}
+                                    onChange={(e) => setFilterMode(e.target.value)}
+                                    label='Filter by Mode'>
+                                    <MenuItem value=''>
+                                        <em>None</em>
+                                    </MenuItem>
+                                    <MenuItem value='1'>Manual</MenuItem>
+                                    <MenuItem value='2'>Automatic</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <TextField
+                                label='Filter by File Name'
+                                variant='outlined'
+                                value={filterFile}
+                                onChange={(e) => setFilterFile(e.target.value)}
+                                fullWidth
+                                sx={{ mb: 2 }}
+                            />
+                        </Box>
                         <Grid container spacing={3}>
-                            <Grid item xs={20}>
+                            <Grid item xs={12}>
                                 <Paper
                                     sx={{
                                         p: 2,
@@ -280,15 +379,21 @@ export default function OldRuns() {
                                         flexDirection: "column",
                                     }}>
                                     <List>
-                                        {runs.map((run) => (
+                                        {filteredRuns.map((run) => (
                                             <ListItemButton
                                                 key={run.id}
                                                 onClick={() => handleOpen(run)}>
                                                 <ListItemText
                                                     primary={`Title: ${run.description}`}
-                                                    secondary={`Hmod: ${run.file1_name} - CSV: ${run.file2_name} -Mode: ${mode}`}
+                                                    secondary={`HMOD:${run.file1_name} - CSV:${run.file2_name} - Mode:${mode} - CreatedAt:${date}`}
                                                 />
-                                                <p>View Run: </p>
+                                                <ListItemText
+                                                    style={{
+                                                        maxWidth: "fit-content",
+                                                    }}>
+                                                    View Projects:
+                                                </ListItemText>
+
                                                 <IconButton
                                                     sx={{ color: blue[500] }}
                                                     onClick={(e) => {
@@ -296,6 +401,14 @@ export default function OldRuns() {
                                                         handleOpen(run);
                                                     }}>
                                                     <ListIcon fontSize='large' />
+                                                </IconButton>
+                                                <IconButton
+                                                    sx={{ color: red[500] }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteDialogOpen(run);
+                                                    }}>
+                                                    <DeleteIcon fontSize='large' />
                                                 </IconButton>
                                             </ListItemButton>
                                         ))}
@@ -312,7 +425,9 @@ export default function OldRuns() {
                                                         id='modal-modal-title'
                                                         variant='h4'
                                                         component='h2'>
-                                                        <strong>Details</strong>
+                                                        <strong>
+                                                            Model Evaluation: Time Series Prediction
+                                                        </strong>
                                                     </Typography>
                                                     <Typography
                                                         id='modal-modal-description'
@@ -433,6 +548,38 @@ export default function OldRuns() {
                                             />
                                         </Box>
                                     </Modal>
+                                    <Dialog
+                                        open={deleteDialogOpen}
+                                        onClose={handleDeleteDialogClose}
+                                        aria-labelledby='alert-dialog-title'
+                                        aria-describedby='alert-dialog-description'>
+                                        <DialogTitle id='alert-dialog-title'>
+                                            {"Delete Run"}
+                                        </DialogTitle>
+                                        <DialogContent>
+                                            <DialogContentText id='alert-dialog-description'>
+                                                Are you sure you want to delete:{" "}
+                                                {runToDelete ? runToDelete.description : ""}? This
+                                                action cannot be undone.
+                                            </DialogContentText>
+                                        </DialogContent>
+                                        <DialogActions>
+                                            <Button
+                                                onClick={handleDeleteDialogClose}
+                                                color='primary'>
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                onClick={() => {
+                                                    console.log("Delete button clicked");
+                                                    deleteRun();
+                                                }}
+                                                color='primary'
+                                                autoFocus>
+                                                Delete
+                                            </Button>
+                                        </DialogActions>
+                                    </Dialog>
                                 </Paper>
                             </Grid>
                         </Grid>

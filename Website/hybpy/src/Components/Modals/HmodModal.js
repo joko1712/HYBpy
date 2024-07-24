@@ -63,7 +63,10 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
 
     return (
         <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>Update Machine Learning Options</DialogTitle>
+            <DialogTitle>Edit HMOD Options</DialogTitle>
+            <DialogContent>
+                In here you can change the Trainning options as you desire
+            </DialogContent>
             <DialogContent>
                 <Grid container spacing={2} marginTop={2}>
                     <Grid item xs={12}>

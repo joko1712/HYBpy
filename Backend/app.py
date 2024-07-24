@@ -26,8 +26,8 @@ from firebase_admin import credentials, firestore, storage
 
 load_dotenv()
 
-#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
-cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
+cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
+#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
 firebase_admin.initialize_app(cred, {
     'storageBucket': os.getenv("STORAGE_BUCKET_NAME")
 })
@@ -80,7 +80,6 @@ def upload_plots_to_gcs(user_id, folder_id):
             for blob in blobs_to_delete:
                 blob.delete()
     
-    # Filter out duplicate URLs from plot_urls
     unique_plot_urls = []
     unique_base_names = set()
     
@@ -233,7 +232,7 @@ def upload_file():
 
         logging.debug("Data prepared for training: %s", data)
 
-        projhyb, trainData, metrics = hybtrain(projhyb, data, user_id, trainedWeights)
+        projhyb, trainData, metrics = hybtrain(projhyb, data, user_id, trainedWeights, file1.filename)
 
         logging.debug("Training complete: projhyb=%s, trainData=%s", projhyb, trainData)
 
@@ -254,7 +253,6 @@ def upload_file():
             "plots": plot_urls
         })
 
-        # Clean up files from local storage
         delete_directory(os.path.join('plots', user_id))
 
         return json.dumps(response_data), 200
@@ -318,7 +316,6 @@ def run_status():
             if run_data.get('status') == 'in_progress':
                 return json.dumps({"status": "in_progress"}), 200
             elif run_data.get('status') == 'completed':
-                #ADD DATA
                 return json.dumps({"status": "completed"}), 200
             else:
                 return json.dumps({"status": "unknown"}), 200
@@ -358,6 +355,75 @@ def get_template_csv():
     except Exception as e:
         logging.error("Error in get_template: %s", str(e), exc_info=True)
         return {"error": str(e)}, 500
+
+
+@app.route('/delete-run', methods=['DELETE'])
+def delete_run():
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        run_id = data.get('run_id')
+        folder_path = data.get('folder_path')
+
+        logging.debug(f"Received delete request for user_id={user_id}, run_id={run_id}, folder_path={folder_path}")
+
+        if not user_id or not run_id or not folder_path:
+            logging.error("User ID, Run ID, or Folder Path is missing")
+            return {"error": "User ID, Run ID, and Folder Path are required"}, 400
+
+        user_ref = db.collection('users').document(user_id)
+        run_ref = user_ref.collection('runs').document(run_id)
+        run_data = run_ref.get().to_dict()
+
+        if not run_data:
+            logging.error(f"No run data found for run_id={run_id}")
+            return {"error": "Run not found"}, 404
+
+        bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
+
+        def delete_blob(blob_path):
+            try:
+                blob = bucket.blob(blob_path)
+                blob.delete()
+                logging.debug(f"Deleted blob: {blob_path}")
+            except Exception as e:
+                logging.error(f"Error deleting blob: {blob_path}, error: {str(e)}")
+
+        folder_prefix = folder_path + '/'
+        blobs = bucket.list_blobs(prefix=folder_prefix)
+        for blob in blobs:
+            logging.debug(f"Attempting to delete blob: {blob.name}")
+            delete_blob(blob.name)
+
+        remaining_blobs = list(bucket.list_blobs(prefix=folder_prefix))
+        if remaining_blobs:
+            logging.warning(f"Some blobs were not deleted: {remaining_blobs}")
+        else:
+            logging.debug("All blobs in main folder successfully deleted.")
+
+        plots_folder_prefix = f"{user_id}/plots/{folder_path.split('/')[-1]}/"
+        blobs = bucket.list_blobs(prefix=plots_folder_prefix)
+        for blob in blobs:
+            logging.debug(f"Attempting to delete blob: {blob.name}")
+            delete_blob(blob.name)
+
+        remaining_blobs = list(bucket.list_blobs(prefix=plots_folder_prefix))
+        if remaining_blobs:
+            logging.warning(f"Some blobs were not deleted in plots folder: {remaining_blobs}")
+        else:
+            logging.debug("All blobs in plots folder successfully deleted.")
+
+        run_ref.delete()
+        logging.debug(f"Deleted Firestore document for run_id={run_id}")
+
+        return {"message": "Run and associated files deleted successfully"}, 200
+
+    except Exception as e:
+        logging.error("Error deleting run: %s", str(e), exc_info=True)
+        return {"error": str(e)}, 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -48,7 +48,6 @@ const MlmModal = ({
     };
 
     const handleSaveChanges = () => {
-        console.log("Saving MLM options:", { nx, ny, xOptions, yOptions }); // Log before saving
         handleSave({ nx, ny, xOptions, yOptions });
         handleClose();
     };
@@ -64,7 +63,7 @@ const MlmModal = ({
 
     return (
         <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>Update MLM Options</DialogTitle>
+            <DialogTitle>Add ML Block to HMOD</DialogTitle>
             <DialogContent>
                 <Grid container spacing={2} marginTop={2}>
                     <Grid item xs={12}>

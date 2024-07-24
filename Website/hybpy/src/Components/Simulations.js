@@ -178,7 +178,7 @@ function Simulations() {
     const openMlmModal = () => {
         return new Promise((resolve) => {
             const saveMlmHandler = (options) => {
-                console.log("MLM Options in saveMlmHandler: ", options); // Ensure logging within the save handler
+                console.log("MLM Options in saveMlmHandler: ", options);
                 setMlmOptions(options);
                 resolve(options);
             };
@@ -372,7 +372,6 @@ function Simulations() {
                     }).max= ${Math.max(...batchData.map((row) => row[y.id]))};\n`;
                 });
 
-                // Add the additional parameters here
                 mlmSection += `${
                     uniquePrefixes.values().next().value
                 }.mlm.options={'hidden nodes', [1]};\n`;
@@ -467,7 +466,7 @@ function Simulations() {
 
                     initialValues = {
                         ...initialValues,
-                        hiddenNodes, // Correctly setting hidden nodes
+                        hiddenNodes,
                         layer: extractLayerValue(updatedContent, prefix, ""),
                         tau: extractValue(updatedContent, `${prefix}.time.TAU`, ""),
                         mode: extractValue(updatedContent, `${prefix}.mode`, ""),
@@ -662,7 +661,7 @@ function Simulations() {
 
                             initialValues = {
                                 ...initialValues,
-                                hiddenNodes, // Correctly setting hidden nodes
+                                hiddenNodes,
                                 layer: extractLayerValue(content, prefix, ""),
                                 tau: extractValue(content, `${prefix}.time.TAU`, ""),
                                 mode: extractValue(content, `${prefix}.mode`, ""),
@@ -769,7 +768,7 @@ function Simulations() {
             const data = await response.json();
             setBackendResponse(JSON.stringify(data, null, 2));
 
-            checkRunStatus(); // Start checking the run status
+            checkRunStatus();
         } catch (error) {
             console.error("Error uploading file:", error);
             setBackendResponse(`Error: ${error.message}`);

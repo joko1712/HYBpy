@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sys
 import os
@@ -15,6 +15,7 @@ import logging
 import uuid
 import shutil
 matplotlib.use('Agg')
+import mimetypes
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from hybtrain import hybtrain
@@ -44,7 +45,12 @@ def upload_file_to_storage(file, user_id, filename, folder_id):
     file.seek(0)
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
     blob = bucket.blob(f"{user_id}/{folder_id}/{filename}")
-    blob.upload_from_file(file, content_type=file.content_type)
+
+    content_type, _ = mimetypes.guess_type(filename)
+    if not content_type:
+        content_type = 'application/octet-stream' 
+
+    blob.upload_from_file(file, content_type=content_type)
     blob.make_public()
     return blob.public_url
 
@@ -59,7 +65,7 @@ def upload_plots_to_gcs(user_id, folder_id):
         blob.upload_from_filename(filename)
         blob.make_public()
         plot_urls.append(blob.public_url)
-    
+
     all_blobs = list(bucket.list_blobs(prefix=f'{user_id}/plots/{folder_id}/'))
     seen_files = {}
     
@@ -74,20 +80,15 @@ def upload_plots_to_gcs(user_id, folder_id):
     
     for base_name, blobs in seen_files.items():
         if len(blobs) > 1:
-            blobs_to_keep = [blobs[0]]
-            blobs_to_delete = blobs[1:]
+            blobs_to_delete = blobs[1:]  # Keep the first one, delete the rest
             
             for blob in blobs_to_delete:
-                blob.delete()
-    
-    unique_plot_urls = []
-    unique_base_names = set()
-    
-    for url in plot_urls:
-        base_name = re.sub(r'_[0-9]+\.png$', '', os.path.basename(url))
-        if base_name not in unique_base_names:
-            unique_base_names.add(base_name)
-            unique_plot_urls.append(url)
+                try:
+                    blob.delete()
+                except Exception as e:
+                    logging.error(f"Error deleting blob: {blob.name}, error: {str(e)}")
+
+    unique_plot_urls = [blob.public_url for blob_list in seen_files.values() for blob in blob_list]
 
     return unique_plot_urls
 
@@ -112,7 +113,7 @@ def delete_directory(directory_path):
 def upload_file():
     try:
         logging.debug("Form data received: %s", request.form)
-        
+
         file1 = request.files.get('file1')
         file2 = request.files.get('file2')
         mode = request.form.get('mode')
@@ -120,7 +121,7 @@ def upload_file():
         description = request.form.get('description')
         train_batches = request.form.get('train_batches').split(",") if request.form.get('train_batches') else []
         test_batches = request.form.get('test_batches').split(",") if request.form.get('test_batches') else []
-        
+
         HiddenNodes = request.form.get('HiddenNodes')
         Layer = request.form.get('Layer')
         Tau = request.form.get('Tau')
@@ -132,18 +133,18 @@ def upload_file():
         Nstep = request.form.get('Nstep')
         Bootstrap = request.form.get('Bootstrap')
 
-        trainedWeights = request.form.get('trainedWeights')
-        if trainedWeights:
-            trainedWeights = trainedWeights
+        trained_weights = request.form.get('trained_weights')
+        if trained_weights:
+            trained_weights = trained_weights.strip('[]"').replace('\n', '').replace(' ', '')
+            trained_weights = list(map(float, trained_weights.split(',')))
         else:
-            trainedWeights = None
+            trained_weights = None
 
-        
-        print("tranedWeights", trainedWeights)
+        print("trained_weights", trained_weights)
 
         if not file1 or not file2:
             return {"error": "Both files are required"}, 400
-        
+
         logging.debug("Files received: file1=%s, file2=%s", file1.filename, file2.filename)
 
         file1.save(file1.filename)
@@ -156,11 +157,8 @@ def upload_file():
 
         if not file1_url or not file2_url:
             return {"error": "Failed to upload files to storage"}, 500
-        
-        logging.debug("Files uploaded: file1_url=%s, file2_url=%s", file1_url, file2_url)
 
         projhyb = hybdata(file1.filename)
-        logging.debug("projhyb loaded: %s", projhyb)
 
         user_ref = db.collection('users').document(user_id)
         run_ref = user_ref.collection('runs').document()
@@ -171,7 +169,7 @@ def upload_file():
             "file1_name": file1.filename,
             "file2_name": file2.filename,
             "description": description,
-            "trained_weights": trainedWeights,
+            "trained_weights": trained_weights,
             "mode": mode,
             "createdAt": firestore.SERVER_TIMESTAMP,
             "MachineLearning": {
@@ -210,8 +208,6 @@ def upload_file():
                 for h, value in zip(headers[1:], row[1:]):
                     data[current_time_group][current_time][h] = value
 
-        logging.debug("Data loaded from file2: %s", data)
-
         if mode == "1":
             for batch in train_batches:
                 if batch in data:
@@ -230,21 +226,23 @@ def upload_file():
         count = len(data)
         data["nbatch"] = count
 
-        logging.debug("Data prepared for training: %s", data)
 
-        projhyb, trainData, metrics = hybtrain(projhyb, data, user_id, trainedWeights, file1.filename)
+        projhyb, trainData, metrics, newHmodFile = hybtrain(projhyb, data, user_id, trained_weights, file1.filename)
 
-        logging.debug("Training complete: projhyb=%s, trainData=%s", projhyb, trainData)
+        new_hmod_url = upload_file_to_storage(open(newHmodFile, 'rb'), user_id, newHmodFile, folder_id)
 
         projhyb_serializable = ensure_json_serializable(projhyb)
         trainData_serializable = ensure_json_serializable(trainData)
-        
+
         response_data = {
             "message": "Files processed successfully",
             "projhyb": projhyb_serializable,
             "trainData": trainData_serializable,
-            "metrics": metrics
+            "metrics": metrics,
+            "new_hmod_url": new_hmod_url,
+            "new_hmod": newHmodFile
         }
+        
 
         plot_urls = upload_plots_to_gcs(user_id, folder_id)
         run_ref.update({
@@ -254,6 +252,11 @@ def upload_file():
         })
 
         delete_directory(os.path.join('plots', user_id))
+
+        os.remove(file1.filename)
+        os.remove(file2.filename)
+        os.remove(newHmodFile)
+        os.remove("trained_model.h5")
 
         return json.dumps(response_data), 200
 
@@ -293,7 +296,6 @@ def get_available_batches():
                         data[current_time_group][current_time][h] = value
             
             all_batches = list(data.keys())
-            logging.debug("Available batches: %s", all_batches)
 
             return json.dumps(all_batches), 200
         
@@ -365,10 +367,7 @@ def delete_run():
         run_id = data.get('run_id')
         folder_path = data.get('folder_path')
 
-        logging.debug(f"Received delete request for user_id={user_id}, run_id={run_id}, folder_path={folder_path}")
-
         if not user_id or not run_id or not folder_path:
-            logging.error("User ID, Run ID, or Folder Path is missing")
             return {"error": "User ID, Run ID, and Folder Path are required"}, 400
 
         user_ref = db.collection('users').document(user_id)
@@ -376,7 +375,6 @@ def delete_run():
         run_data = run_ref.get().to_dict()
 
         if not run_data:
-            logging.error(f"No run data found for run_id={run_id}")
             return {"error": "Run not found"}, 404
 
         bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
@@ -385,14 +383,12 @@ def delete_run():
             try:
                 blob = bucket.blob(blob_path)
                 blob.delete()
-                logging.debug(f"Deleted blob: {blob_path}")
             except Exception as e:
                 logging.error(f"Error deleting blob: {blob_path}, error: {str(e)}")
 
         folder_prefix = folder_path + '/'
         blobs = bucket.list_blobs(prefix=folder_prefix)
         for blob in blobs:
-            logging.debug(f"Attempting to delete blob: {blob.name}")
             delete_blob(blob.name)
 
         remaining_blobs = list(bucket.list_blobs(prefix=folder_prefix))
@@ -422,8 +418,29 @@ def delete_run():
         logging.error("Error deleting run: %s", str(e), exc_info=True)
         return {"error": str(e)}, 500
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/get-file-urls', methods=['GET'])
+def get_file_urls():
+    user_id = request.args.get('user_id')
+    run_id = request.args.get('run_id')
+    
+    try:
+        run_ref = db.collection('users').document(user_id).collection('runs').document(run_id)
+        run_data = run_ref.get().to_dict()
+
+        if not run_data:
+            return jsonify({"error": "Run not found"}), 404
+        
+        file1_url = run_data.get('file1')
+        file2_url = run_data.get('file2')
+        new_hmod_url = run_data.get('response_data', {}).get('new_hmod_url')
+
+        return jsonify({
+            "file1_url": file1_url,
+            "file2_url": file2_url,
+            "new_hmod_url": new_hmod_url
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

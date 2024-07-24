@@ -736,7 +736,7 @@ function Simulations() {
         formData.append("mode", mode);
         formData.append("userId", auth.currentUser.uid);
         formData.append("description", description);
-        formData.append("trained_weights", Array.from(trainedWeights).join(","));
+        formData.append("trained_weights", JSON.stringify(trainedWeights));
         formData.append("train_batches", Array.from(train_batches).join(","));
         formData.append("test_batches", Array.from(test_batches).join(","));
         formData.append("user_id", auth.currentUser.uid);

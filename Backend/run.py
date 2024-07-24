@@ -13,7 +13,6 @@ from hybdata import hybdata
 from csv2json import label_batches, manual_label, random_label, add_state_and_time_to_data
 
 projhyb = hybdata("Backend/Chass1.hmod")
-print(projhyb)
 
 
 
@@ -65,7 +64,6 @@ user_id = 'Joko'
 projhyb, trainData = hybtrain(projhyb, data, user_id)
 response_data = {
     "message": "Files processed successfully",
-    "projhyb": projhyb,  # Assuming this is serializable to JSON
-    "trainData": trainData  # Assuming this is serializable to JSON
+    "projhyb": projhyb,
+    "trainData": trainData 
 }
-print(projhyb, trainData)

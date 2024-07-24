@@ -127,7 +127,7 @@ export default function Dashboard() {
     const getPlotTitle = (url) => {
         const parts = url.split("/");
         const fileName = parts[parts.length - 1];
-        if (url.includes("predicted_vs_actual")) {
+        if (url.includes("predicted_vs_observed")) {
             const species = fileName.split("_")[3].toUpperCase();
             return `PREDICTED VS ACTUAL - ${species}`;
         } else {
@@ -162,7 +162,7 @@ export default function Dashboard() {
         if (showMetabolites) {
             return plots.filter((url) => url.includes("metabolite"));
         } else {
-            return plots.filter((url) => url.includes("predicted_vs_actual"));
+            return plots.filter((url) => url.includes("predicted_vs_observed"));
         }
     };
 
@@ -320,7 +320,7 @@ export default function Dashboard() {
                                         onClick={toggleShowMetabolites}
                                         sx={{ mb: 2 }}>
                                         {showMetabolites
-                                            ? "Show Predicted vs Actual Plots"
+                                            ? "Show Predicted vs Observed Plots"
                                             : "Show Metabolite Plots"}
                                     </Button>
                                     {getFilteredPlots().length > 0 ? (

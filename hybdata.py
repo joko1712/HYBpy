@@ -57,6 +57,8 @@ def hybdata(filename):
     admini = 0
     addrop = 0
     projId = ""
+    inputs = []
+    outputs = []
 
     correctreac = 0
     correctl = 1
@@ -64,7 +66,7 @@ def hybdata(filename):
     for line in lines:
         line = line.strip()
 
-        # Eleminate the ; at the end of the line
+        # Eliminate the ; at the end of the line
         line = line.replace(";", "")
         line = line.replace(" ", "")
 
@@ -72,7 +74,7 @@ def hybdata(filename):
         if line == 'end':
             break
 
-        # Check if line is a comment or if there is a commenqt in the line and erase it
+        # Check if line is a comment or if there is a comment in the line and erase it
         if "%" in line:
             line = line[0:line.find("%")]
 
@@ -81,25 +83,25 @@ def hybdata(filename):
             if match:
                 projId = match.group(2)
 
-        # Check if is a tspan line and create the array for the json file
+        # Check if it is a tspan line and create the array for the json file
         if "tspan" in line:
             x = line[line.find("=")+1:line.find(":")]
 
             # Check if the y value is a single digit or a double digit ?? Maybe more if so loop
-            if (line[line.find(":")+2].isnumeric() == True):
+            if line[line.find(":")+2].isnumeric():
                 y = line[line.find(":")+1:line.find(":")+3]
             else:
                 y = line[line.find(":")+1]
 
             # Check if the z value is a single digit or a double digit ?? Maybe more if so loop
-            if (line[-3].isnumeric() == True):
+            if line[-3].isnumeric():
                 z = line[-3:len(line)]
             else:
                 z = line[-2:len(line)]
 
             line = line[line.find(".")+1:len(line)]
 
-            # tspan: [0,1,2,3,4,5,,6,7,8,9,10]
+            # tspan: [0,1,2,3,4,5,6,7,8,9,10]
             listArray = list(range(int(x), int(z)+1, int(y)))
 
         # Check if line is the number of species
@@ -123,7 +125,7 @@ def hybdata(filename):
             if "compartment" in line:
                 compartment = line[line.find("=")+2:len(line)-1]
 
-            # Get see if the species is fixed
+            # See if the species is fixed
             if "fixed" in line:
                 fixed = line[line.find("=")+1:len(line)+1]
 
@@ -274,7 +276,7 @@ def hybdata(filename):
             if "id" in line:
                 id = line[line.find("=")+2:len(line)-1]
 
-            # Get the rate of the reactio
+            # Get the rate of the reaction
             if "rate" in line:
                 rate = line[line.find("=")+2:len(line)-1]
 
@@ -285,7 +287,7 @@ def hybdata(filename):
                 y_values = [int(i.strip().strip('\"')) for i in y_values]
 
                 y_dict = {str(index+1): value for index,
-                        value in enumerate(y_values)}
+                          value in enumerate(y_values)}
 
                 reaction_dict[i] = {
                     "id": id,
@@ -533,7 +535,7 @@ def hybdata(filename):
         if "addrop" in line:
             addrop = int(line[line.find("=")+1:len(line)])
 
-    dict = {
+    proj_dict = {
         "id": projId,
         "tspan": listArray,
         "nspecies": nspecies,
@@ -574,9 +576,17 @@ def hybdata(filename):
         "adalfa": adalfa,
         "admini": admini,
         "addrop": addrop,
+        "inputs": inputs,
+        "outputs": outputs,
     }
 
-    
-    
+    for i in range(1, proj_dict["mlm"]["nx"]+1):
+        inputs.append(proj_dict["mlm"]["x"][str(i)]["val"])
 
-    return dict
+    for i in range(1, proj_dict["mlm"]["ny"]+1):
+        outputs.append(proj_dict["mlm"]["y"][str(i)]["id"])
+
+    proj_dict["inputs"] = inputs
+    proj_dict["outputs"] = outputs
+    
+    return proj_dict

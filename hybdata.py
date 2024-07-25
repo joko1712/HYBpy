@@ -284,7 +284,7 @@ def hybdata(filename):
             if "Y" in line:
                 j = line[line.find("=")+2:len(line)-1]
                 y_values = j.split(",")
-                y_values = [int(i.strip().strip('\"')) for i in y_values]
+                y_values = [float(i.strip().strip('\"')) for i in y_values]
 
                 y_dict = {str(index+1): value for index,
                           value in enumerate(y_values)}
@@ -322,7 +322,7 @@ def hybdata(filename):
             raterules_dict[i] = {
                 "id": id,
                 "min": int(min),
-                "max": int(max),
+                "max": float(max),
                 "val": val,
                 "isres": int(isres),
             }
@@ -375,7 +375,7 @@ def hybdata(filename):
             control_dict[i] = {
                 "id": id,
                 "min": int(min),
-                "max": int(max),
+                "max": float(max),
                 "val": val,
                 "constant": int(constant),
             }
@@ -588,5 +588,11 @@ def hybdata(filename):
 
     proj_dict["inputs"] = inputs
     proj_dict["outputs"] = outputs
+
+
+    with open("file.json", "w") as write_file:
+        json.dump(proj_dict, write_file)
+
+
     
     return proj_dict

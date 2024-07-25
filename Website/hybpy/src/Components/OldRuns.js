@@ -17,22 +17,17 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase-config";
-import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { useEffect } from "react";
 import ListItemText from "@mui/material/ListItemText";
-import ListIcon from "@mui/icons-material/List";
-import { blue, red } from "@mui/material/colors";
+import { red } from "@mui/material/colors";
 import Modal from "@mui/material/Modal";
 import logo from "../Image/HYBpyINVIS_logo.png";
 import DeleteIcon from "@mui/icons-material/Delete";
 import {
     ListItemButton,
     TextField,
-    MenuItem,
-    Select,
-    FormControl,
-    InputLabel,
     Dialog,
     DialogActions,
     DialogContent,
@@ -155,8 +150,6 @@ export default function OldRuns() {
 
     const [runs, setRuns] = React.useState([]);
     const [searchQuery, setSearchQuery] = React.useState("");
-    const [filterMode, setFilterMode] = React.useState("");
-    const [filterFile, setFilterFile] = React.useState("");
     const userId = auth.currentUser.uid;
     const [mode, setMode] = React.useState("Error");
     const [date, setDate] = React.useState("Error");
@@ -208,7 +201,7 @@ export default function OldRuns() {
         const response = await fetch(
             `http://localhost:5000/get-file-urls?user_id=${userId}&run_id=${runId}`
         );
-        const data = await response.json();
+        const data = response.json();
         if (response.ok) {
             return data;
         } else {
@@ -285,12 +278,10 @@ export default function OldRuns() {
 
     const filteredRuns = runs.filter((run) => {
         return (
-            (searchQuery === "" ||
-                run.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
-            (filterMode === "" || run.mode.toString() === filterMode) &&
-            (filterFile === "" ||
-                run.file1_name.toLowerCase().includes(filterFile.toLowerCase()) ||
-                run.file2_name.toLowerCase().includes(filterFile.toLowerCase()))
+            searchQuery === "" ||
+            (run.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                run.file1_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            run.file2_name.toLowerCase().includes(searchQuery.toLowerCase())
         );
     });
 
@@ -367,32 +358,10 @@ export default function OldRuns() {
                         </h1>
                         <Box sx={{ mb: 2 }}>
                             <TextField
-                                label='Search by Description'
+                                label='Search Project'
                                 variant='outlined'
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                fullWidth
-                                sx={{ mb: 2 }}
-                            />
-                            <FormControl fullWidth sx={{ mb: 2 }}>
-                                <InputLabel id='filter-mode-label'>Filter by Mode</InputLabel>
-                                <Select
-                                    labelId='filter-mode-label'
-                                    value={filterMode}
-                                    onChange={(e) => setFilterMode(e.target.value)}
-                                    label='Filter by Mode'>
-                                    <MenuItem value=''>
-                                        <em>None</em>
-                                    </MenuItem>
-                                    <MenuItem value='1'>Manual</MenuItem>
-                                    <MenuItem value='2'>Automatic</MenuItem>
-                                </Select>
-                            </FormControl>
-                            <TextField
-                                label='Filter by File Name'
-                                variant='outlined'
-                                value={filterFile}
-                                onChange={(e) => setFilterFile(e.target.value)}
                                 fullWidth
                                 sx={{ mb: 2 }}
                             />
@@ -414,21 +383,7 @@ export default function OldRuns() {
                                                     primary={`Title: ${run.description}`}
                                                     secondary={`HMOD:${run.file1_name} - CSV:${run.file2_name} - Mode:${mode} - CreatedAt:${date}`}
                                                 />
-                                                <ListItemText
-                                                    style={{
-                                                        maxWidth: "fit-content",
-                                                    }}>
-                                                    View Projects:
-                                                </ListItemText>
 
-                                                <IconButton
-                                                    sx={{ color: blue[500] }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleOpen(run);
-                                                    }}>
-                                                    <ListIcon fontSize='large' />
-                                                </IconButton>
                                                 <IconButton
                                                     sx={{ color: red[500] }}
                                                     onClick={(e) => {
@@ -447,22 +402,33 @@ export default function OldRuns() {
                                         aria-describedby='modal-modal-description'>
                                         <Box sx={{ ...style, width: "80%", height: "90%" }}>
                                             {selectedRun && (
-                                                <>
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                    }}>
                                                     <Typography
                                                         id='modal-modal-title'
                                                         variant='h4'
                                                         component='h2'>
                                                         <strong>
-                                                            Model Evaluation: Time Series Prediction
+                                                            Title: {selectedRun.description}
                                                         </strong>
+                                                    </Typography>
+                                                    <Typography
+                                                        id='modal-modal-title'
+                                                        variant='h4'
+                                                        component='h2'
+                                                        style={{
+                                                            display: "flex",
+                                                            alignSelf: "center",
+                                                        }}>
+                                                        Model Evaluation: Time Series Prediction
                                                     </Typography>
                                                     <Typography
                                                         id='modal-modal-description'
                                                         sx={{ mt: 3 }}>
                                                         <br />
-                                                        Title: {selectedRun.description}
-                                                        <br />
-                                                        Plots:
                                                         <div>
                                                             {selectedRun.plots &&
                                                                 selectedRun.plots.map(
@@ -571,7 +537,7 @@ export default function OldRuns() {
                                                             Download New HMOD
                                                         </Button>
                                                     </Typography>
-                                                </>
+                                                </div>
                                             )}
                                         </Box>
                                     </Modal>

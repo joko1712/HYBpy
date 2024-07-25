@@ -34,7 +34,7 @@ export const mainListItems = (navigate) => (
             <ListItemIcon>
                 <InventoryIcon />
             </ListItemIcon>
-            <ListItemText primary='Data' />
+            <ListItemText primary='Projects' />
         </ListItemButton>
 
         <ListItemButton onClick={() => navigate("/upload")}>

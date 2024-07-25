@@ -10,22 +10,22 @@ parkram.species(1).id="X"
 parkram.species(1).val=1
 parkram.species(1).compartment="V"
 parkram.species(1).fixed=0
-parkram.species(1).min= 0;
-parkram.species(1).max= 5;
+parkram.species(1).min=0;
+parkram.species(1).max=5;
 parkram.species(1).isres=1;
 parkram.species(2).id="S"
 parkram.species(2).val=5
 parkram.species(2).compartment="V"
 parkram.species(2).fixed=0
-parkram.species(2).min= 0;
-parkram.species(2).max= 20;
+parkram.species(2).min=0;
+parkram.species(2).max=20;
 parkram.species(2).isres=1;
 parkram.species(3).id="PT"
 parkram.species(3).val=0
 parkram.species(3).compartment="V"
 parkram.species(3).fixed=0
-parkram.species(3).min= 0;
-parkram.species(3).max= 5;
+parkram.species(3).min=0;
+parkram.species(3).max=5;
 parkram.species(3).isres=1;
 parkram.species(4).id="PM"
 parkram.species(4).val=0
@@ -68,7 +68,7 @@ parkram.nevent=0
 parkram.nreaction=4
 parkram.reaction(1).id="rX"
 parkram.reaction(1).rate="miu*X"
-parkram.reaction(1).Y=["1", "-1", "0", "0"]
+parkram.reaction(1).Y=["1", "-7.3", "0", "0"]
 parkram.reaction(2).id="rSin"
 parkram.reaction(2).rate="D*Sin"
 parkram.reaction(2).Y=["0", "1", "0", "0"]
@@ -165,21 +165,6 @@ parkram.display='off';   %'off','Iter'
 parkram.bootstrap=0; %1-do bootstrap; 0-no boostrapp
 parkram.nensemble=1; %number of models to aggregate >=1; if >1 confidence intervals are computed
 parkram.crossval=1;  %0 - no cross-validation; 1 - do crossvalidation
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 end

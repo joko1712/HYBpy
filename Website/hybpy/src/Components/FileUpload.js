@@ -975,18 +975,34 @@ function FileUpload() {
                             </Button>
                         </div>
                         <Grid container spacing={3} columns={20}>
-                            <Grid item xs={20}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                            <Grid item xs={20} columns={20}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        marginBottom: 0.5,
+                                        overflow: "auto",
+                                    }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'>Title</Typography>
+                                        <Typography variant='h5'> Step 1: Project Title</Typography>
+
                                         <Tooltip
                                             title='In this section you can write the Title of the Model you are going to create.'
                                             arrow>
-                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                            <IconButton size='xsmall' sx={{ ml: 0.5, mb: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
                                     </div>
+                                </Paper>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        marginBottom: 4,
+                                    }}>
                                     <Input
                                         fullWidth
                                         value={description}
@@ -1010,11 +1026,11 @@ function FileUpload() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 400,
+                                        marginBottom: 0.5,
                                         overflow: "auto",
                                     }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'>CSV</Typography>
+                                        <Typography variant='h5'> Step 2: CSV</Typography>
                                         <Tooltip
                                             title='In this we will ask you to upload the CSV file which is a file containing the information about the batches. After uploading there will be a preview of the file.'
                                             arrow>
@@ -1023,15 +1039,19 @@ function FileUpload() {
                                             </IconButton>
                                         </Tooltip>
                                     </div>
-                                    <Typography variant='h7'>
-                                        {" "}
-                                        Step 1: Please select Dataset (.csv). See{" "}
-                                        <Link>Template</Link> and <Link>Example</Link>.{" "}
-                                    </Typography>
+                                </Paper>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        height: 400,
+                                        overflow: "auto",
+                                    }}>
                                     <p>
                                         {selectedFile2
                                             ? selectedFile2.name
-                                            : "Insert your CSV file containing the information about the batches here."}
+                                            : "Insert your CSV file containing the experimental data here. See structure in the {Link]template file."}
                                     </p>
                                     <TableContainer
                                         component={Paper}
@@ -1139,6 +1159,26 @@ function FileUpload() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
+                                        marginBottom: 2,
+                                        overflow: "auto",
+                                    }}>
+                                    <Typography variant='h6'>
+                                        Step 3. Please select HMOD hybrid/standard model (.hmod).
+                                        The HMOD file is an intermediate format that enables
+                                        communication between the essential components of the
+                                        mechanistic and hybrid models. You can use the{" "}
+                                        <Link href='#'>SBML2HYB</Link> tool to create a hybrid HMOD
+                                        model format from any SBML model or see{" "}
+                                        <Link href='#'> Example 1</Link> and{" "}
+                                        <Link href='#'> Example 2</Link> to edit/create your own
+                                        standard HMOD model.
+                                    </Typography>
+                                </Paper>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
                                         height: 600,
                                     }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
@@ -1151,17 +1191,6 @@ function FileUpload() {
                                             </IconButton>
                                         </Tooltip>
                                     </div>
-                                    <Typography variant='subtitle1' sx={{ mt: 2 }}>
-                                        Step 2. Please select HMOD hybrid/standard model (.hmod).
-                                        The HMOD file is an intermediate format that enables
-                                        communication between the essential components of the
-                                        mechanistic and hybrid models. You can use the{" "}
-                                        <Link href='#'>SBML2HYB</Link> tool to create a hybrid HMOD
-                                        model format from any SBML model or see{" "}
-                                        <Link href='#'> Example 1</Link> and{" "}
-                                        <Link href='#'> Example 2</Link> to edit/create your own
-                                        standard HMOD model.
-                                    </Typography>
                                     <Typography variant='body1' sx={{ mt: 2 }}>
                                         {selectedFile1
                                             ? selectedFile1.name
@@ -1209,8 +1238,22 @@ function FileUpload() {
                                 </div>
                             </Grid>
 
-                            <Grid container spacing={2}>
-                                <Grid item xs={7}>
+                            <Grid item xs={20} columns={20}>
+                                <Grid item xs={20}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            overflow: "auto",
+                                        }}>
+                                        <Typography variant='h6'>
+                                            {" "}
+                                            Step 4: Please select the batch selection mode.{" "}
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+                                <Grid item xs={10}>
                                     <Paper
                                         sx={{
                                             p: 2,
@@ -1292,7 +1335,7 @@ function FileUpload() {
                                                     description === ""
                                                 }>
                                                 <PublishIcon fontSize='large' />
-                                                Upload Information
+                                                Start Trainning
                                             </Button>
                                         </Grid>
                                     </>
@@ -1315,7 +1358,7 @@ function FileUpload() {
                                                 sx={{ mt: 2 }}
                                                 disabled={description === ""}>
                                                 <PublishIcon fontSize='large' />
-                                                Upload Information
+                                                Start Trainning
                                             </Button>
                                         </CustomWidthTooltip>
                                     </Grid>

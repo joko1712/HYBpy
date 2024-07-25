@@ -82,7 +82,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     
     if jac is not None:
         jac = torch.tensor(jac, dtype=torch.float64)
-    fstate = fstate_func(projhyb, values)
+    fstate, parametersvariables = fstate_func(projhyb, values)
 
     while t < tf:
         h = min(projhyb['time']['TAU'], tf - t)
@@ -102,6 +102,13 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
             ucontrol1 = []
         
         print("values", values)
+        print("parametersvariables", parametersvariables)
+
+        for key, val in parametersvariables.items():
+            if key not in values:
+                values[key] = val
+
+                
         if jac != None:
             k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
         else:

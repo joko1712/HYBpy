@@ -32,6 +32,7 @@ import {
     Tooltip,
     tooltipClasses,
     Link,
+    Checkbox,
 } from "@mui/material";
 import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
@@ -124,7 +125,6 @@ function Simulations() {
     const [mode, setMode] = useState("");
     const [backendResponse, setBackendResponse] = useState("");
     const [description, setDescription] = useState("");
-    const [trainedWeights, setTrainedWeights] = useState("");
     const [tooltipDisplay, setTooltipDisplay] = useState("block");
     const [modalOpen, setModalOpen] = useState(false);
     const [tabIndex, setTabIndex] = useState(0);
@@ -142,6 +142,8 @@ function Simulations() {
         onSave: () => {},
         handleClose: () => {},
     });
+    const [trainedWeights, setTrainedWeights] = useState("");
+
     const [mlmModalOpen, setMlmModalOpen] = useState(false);
     const [speciesOptions, setSpeciesOptions] = useState([]);
     const [controlOptions, setControlOptions] = useState([]);
@@ -225,6 +227,18 @@ function Simulations() {
         });
     };
 
+    const parseWeightsFromHmod = (content) => {
+        const weightRegex = /parameters\((\d+)\).id="w\d+"\s*parameters\(\d+\).val="([-\d.]+)"/g;
+        let weights = [];
+        let match;
+
+        while ((match = weightRegex.exec(content)) !== null) {
+            weights.push(parseFloat(match[2]));
+        }
+
+        return weights;
+    };
+
     const extractLayerValue = (content, prefix, defaultValue) => {
         const regex = new RegExp(`${prefix}\\.mlm\\.layer=([0-9]+);`);
         const match = content.match(regex);
@@ -262,6 +276,12 @@ function Simulations() {
         let tspan = `0:1:${timeMax}`;
 
         let updatedContent = content.replace(/\bend\b\s*$/, "");
+
+        if (!updatedContent.includes("time.tspan=")) {
+            uniquePrefixes.forEach((prefix) => {
+                updatedContent = `${prefix}.time.tspan=${tspan}\n` + updatedContent;
+            });
+        }
 
         let controlExists = updatedContent.includes("% control---------------------------");
         let configExists = updatedContent.includes("% %model configuration");
@@ -431,12 +451,16 @@ function Simulations() {
                     file2Content,
                     Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
                     handleOpenHeaderModal,
-                    selectedHeaders
+                    selectedHeaders,
+                    mlmOptions
                 );
 
                 if (updatedContent) {
                     console.log("Updated Content: ", updatedContent);
                     setFile1Content(updatedContent);
+
+                    const weights = parseWeightsFromHmod(updatedContent);
+                    setTrainedWeights(weights);
                 } else {
                     console.log("Updated content not set because ensureHmodSections returned null");
                 }
@@ -535,9 +559,11 @@ function Simulations() {
     };
 
     // Fetch the template HMOD and CSV files from the server
-    const getTemplate = () => {
+    const getTemplate = (templateType) => {
         fetch("http://localhost:5000/get-template-csv", {
-            method: "GET",
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ template_type: templateType }),
         })
             .then((response) => response.blob())
             .then((blob) => {
@@ -591,7 +617,9 @@ function Simulations() {
             });
 
         fetch("http://localhost:5000/get-template-hmod", {
-            method: "GET",
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ template_type: templateType }),
         })
             .then((response) => response.blob())
             .then((blob) => {
@@ -730,16 +758,41 @@ function Simulations() {
             return;
         }
 
+        // Ensure HMOD sections before upload
+        const updatedContent = await ensureHmodSections(
+            file1Content,
+            file2Content,
+            Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+            handleOpenHeaderModal,
+            selectedHeaders,
+            mlmOptions
+        );
+
+        if (updatedContent) {
+            console.log("asdasdasdasdasasd: ", updatedContent);
+            setFile1Content(updatedContent);
+
+            const updatedFile = new Blob([updatedContent], { type: "text/plain" });
+            const updatedFileObject = new File([updatedFile], selectedFile1.name, {
+                type: selectedFile1.type,
+            });
+            setFile1Content(updatedContent);
+            setSelectedFile1(updatedFileObject);
+            uploadFiles(updatedFileObject);
+        }
+    };
+
+    const uploadFiles = async (updatedFile) => {
         const formData = new FormData();
-        formData.append("file1", selectedFile1);
+        formData.append("file1", updatedFile);
         formData.append("file2", selectedFile2);
         formData.append("mode", mode);
         formData.append("userId", auth.currentUser.uid);
         formData.append("description", description);
-        formData.append("trained_weights", JSON.stringify(trainedWeights));
         formData.append("train_batches", Array.from(train_batches).join(","));
         formData.append("test_batches", Array.from(test_batches).join(","));
         formData.append("user_id", auth.currentUser.uid);
+        formData.append("trained_weights", JSON.stringify(trainedWeights));
 
         console.log("Form Data: ", hmodOptions);
         formData.append("HiddenNodes", hmodOptions.hiddenNodes);
@@ -752,6 +805,8 @@ function Simulations() {
         formData.append("Niter", hmodOptions.niter);
         formData.append("Nstep", hmodOptions.nstep);
         formData.append("Bootstrap", hmodOptions.bootstrap);
+        formData.append("Inputs", JSON.stringify(mlmOptions.xOptions));
+        formData.append("Outputs", JSON.stringify(mlmOptions.yOptions));
 
         formData.append("hiddenOptions", JSON.stringify(hmodOptions));
 
@@ -899,6 +954,34 @@ function Simulations() {
         setSelectedFile1(updatedFileObject);
     };
 
+    // Fetch old HMOD file
+    const fetchOldHmodFile = async (userId, runId) => {
+        const response = await fetch(
+            `http://localhost:5000/get-old-hmod?user_id=${userId}&run_id=${runId}`
+        );
+        const data = await response.json();
+        if (response.ok) {
+            return data;
+        } else {
+            throw new Error(data.error);
+        }
+    };
+
+    // Use old HMOD file
+    const handleUseOldHmod = async (runId) => {
+        try {
+            const oldHmod = await fetchOldHmodFile(auth.currentUser.uid, runId);
+            setFile1Content(oldHmod.content);
+            const updatedFileObject = new File([oldHmod.content], "old_hmod.hmod", {
+                type: "text/plain",
+            });
+            setSelectedFile1(updatedFileObject);
+            console.log("Old HMOD content set successfully.");
+        } catch (error) {
+            console.error("Error fetching old HMOD file:", error);
+        }
+    };
+
     return (
         <ThemeProvider theme={defaultTheme}>
             <Box sx={{ display: "flex" }}>
@@ -967,61 +1050,54 @@ function Simulations() {
                     <Toolbar />
                     <Container maxWidth='lg' sx={{}}>
                         <div style={{ overflow: "auto", marginTop: 20 }}>
-                            <h2 style={{ float: "left", marginTop: 0 }}>New Simulation</h2>
+                            <h2 style={{ float: "left", marginTop: 0 }}>Simulate Model</h2>
                             <Button
-                                onClick={getTemplate}
+                                onClick={() => getTemplate(2)}
                                 variant='contained'
-                                style={{ float: "right", marginTop: 0 }}>
-                                Use Template Model
+                                style={{ float: "right", marginTop: 0, margin: 5 }}>
+                                Use Template Model 2
+                            </Button>
+                            <Button
+                                onClick={() => getTemplate(1)}
+                                variant='contained'
+                                style={{ float: "right", marginTop: 0, margin: 5 }}>
+                                Use Template Model 1
                             </Button>
                         </div>
                         <Grid container spacing={3} columns={20}>
-                            <Grid item xs={20}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                            <Grid item xs={20} columns={20}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        marginBottom: 0.5,
+                                        overflow: "auto",
+                                    }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'>Title</Typography>
+                                        <Typography variant='h5'> Step 1: Project Title</Typography>
+
                                         <Tooltip
                                             title='In this section you can write the Title of the Model you are going to create.'
                                             arrow>
-                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                            <IconButton size='xsmall' sx={{ ml: 0.5, mb: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
                                     </div>
+                                </Paper>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        marginBottom: 4,
+                                    }}>
                                     <Input
                                         fullWidth
                                         value={description}
                                         onChange={(e) => {
                                             setDescription(e.target.value);
-                                            if (e.target.value) {
-                                                if (progress < 1) {
-                                                    setProgress(1);
-                                                }
-                                            } else {
-                                                setProgress(0);
-                                            }
-                                        }}
-                                    />
-                                </Paper>
-                            </Grid>
-
-                            <Grid item xs={20}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                                    <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'>Trained Weights</Typography>
-                                        <Tooltip
-                                            title='In this section you can upload the trained weights of the model you are going to simulate.'
-                                            arrow>
-                                            <IconButton size='small' sx={{ ml: 1 }}>
-                                                <InfoIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </div>
-                                    <Input
-                                        fullWidth
-                                        value={trainedWeights}
-                                        onChange={(e) => {
-                                            setTrainedWeights(e.target.value);
                                             if (e.target.value) {
                                                 if (progress < 1) {
                                                     setProgress(1);
@@ -1040,11 +1116,11 @@ function Simulations() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 400,
+                                        marginBottom: 0.5,
                                         overflow: "auto",
                                     }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'>CSV</Typography>
+                                        <Typography variant='h5'> Step 2: CSV</Typography>
                                         <Tooltip
                                             title='In this we will ask you to upload the CSV file which is a file containing the information about the batches. After uploading there will be a preview of the file.'
                                             arrow>
@@ -1053,15 +1129,19 @@ function Simulations() {
                                             </IconButton>
                                         </Tooltip>
                                     </div>
-                                    <Typography variant='h7'>
-                                        {" "}
-                                        Step 1: Please select Dataset (.csv). See{" "}
-                                        <Link>Template</Link> and <Link>Example</Link>.{" "}
-                                    </Typography>
+                                </Paper>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        height: 400,
+                                        overflow: "auto",
+                                    }}>
                                     <p>
                                         {selectedFile2
                                             ? selectedFile2.name
-                                            : "Insert your CSV file containing the information about the batches here."}
+                                            : "Insert your CSV file containing the experimental data here. See structure in the {Link]template file."}
                                     </p>
                                     <TableContainer
                                         component={Paper}
@@ -1089,12 +1169,17 @@ function Simulations() {
                                         </Table>
                                     </TableContainer>
                                 </Paper>
-                                <div style={{ display: "flex", marginTop: "8px" }}>
-                                    <label htmlFor='csv-upload' style={{ flex: 1 }}>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        marginTop: "8px",
+                                        justifyContent: "flex-end",
+                                    }}>
+                                    <label htmlFor='csv-upload'>
                                         <Button
                                             fullWidth
                                             variant='contained'
-                                            sx={{ height: "100%", marginBottom: 2 }}
+                                            sx={{ height: "60%", marginBottom: 2 }}
                                             disabled={progress < 1}
                                             component='span'>
                                             <PublishIcon fontSize='large' />
@@ -1124,7 +1209,7 @@ function Simulations() {
                                     onClose={() => setModalOpen(false)}
                                     maxWidth='lg'
                                     fullWidth>
-                                    <DialogTitle>Batch Data Visualization</DialogTitle>
+                                    <DialogTitle>Experimental Data Visualization</DialogTitle>
                                     <DialogContent>
                                         <Tabs
                                             value={tabIndex}
@@ -1164,8 +1249,27 @@ function Simulations() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 400,
+                                        marginBottom: 2,
                                         overflow: "auto",
+                                    }}>
+                                    <Typography variant='h6'>
+                                        Step 3. Please select HMOD hybrid/standard model (.hmod).
+                                        The HMOD file is an intermediate format that enables
+                                        communication between the essential components of the
+                                        mechanistic and hybrid models. You can use the{" "}
+                                        <Link href='#'>SBML2HYB</Link> tool to create a hybrid HMOD
+                                        model format from any SBML model or see{" "}
+                                        <Link href='#'> Example 1</Link> and{" "}
+                                        <Link href='#'> Example 2</Link> to edit/create your own
+                                        standard HMOD model.
+                                    </Typography>
+                                </Paper>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        height: 600,
                                     }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
                                         <Typography variant='h5'>HMOD</Typography>
@@ -1177,25 +1281,28 @@ function Simulations() {
                                             </IconButton>
                                         </Tooltip>
                                     </div>
-                                    <Typography variant='h7'>
-                                        Step 2. Please select HMOD hybrid/standard model (.hmod).
-                                        The HMOD file is an intermediate format that enables
-                                        communication between the essential components of the
-                                        mechanistic and hybrid models. You can use the{" "}
-                                        <Link>SBML2HYB</Link> tool to create a hybrid HMOD model
-                                        format from any SBML model or see <Link> Example 1</Link>{" "}
-                                        and <Link> Example 2</Link> to edit/create your own standard
-                                        HMOD model.
+                                    <Typography variant='body1' sx={{ mt: 2 }}>
+                                        {selectedFile1
+                                            ? selectedFile1.name
+                                            : "Insert your HMOD file containing the information about the mechanistic model and the settings for the machine learning model here."}
                                     </Typography>
-                                    <pre>{file1Content}</pre>{" "}
+                                    <div style={{ overflowY: "auto", flex: 1 }}>
+                                        <pre>{file1Content}</pre>
+                                    </div>
                                 </Paper>
-                                <div style={{ display: "flex", marginTop: "8px" }}>
-                                    <label htmlFor='hmod-upload' style={{ flex: 1 }}>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        marginTop: "8px",
+                                        justifyContent: "flex-end",
+                                    }}>
+                                    <label htmlFor='hmod-upload'>
                                         <Button
                                             component='span'
                                             fullWidth
                                             variant='contained'
-                                            sx={{ height: "100%", marginBottom: 2 }}
+                                            sx={{ height: "60%", marginBottom: 2 }}
                                             disabled={progress < 2}>
                                             <PublishIcon fontSize='large' />
                                             Upload Hmod
@@ -1218,96 +1325,154 @@ function Simulations() {
                                         }}>
                                         Edit HMOD Options
                                     </Button>
+                                    <Button
+                                        variant='contained'
+                                        onClick={() => handleUseOldHmod("old_run_id")}
+                                        disabled={progress < 2}
+                                        sx={{
+                                            marginLeft: "16px",
+                                            height: "100%",
+                                            marginBottom: 2,
+                                        }}>
+                                        Use Old HMOD
+                                    </Button>
                                 </div>
                             </Grid>
 
-                            <Grid item xs={7}>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        marginBottom: 2,
-                                    }}>
+                            <Grid item xs={20}>
+                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'>Batch Selection</Typography>
+                                        <Typography variant='h5'>Trained Weights</Typography>
                                         <Tooltip
-                                            title='In this section you can select the batch selection mode. Manual is for selecting train and test batches manually from a list and Automatic is for the selection to be done randomly (with a 2/3; 1/3 split).'
+                                            title='In this section you can upload the trained weights of the model you are going to simulate.'
                                             arrow>
                                             <IconButton size='small' sx={{ ml: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
                                     </div>
-                                    <Select
-                                        labelId='Mode'
-                                        id='Mode'
-                                        value={mode}
-                                        style={{ marginTop: 20 }}
-                                        onChange={handleModeChange}
-                                        disabled={progress < 3}>
-                                        <MenuItem value={"1"}>Manual</MenuItem>
-                                        <MenuItem value={"2"}>Automatic</MenuItem>
-                                    </Select>
+                                    <Input
+                                        fullWidth
+                                        value={trainedWeights}
+                                        onChange={(e) => {
+                                            setTrainedWeights(e.target.value);
+                                            if (e.target.value) {
+                                                if (progress < 1) {
+                                                    setProgress(1);
+                                                }
+                                            } else {
+                                                setProgress(0);
+                                            }
+                                        }}
+                                    />
                                 </Paper>
                             </Grid>
-                            {(mode === "1" && progress >= 4 && (
-                                <>
-                                    <Grid item xs={3}>
-                                        <h3>Available Batches: {availableBatches.join(", ")}</h3>
-                                    </Grid>
-                                    <Grid item xs={3}>
-                                        <h3>Select Train Batches: </h3>
-                                        {availableBatches.map((batch) => (
-                                            <div key={batch}>
-                                                <input
-                                                    type='checkbox'
-                                                    checked={Array.from(train_batches).includes(
-                                                        batch
-                                                    )}
-                                                    onChange={() =>
-                                                        handleTrainBatchSelection(batch)
-                                                    }
-                                                />
-                                                {batch}
-                                            </div>
-                                        ))}
-                                    </Grid>
-                                    <Grid item xs={3}>
-                                        <h3>Select Test Batches: </h3>
-                                        {availableBatches.map((batch) => (
-                                            <div key={batch}>
-                                                <input
-                                                    type='checkbox'
-                                                    checked={Array.from(test_batches).includes(
-                                                        batch
-                                                    )}
-                                                    onChange={() => handleTestBatchSelection(batch)}
-                                                />
-                                                {batch}
-                                            </div>
-                                        ))}
-                                    </Grid>
-                                    <Grid item xs={4}>
-                                        <Button
-                                            onClick={() => handleUpload()}
-                                            fullWidth
-                                            variant='contained'
-                                            sx={{ height: "100%" }}
-                                            disabled={
-                                                train_batches.size === 0 ||
-                                                test_batches.size === 0 ||
-                                                description === ""
-                                            }>
-                                            <PublishIcon fontSize='large' />
-                                            Upload Information
-                                        </Button>
-                                    </Grid>
-                                </>
-                            )) ||
-                                (mode === "2" && progress >= 5 && (
+
+                            <Grid item xs={20} columns={20}>
+                                <Grid item xs={20}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            overflow: "auto",
+                                        }}>
+                                        <Typography variant='h6'>
+                                            {" "}
+                                            Step 4: Please select the batch selection mode.{" "}
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+                                <Grid item xs={10}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            marginBottom: 2,
+                                        }}>
+                                        <div style={{ display: "flex", alignItems: "center" }}>
+                                            <Typography variant='h5'>Batch Selection</Typography>
+                                            <Tooltip
+                                                title='The experimental dataset selections can be manually adjust or automatically split into training/test sets (2/3 of the data split for the trainning).'
+                                                arrow>
+                                                <IconButton size='small' sx={{ ml: 1 }}>
+                                                    <InfoIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </div>
+                                        <Select
+                                            labelId='Mode'
+                                            id='Mode'
+                                            value={mode}
+                                            sx={{ mt: 2 }}
+                                            onChange={handleModeChange}
+                                            disabled={progress < 3}>
+                                            <MenuItem value={"1"}>Manual</MenuItem>
+                                            <MenuItem value={"2"}>Automatic</MenuItem>
+                                        </Select>
+                                    </Paper>
+                                </Grid>
+
+                                {mode === "1" && progress >= 4 && (
                                     <>
-                                        <Grid item xs={4}></Grid>
+                                        <Grid item xs={12}>
+                                            <Typography variant='h6'>
+                                                Available Batches: {availableBatches.join(", ")}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                            <Typography variant='h6'>
+                                                Select Train Batches:{" "}
+                                            </Typography>
+                                            {availableBatches.map((batch) => (
+                                                <div key={batch}>
+                                                    <Checkbox
+                                                        checked={train_batches.has(batch)}
+                                                        onChange={() =>
+                                                            handleTrainBatchSelection(batch)
+                                                        }
+                                                    />
+                                                    {batch}
+                                                </div>
+                                            ))}
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                            <Typography variant='h6'>
+                                                Select Test Batches:{" "}
+                                            </Typography>
+                                            {availableBatches.map((batch) => (
+                                                <div key={batch}>
+                                                    <Checkbox
+                                                        checked={test_batches.has(batch)}
+                                                        onChange={() =>
+                                                            handleTestBatchSelection(batch)
+                                                        }
+                                                    />
+                                                    {batch}
+                                                </div>
+                                            ))}
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <Button
+                                                onClick={handleUpload}
+                                                fullWidth
+                                                variant='contained'
+                                                sx={{ mt: 2 }}
+                                                disabled={
+                                                    train_batches.size === 0 ||
+                                                    test_batches.size === 0 ||
+                                                    description === ""
+                                                }>
+                                                <PublishIcon fontSize='large' />
+                                                Start Trainning
+                                            </Button>
+                                        </Grid>
+                                    </>
+                                )}
+
+                                {mode === "2" && progress >= 5 && (
+                                    <Grid item xs={12}>
                                         <CustomWidthTooltip
                                             title={
                                                 tooltipDisplay === "block"
@@ -1316,20 +1481,19 @@ function Simulations() {
                                             }
                                             followCursor
                                             arrow>
-                                            <Grid item xs={6}>
-                                                <Button
-                                                    onClick={() => handleUpload()}
-                                                    fullWidth
-                                                    variant='contained'
-                                                    sx={{ height: "100%" }}
-                                                    disabled={description === ""}>
-                                                    <PublishIcon fontSize='large' />
-                                                    Upload Information
-                                                </Button>
-                                            </Grid>
+                                            <Button
+                                                onClick={handleUpload}
+                                                fullWidth
+                                                variant='contained'
+                                                sx={{ mt: 2 }}
+                                                disabled={description === ""}>
+                                                <PublishIcon fontSize='large' />
+                                                Start Trainning
+                                            </Button>
                                         </CustomWidthTooltip>
-                                    </>
-                                ))}
+                                    </Grid>
+                                )}
+                            </Grid>
                         </Grid>
                     </Container>
                 </Box>

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 import sys
 import os
@@ -27,8 +27,8 @@ from firebase_admin import credentials, firestore, storage
 
 load_dotenv()
 
-#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
-cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
+cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
+#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
 firebase_admin.initialize_app(cred, {
     'storageBucket': os.getenv("STORAGE_BUCKET_NAME")
 })
@@ -132,6 +132,8 @@ def upload_file():
         Niter = request.form.get('Niter')
         Nstep = request.form.get('Nstep')
         Bootstrap = request.form.get('Bootstrap')
+        Inputs = request.form.get('Inputs')
+        Outputs = request.form.get('Outputs')
 
         trained_weights = request.form.get('trained_weights')
         if trained_weights:
@@ -172,6 +174,8 @@ def upload_file():
             "trained_weights": trained_weights,
             "mode": mode,
             "createdAt": firestore.SERVER_TIMESTAMP,
+            "Inputs": Inputs,
+            "Outputs": Outputs,
             "MachineLearning": {
                 "HiddenNodes": HiddenNodes,
                 "Layer": Layer,
@@ -326,37 +330,54 @@ def run_status():
         logging.error("Error in run_status: %s", str(e), exc_info=True)
         return {"error": str(e)}, 500
 
-@app.route('/get-template-hmod', methods=['GET'])
+
+@app.route('/get-template-hmod', methods=['POST'])
 def get_template_hmod():
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
     
     try:
-        blob_hmod = bucket.blob("Template/Hmod/template.hmod")
-        hmod_file_path = "template.hmod"
-        blob_hmod.download_to_filename(hmod_file_path)
+        template_type = request.json.get('template_type')
+        if template_type == 1:
+            blob_hmod = bucket.blob("Template/Hmod1/template1.hmod")
+            hmod_file_path = "template1.hmod"
+            blob_hmod.download_to_filename(hmod_file_path)
+
+        elif template_type == 2:
+            blob_hmod = bucket.blob("Template/Hmod2/template2.hmod")
+            hmod_file_path = "template2.hmod"
+            blob_hmod.download_to_filename(hmod_file_path)
+        else:
+            return jsonify({"error": "Invalid template type"}), 400
+
         
-    
         return send_file(hmod_file_path, as_attachment=True)
     
     except Exception as e:
-        logging.error("Error in get_template: %s", str(e), exc_info=True)
-        return {"error": str(e)}, 500
+        logging.error("Error in get_template_hmod: %s", str(e), exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/get-template-csv', methods=['GET'])
+
+@app.route('/get-template-csv', methods=['POST'])
 def get_template_csv():
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
     
     try:
-        blob_csv = bucket.blob("Template/Csv/template.csv")
-        csv_file_path = "template.csv"
+        template_type = request.json.get('template_type')
+        if template_type == 1:
+            blob_csv = bucket.blob("Template/Csv/basicmodel1data.csv")
+        elif template_type == 2:
+            blob_csv = bucket.blob("Template/Csv/basicmodel2data.csv")
+        else:
+            return jsonify({"error": "Invalid template type"}), 400
+
+        csv_file_path = f"basicmodel{template_type}data.csv"
         blob_csv.download_to_filename(csv_file_path)
         
         return send_file(csv_file_path, as_attachment=True)
-        
     
     except Exception as e:
-        logging.error("Error in get_template: %s", str(e), exc_info=True)
-        return {"error": str(e)}, 500
+        logging.error("Error in get_template_csv: %s", str(e), exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/delete-run', methods=['DELETE'])

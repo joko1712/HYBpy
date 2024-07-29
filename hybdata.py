@@ -63,6 +63,14 @@ def hybdata(filename):
     correctreac = 0
     correctl = 1
 
+    listArray = []
+
+    current_reaction = None
+    current_reaction_index = None
+    current_reaction_id = None
+    current_reaction_rate = None
+    reaction_y_pattern = re.compile(r'reaction\((\d+)\)\.r(\w+)="(.+)"')
+
     for line in lines:
         line = line.strip()
 
@@ -155,7 +163,7 @@ def hybdata(filename):
             # Get the number of compartments
             ncompartments = int(line[line.find("=")+1:len(line)+1])
 
-        if "compartment(" in line:
+        if "compartments(" in line:
             i = line[line.find("(")+1:line.find(")")]
 
             # Get the compartments id
@@ -270,30 +278,44 @@ def hybdata(filename):
             nreaction = int(line[line.find("=")+1:len(line)+1])
 
         if "reaction(" in line:
-            i = line[line.find("(")+1:line.find(")")]
+            current_reaction_index = line[line.find("(") + 1:line.find(")")]
 
-            # Get the reactions id
             if "id" in line:
-                id = line[line.find("=")+2:len(line)-1]
+                current_reaction_id = line[line.find("=") + 2:len(line) - 1].strip('"')
 
-            # Get the rate of the reaction
             if "rate" in line:
-                rate = line[line.find("=")+2:len(line)-1]
+                current_reaction_rate = line[line.find("=") + 2:len(line) - 1].strip('"')
 
-            # Get the Y of the reaction
-            if "Y" in line:
-                j = line[line.find("=")+2:len(line)-1]
-                y_values = j.split(",")
-                y_values = [float(i.strip().strip('\"')) for i in y_values]
+            match = reaction_y_pattern.search(line)
+            if match:
+                reaction_index, reaction_name, y_values_str = match.groups()
+                y_values = y_values_str.strip('[]').split(',')
+                y_dict = {}
+                for index, value in enumerate(y_values):
+                    try:
+                        y_dict[str(index + 1)] = float(value.strip().strip("'"))
+                    except ValueError:
+                        y_dict[str(index + 1)] = value.strip().strip("'")
 
-                y_dict = {str(index+1): value for index,
-                          value in enumerate(y_values)}
+                if reaction_index not in reaction_dict:
+                    reaction_dict[reaction_index] = {
+                        "id": current_reaction_id,
+                        "rate": current_reaction_rate,
+                        "Y": y_dict
+                    }
+                else:
+                    reaction_dict[reaction_index]["Y"].update(y_dict)
 
-                reaction_dict[i] = {
-                    "id": id,
-                    "rate": rate,
-                    "Y": y_dict,
-                }
+        elif current_reaction_index and current_reaction_id and current_reaction_rate:
+            reaction_dict[current_reaction_index] = {
+                "id": current_reaction_id,
+                "rate": current_reaction_rate,
+                "Y": reaction_dict[current_reaction_index]["Y"]
+            }
+            current_reaction_index = None
+            current_reaction_id = None
+            current_reaction_rate = None
+
 
         if "nraterules" in line:
             # Get the number of rate rules

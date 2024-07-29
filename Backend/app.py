@@ -27,8 +27,8 @@ from firebase_admin import credentials, firestore, storage
 
 load_dotenv()
 
-cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
-#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
+#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
+cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
 firebase_admin.initialize_app(cred, {
     'storageBucket': os.getenv("STORAGE_BUCKET_NAME")
 })

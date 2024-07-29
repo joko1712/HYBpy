@@ -86,6 +86,13 @@ def fstate_func(projhyb,values):
     State = Species + Raterules
 
     fState = fSpecies + fRaterules
+    
+    subout = {}
+    for i in range(1, projhyb["mlm"]["ny"]+1):
+        subout[symbols(projhyb["mlm"]["y"][str(i)]["id"])] = sympify(
+            projhyb["mlm"]["y"][str(i)]["val"])
+
+    fState = [expr.subs(subout) for expr in fState]
 
 
 

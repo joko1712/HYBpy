@@ -63,10 +63,8 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
 
     return (
         <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>Edit HMOD Options</DialogTitle>
-            <DialogContent>
-                In here you can change the Trainning options as you desire
-            </DialogContent>
+            <DialogTitle>Edit HMOD Settings</DialogTitle>
+
             <DialogContent>
                 <Grid container spacing={2} marginTop={2}>
                     <Grid item xs={12}>
@@ -93,7 +91,7 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                             style={{ width: "90%" }}
                             value={layer}
                             onChange={(e) => setLayer(Number(e.target.value))}
-                            helperText='Activation function'>
+                            helperText='Select activation function. Options: Tanh, ReLu, LSTM'>
                             <MenuItem value={1}>Tanh</MenuItem>
                             <MenuItem value={2}>ReLu</MenuItem>
                             <MenuItem value={3}>LSTM</MenuItem>
@@ -113,12 +111,12 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                             select
                             value={method}
                             onChange={(e) => setMethod(Number(e.target.value))}
-                            helperText='Training Method: Trust Region Reflective(trf), trust-constr, Simulated Annealing, ADAM'>
+                            helperText='Select training method. Options: Trust Region Reflective(trf), trust-constr, Simulated Annealing, ADAM'>
                             <MenuItem value={1}>TRF</MenuItem>
 
                             <MenuItem value={2}>Trust-Constr</MenuItem>
 
-                            <MenuItem value={3}>Simulated Annealing</MenuItem>
+                            <MenuItem value={3}>Dual Annealing</MenuItem>
 
                             <MenuItem value={4}>ADAM</MenuItem>
                         </TextField>
@@ -225,7 +223,7 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                                     type='number'
                                     value={tau}
                                     onChange={(e) => setTau(Number(e.target.value))}
-                                    helperText='Enter a floating-point value'
+                                    helperText='Enter a floating-point value for the TAU parameter'
                                 />
                                 <Tooltip
                                     title='A parameter that influences the convergence speed of the optimization process.'
@@ -243,11 +241,9 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                                     select
                                     value={mode}
                                     onChange={(e) => setMode(Number(e.target.value))}
-                                    helperText='Trainning Mode: Indirect, Direct, Semidirect. Direct mode not yet implemented.'>
+                                    helperText='Trainning Mode: Indirect, Direct, Semidirect '>
                                     <MenuItem value={1}>Indirect</MenuItem>
-                                    <MenuItem value={2} disabled>
-                                        Direct
-                                    </MenuItem>
+                                    <MenuItem value={2}>Direct</MenuItem>
                                     <MenuItem value={3}>Semidirect</MenuItem>
                                 </TextField>
                                 <Tooltip

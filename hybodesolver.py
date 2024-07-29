@@ -17,15 +17,20 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     state_symbols = []
 
     anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
+    print("anninp", anninp)
+    print("rann", rann)
+    print("anninp_mat", anninp_mat)
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
     anninp_tensor = anninp_tensor.view(-1, 1)       
 
     activations = [anninp_tensor]
+    print("activations", activations)
     
     y = activations[-1]
 
     rann_results = ann.forward(y)
+    print("rann_results", rann_results)
 
     rann_results = rann_results.detach().numpy()
 
@@ -59,23 +64,6 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     print("state", state)
     print("State_Symbols", state_symbols)
 
-    '''
-    state_symbols_upper = {str(symbol).upper() for symbol in state_symbols}
-    
-    for key, val in statedict.items():
-        if key.upper() not in state_symbols_upper and key not in values:
-            values[key] = val
-    '''
-
-    ### CHANGE THIS!!
-    
-    '''
-    feed = statedict["Feed"]
-    
-    values["D"] = feed / values["V"]
-    values["Sin"] = 20
-    '''
-
     for key, val in statedict.items():
         values[key] = val
 
@@ -102,17 +90,13 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
             ucontrol1 = []
         
         print("values", values)
-        print("parametersvariables", parametersvariables)
 
-        for key, val in parametersvariables.items():
-            if key not in values:
-                values[key] = val
 
                 
         if jac != None:
-            k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
+            k1_state, k1_jac = odesfun(ann, t, state, jac, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
         else:
-            k1_state = odesfun(ann, t, state, None, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
+            k1_state = odesfun(ann, t, state, None, None, w, ucontrol1, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
         
         control = None
         ucontrol2 = controlfun(t + h / 2, batch) if controlfun is not None else []
@@ -127,7 +111,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
         if jac != None:
 
             state1 = update_state(state, h2, k1_state)
-            k2_state, k2_jac = odesfun(ann, t + h2, state1, jac + h2 * k1_jac, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
+            k2_state, k2_jac = odesfun(ann, t + h2, state1, jac + h2 * k1_jac, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
            
             k2_state = np.array(k2_state)
             k2_state = k2_state.astype(np.float64)
@@ -135,7 +119,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
 
             state2 = update_state(state, h2, k2_state)
 
-            k3_state, k3_jac = odesfun(ann, t + h2, state2, jac + h2 * k2_jac, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
+            k3_state, k3_jac = odesfun(ann, t + h2, state2, jac + h2 * k2_jac, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
             
             k3_state = np.array(k3_state)
             k3_state = k3_state.astype(np.float64)
@@ -143,9 +127,9 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
 
         else:
             state1 = update_state(state, h2, k1_state)
-            k2_state = odesfun(ann, t + h2, state1, None, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
+            k2_state = odesfun(ann, t + h2, state1, None, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
             state2 = update_state(state, h2, k2_state)
-            k3_state = odesfun(ann, t + h2, state2, None, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
+            k3_state = odesfun(ann, t + h2, state2, None, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
 
         hl= h - h / 1e10
         ucontrol4 = controlfun(t + hl, batch) if controlfun is not None else []
@@ -153,13 +137,13 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
         if jac != None:
 
             state3 = update_state(state, hl, k3_state)
-            k4_state, k4_jac = odesfun(ann, t + hl, state3, jac + hl * k3_jac, None, w, ucontrol4, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
+            k4_state, k4_jac = odesfun(ann, t + hl, state3, jac + hl * k3_jac, None, w, ucontrol4, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
             k4_state = np.array(k4_state)
             k4_state = k4_state.astype(np.float64)
             k4_state = torch.from_numpy(k4_state)
         else:
             state3 = update_state(state, hl, k3_state)
-            k4_state = odesfun(ann, t + hl, state3, None, None, w, ucontrol4, projhyb, fstate, anninp, anninp_tensor, state_symbols, values)
+            k4_state = odesfun(ann, t + hl, state3, None, None, w, ucontrol4, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
         
 
         if jac != None:
@@ -182,6 +166,8 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
 def anninp_rann_func(projhyb, state):
 
     species_values = extract_species_values(projhyb, state)
+
+    print("species_values", species_values)
 
     totalsyms = ["t", "dummyarg1", "dummyarg2", "w"]
 

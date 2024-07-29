@@ -489,6 +489,9 @@ export default function OldRuns() {
                                                         <Typography variant='h6' marginTop={3}>
                                                             Machine Learning Options:
                                                         </Typography>
+                                                        Inputs: {selectedRun.Inputs}
+                                                        <br />
+                                                        Outputs: {selectedRun.Outputs}
                                                         {selectedRun.MachineLearning ? (
                                                             <div style={{ marginLeft: 20 }}>
                                                                 {Object.keys(

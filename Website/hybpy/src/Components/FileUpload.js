@@ -263,6 +263,12 @@ function FileUpload() {
 
         let updatedContent = content.replace(/\bend\b\s*$/, "");
 
+        if (!updatedContent.includes("time.tspan=")) {
+            uniquePrefixes.forEach((prefix) => {
+                updatedContent = `${prefix}.time.tspan=${tspan}\n` + updatedContent;
+            });
+        }
+
         let controlExists = updatedContent.includes("% control---------------------------");
         let configExists = updatedContent.includes("% %model configuration");
         let mlmExists = updatedContent.includes(
@@ -431,7 +437,8 @@ function FileUpload() {
                     file2Content,
                     Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
                     handleOpenHeaderModal,
-                    selectedHeaders
+                    selectedHeaders,
+                    mlmOptions
                 );
 
                 if (updatedContent) {
@@ -535,9 +542,11 @@ function FileUpload() {
     };
 
     // Fetch the template HMOD and CSV files from the server
-    const getTemplate = () => {
+    const getTemplate = (templateType) => {
         fetch("http://localhost:5000/get-template-csv", {
-            method: "GET",
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ template_type: templateType }),
         })
             .then((response) => response.blob())
             .then((blob) => {
@@ -591,7 +600,9 @@ function FileUpload() {
             });
 
         fetch("http://localhost:5000/get-template-hmod", {
-            method: "GET",
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ template_type: templateType }),
         })
             .then((response) => response.blob())
             .then((blob) => {
@@ -730,8 +741,33 @@ function FileUpload() {
             return;
         }
 
+        // Ensure HMOD sections before upload
+        const updatedContent = await ensureHmodSections(
+            file1Content,
+            file2Content,
+            Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+            handleOpenHeaderModal,
+            selectedHeaders,
+            mlmOptions
+        );
+
+        if (updatedContent) {
+            console.log("asdasdasdasdasasd: ", updatedContent);
+            setFile1Content(updatedContent);
+
+            const updatedFile = new Blob([updatedContent], { type: "text/plain" });
+            const updatedFileObject = new File([updatedFile], selectedFile1.name, {
+                type: selectedFile1.type,
+            });
+            setFile1Content(updatedContent);
+            setSelectedFile1(updatedFileObject);
+            uploadFiles(updatedFileObject);
+        }
+    };
+
+    const uploadFiles = async (updatedFile) => {
         const formData = new FormData();
-        formData.append("file1", selectedFile1);
+        formData.append("file1", updatedFile);
         formData.append("file2", selectedFile2);
         formData.append("mode", mode);
         formData.append("userId", auth.currentUser.uid);
@@ -751,6 +787,8 @@ function FileUpload() {
         formData.append("Niter", hmodOptions.niter);
         formData.append("Nstep", hmodOptions.nstep);
         formData.append("Bootstrap", hmodOptions.bootstrap);
+        formData.append("Inputs", JSON.stringify(mlmOptions.xOptions));
+        formData.append("Outputs", JSON.stringify(mlmOptions.yOptions));
 
         formData.append("hiddenOptions", JSON.stringify(hmodOptions));
 
@@ -968,10 +1006,16 @@ function FileUpload() {
                         <div style={{ overflow: "auto", marginTop: 20 }}>
                             <h2 style={{ float: "left", marginTop: 0 }}>New Hybrid Model</h2>
                             <Button
-                                onClick={getTemplate}
+                                onClick={() => getTemplate(2)}
                                 variant='contained'
-                                style={{ float: "right", marginTop: 0 }}>
-                                Use Template Model
+                                style={{ float: "right", marginTop: 0, margin: 5 }}>
+                                Use Template Model 2
+                            </Button>
+                            <Button
+                                onClick={() => getTemplate(1)}
+                                variant='contained'
+                                style={{ float: "right", marginTop: 0, margin: 5 }}>
+                                Use Template Model 1
                             </Button>
                         </div>
                         <Grid container spacing={3} columns={20}>

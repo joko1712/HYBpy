@@ -11,6 +11,7 @@ from mlpnetinit import mlpnetinitw
 from mlpnetcreate import mlpnetcreate
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torch import optim 
 from mlpnetsetw import mlpnetsetw
 from hybodesolver import hybodesolver
 from odesfun import odesfun

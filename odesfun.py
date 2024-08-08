@@ -25,6 +25,7 @@ def computeDFDS(projhyb, fstate, state_symbols, NValues):
         DfDs = projhyb['mlm']['DFDS']
     print("DfDs",DfDs)
     DfDs = DfDs.subs(NValues)
+    print("DfDs",DfDs)
     DfDs = np.array(DfDs).reshape(len(fstate), len(state_symbols))
     if np.iscomplexobj(DfDs):
         DfDs = DfDs.real

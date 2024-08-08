@@ -67,7 +67,7 @@ basic1.nevent=0
 %Reactions
 basic1.nreaction=4
 basic1.reaction(1).id="miu"
-basic1.reaction(1).rate="(miumax * Sub / (Ks + Sub))"
+basic1.reaction(1).rate="miumax * Sub / (Ks + Sub)"
 basic1.reaction(1).Y=["VCD", "-alpha * VCD","alpha * VCD"]
 basic1.reaction(2).id="rS"
 basic1.reaction(2).rate="Sub"

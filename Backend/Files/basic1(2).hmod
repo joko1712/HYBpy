@@ -7,14 +7,14 @@ basic1.tspan=0:1:24
 
 %Species
 basic1.nspecies=2
-basic1.species(1).id="X"
+basic1.species(1).id="X";
 basic1.species(1).val=6000
 basic1.species(1).compartment="V"
 basic1.species(1).fixed=0
 basic1.species(1).min= 0;
 basic1.species(1).max= 50;
 basic1.species(1).isres=1;
-basic1.species(2).id="S"
+basic1.species(2).id="S";
 basic1.species(2).val=8
 basic1.species(2).compartment="V"
 basic1.species(2).fixed=0
@@ -32,22 +32,22 @@ basic1.compartment(1).isres=0;
 
 %Parameters
 basic1.nparameters=5
-basic1.parameters(1).id="alpha"
+basic1.parameters(1).id="alpha";
 basic1.parameters(1).val="0.65"
 basic1.parameters(1).reaction="global"
-basic1.parameters(2).id="beta"
+basic1.parameters(2).id="beta";
 basic1.parameters(2).val="0.075" 
 basic1.parameters(2).reaction="global"
-basic1.parameters(3).id="miumax"
+basic1.parameters(3).id="miumax";
 basic1.parameters(3).val="1" 
 basic1.parameters(3).reaction="global"
-basic1.parameters(4).id="ks"
+basic1.parameters(4).id="Ks";
 basic1.parameters(4).val="5" 
 basic1.parameters(4).reaction="global"
-basic1.parameters(5).id="Feedrate"
+basic1.parameters(5).id="Feedrate";
 basic1.parameters(5).val="12" 
 basic1.parameters(5).reaction="global"
-basci1.parameters(6).id="miu"
+basci1.parameters(6).id="miu";
 basic1.parameters(6).val="0"
 basic1.parameters(6).reaction="global"
 
@@ -64,11 +64,11 @@ basic1.nevent=0
 %Reactions
 basic1.nreaction=3
 basic1.reaction(1).id="miu"
-basic1.reaction(1).rate="(miumax * S / (Ks + S))"
-basic1.reaction(1).Y=["X", "-alpha * X"]
+basic1.reaction(1).rate="(miumax * S / (Ks + S)) * X"
+basic1.reaction(1).Y=["1", "-0.65"]
 basic1.reaction(2).id="rS"
-basic1.reaction(2).rate="S"
-basic1.reaction(2).Y=["0", "-beta * X"]
+basic1.reaction(2).rate="beta * X * S"
+basic1.reaction(2).Y=["0", "-1"]
 basic1.reaction(3).id="rFeed"
 basic1.reaction(3).rate="Feedrate"
 basic1.reaction(3).Y=["0","1"]
@@ -135,6 +135,32 @@ basic1.display='off';
 basic1.bootstrap=0;
 basic1.nensemble=1;
 basic1.crossval=1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 end

@@ -94,10 +94,14 @@ def fstate_func(projhyb,values):
 
     fState = [expr.subs(subout) for expr in fState]
 
+    print("fState", fState)
+    print("ruleAss", ruleassvariables)
+
+    fState = [expr.subs(ruleassvariables) for expr in fState]
+
 
 
     print("fState", fState)
-
     '''
     nspecies = data["nspecies"]
     nraterules = data["nraterules"]
@@ -141,4 +145,4 @@ def fstate_func(projhyb,values):
     print("DrDrann", DrDrann)
 
     '''
-    return fState, parametersvariables
+    return fState

@@ -6,14 +6,14 @@ basic1.tspan=0:1:24
 
 %Species
 basic1.nspecies=2
-basic1.species(1).id="VCD"
+basic1.species(1).id="X"
 basic1.species(1).val=6000
 basic1.species(1).compartment="V"
 basic1.species(1).fixed=0
 basic1.species(1).min= 0;
 basic1.species(1).max= 50;
 basic1.species(1).isres=1;
-basic1.species(2).id="Sub"
+basic1.species(2).id="S"
 basic1.species(2).val=8
 basic1.species(2).compartment="V"
 basic1.species(2).fixed=0
@@ -63,14 +63,14 @@ basic1.nevent=0
 %Reactions
 basic1.nreaction=3
 basic1.reaction(1).id="miu"
-basic1.reaction(1).rate="(miumax * Sub / (Ks + Sub))"
-basic1.reaction(1).miu=["VCD", "-alpha * VCD"]
+basic1.reaction(1).rate="(miumax * S / (Ks + S))"
+basic1.reaction(1).Y=["0", "-0.65 * 1"]
 basic1.reaction(2).id="rS"
-basic1.reaction(2).rate="Sub"
-basic1.reaction(2).rS=["0", "-beta * VCD"]
+basic1.reaction(2).rate="S"
+basic1.reaction(2).Y=["0", "-0.075 * 1"]
 basic1.reaction(3).id="rFeed"
 basic1.reaction(3).rate="Feedrate"
-basic1.reaction(3).rFeed=["0","1"]
+basic1.reaction(3).Y=["0","1"]
 
 
 

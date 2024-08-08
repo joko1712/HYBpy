@@ -70,7 +70,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     
     if jac is not None:
         jac = torch.tensor(jac, dtype=torch.float64)
-    fstate, parametersvariables = fstate_func(projhyb, values)
+    fstate = fstate_func(projhyb, values)
 
     while t < tf:
         h = min(projhyb['time']['TAU'], tf - t)

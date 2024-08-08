@@ -352,7 +352,7 @@ def hybdata(filename):
             time_dict = {
                 "id": id,
                 "min": int(min),
-                "max": int(max),
+                "max": float(max),
                 "TAU": float(tau),
                 "tspan": listArray,
             }

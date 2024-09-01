@@ -97,9 +97,9 @@ def fstate_func(projhyb,values):
     print("fState", fState)
     print("ruleAss", ruleassvariables)
 
-    fState = [expr.subs(ruleassvariables) for expr in fState]
-
-
+    '''
+    fState = automate_substitution(fState, ruleassvariables)
+    '''
 
     print("fState", fState)
     '''
@@ -146,3 +146,17 @@ def fstate_func(projhyb,values):
 
     '''
     return fState
+
+
+def automate_substitution(fState, ruleassvariables):
+    all_symbols = set()
+    for expr in fState:
+        all_symbols.update(expr.free_symbols)
+
+    symbolic_ruleassvariables = {
+        sp.sympify(key): sp.sympify(val) for key, val in ruleassvariables.items()
+    }
+
+    fState_substituted = [expr.subs(symbolic_ruleassvariables) for expr in fState]
+
+    return fState_substituted

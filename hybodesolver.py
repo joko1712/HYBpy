@@ -10,7 +10,7 @@ from derivativeXY import numerical_derivativeXY
 import json 
 
 
-def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, jac, hess, w, batch, projhyb):
+def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w, batch, projhyb):
     t = t0
     hopt = []   
 
@@ -47,25 +47,23 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
 
     for i in range(1, projhyb["mlm"]["ny"]+1):
         values[projhyb["mlm"]["y"][str(i)]["id"]] = values[projhyb["mlm"]["y"][str(i)]["val"]]
-
+    
     for i in range(1, projhyb["nparameters"]+1):
         values[projhyb["parameters"][str(i)]["id"]] = projhyb["parameters"][str(i)]["val"]
-
+    
     for i in range(1, projhyb["nspecies"]+1):
         state_symbols.append(sp.Symbol(projhyb["species"][str(i)]["id"]))
 
     for i in range(1, projhyb["ncompartment"]+1):
         state_symbols.append(sp.Symbol(projhyb["compartment"][str(i)]["id"]))
     
-    
-    statedict = ensure_dict(statedict)
-
-    print("statedict", statedict)
     print("state", state)
+    '''
+    print("state_dict", state_dict)
+    state_dict = {symbols(key): value for key, value in state_dict.items()}
+    print("state_dict", state_dict)
+    '''
     print("State_Symbols", state_symbols)
-
-    for key, val in statedict.items():
-        values[key] = val
 
     
     if jac is not None:

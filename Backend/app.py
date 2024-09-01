@@ -230,6 +230,9 @@ def upload_file():
         count = len(data)
         data["nbatch"] = count
 
+        with open("data.json", "w") as write_file:
+            json.dump(data, write_file)
+
 
         projhyb, trainData, metrics, newHmodFile = hybtrain(projhyb, data, user_id, trained_weights, file1.filename)
 

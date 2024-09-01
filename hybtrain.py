@@ -171,7 +171,7 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
     if projhyb['method'] == 1:
         print("   Optimiser:              Trust Region Reflective")
         options = {
-            'xtol': 1e-10, #1e-10
+            'xtol': 1e-8, #1e-10
             'verbose': projhyb['display'],
             'max_nfev': 1000 * projhyb['niter'] * projhyb['niteroptim'],
             'method': 'trf',
@@ -477,16 +477,16 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
             sY = torch.from_numpy(sY)
             
             state = np.array(file[l]["y"][0])
+            #statedict = file[l]["key_value_array"][0]
+
             Sw = np.zeros((nt, nw))
 
             for i in range(1, file[l]["np"]):
-                statedict = np.array(file[l]["key_value_array"][i-1])
-                print("statedict", statedict)
-
+                
                 batch_data = file[l]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
                                             control_function , projhyb["fun_event"], tb[i-1], tb[i],
-                                            state, statedict, Sw, 0, w, batch_data, projhyb)
+                                            state, Sw, 0, w, batch_data, projhyb)
                 
                 Y_select = Y[i, isresY]
                 state_tensor = torch.tensor(state, dtype=torch.float64)
@@ -674,9 +674,10 @@ def resfun_direct_jac(ann, w, istrain, projhyb, file, method=1):
 
             state = np.array(file[l]["y"][0])
             state = torch.tensor(state, requires_grad=True, dtype=torch.float64)
+            statedict = np.array(file[l]["key_value_array"][0])
 
             for i in range(1, file[l]["np"]):
-                statedict = np.array(file[l]["key_value_array"][i-1])
+                
                 print("statedict", statedict)
 
                 batch_data = file[l]
@@ -853,12 +854,13 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         
         state = np.array(file[l]["y"][0])
         Sw = np.zeros((nt, nw))
+        #statedict = file[l]["key_value_array"][0]
+
 
         for i in range(1, file[l]["np"]):
-            statedict = np.array(file[l]["key_value_array"][i-1])
 
             batch_data = file[l]
-            _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, statedict, None, None, w, batch_data, projhyb)
+            _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, None, None, w, batch_data, projhyb)
 
             if l not in dictState:
                 dictState[l] = {}

@@ -92,6 +92,7 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
     if projhyb['mode'] == 1:
         NValues = {**values, **state}
+        print("NValues",NValues)
         fstate = projhyb_cache.get('FSTATE', sp.sympify(fstate))
         state_symbols = projhyb_cache.get('STATE_SYMBOLS', sp.sympify(state_symbols))
         anninp = projhyb_cache.get('ANNINP', sp.sympify(anninp))

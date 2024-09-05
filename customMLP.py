@@ -27,6 +27,8 @@ class CustomMLP(nn.Module):
 
     def forward(self, x):
         for layer in self.layers:
+            print("weights: ", layer.w)
+            print("biases: ", layer.b)
             x = x.to(dtype=torch.float64)
 
             x = layer(x)
@@ -81,6 +83,19 @@ class CustomMLP(nn.Module):
 
                 layer.w.data = new_w_tensor
                 layer.b.data = new_b_tensor
+        
+        '''
+        for layer in self.layers:
+            print("weights: ", layer.w)
+            print("biases: ", layer.b)
+            if layer.w.shape == torch.Size([3, 3]):
+                with torch.no_grad():
+                    transposed_w = layer.w.t().clone() 
+                    layer.w.copy_(transposed_w)  
+        '''
+
+
+
 
     def print_weights_and_biases(self):
         for i, layer in enumerate(self.layers):
@@ -110,17 +125,52 @@ class CustomMLP(nn.Module):
             
         # y = output
         y = activations[-1]
+
+        # x = input
+        x = activations[0]
+
+        # h1 
         tensorList = []
         DrannDw = []
         output_size = self.layers[-1].w.shape[0]
         DrannDanninp = torch.eye(output_size, dtype=torch.float64)
         A1 = DrannDanninp
         tensor_size = 0
-        
+        '''
+        with open("back.txt", "a") as f:
+            f.write("activations\n")
+            f.write(str(activations))
+            f.write("\n")
+            f.write("y\n")
+            f.write(str(y))
+            f.write("\n")
+            f.write("x\n")
+            f.write(str(x))
+            f.write("\n")
+            f.write("")
+            f.write(str(range(len(self.layers))))
+            f.write("\n")
+        '''
+    
         for i in reversed(range(len(self.layers))):
+
             h1 = activations[i]
-            h1l = self.layers[i].derivative(h1)
-            h1l_reshaped = h1l.t()
+            h1l = self.layers[i-1].derivative(h1)
+            h1l_reshaped = h1l.t()        
+
+            '''
+            1º valor i self.layers -1
+               A2 =  matriz identidade tamanho = n de outputs
+
+            2º valor i self.layers 
+                obter h1l  =  self.layers[i].derivative(h1)
+                A1 = -(torch.mm(A2, self.layers[i].w) * h1l.repeat(output_size, 1))
+
+            3º valor i self.layers
+                dydw = matriz em linha kron([input,1],A1).cat(kron([h1,1],A2)) 
+                dydx = A1 * self.layers[i].w
+
+            '''
             
             h1_reshaped = torch.cat((h1.t(), torch.tensor([[1]])), dim=1)
             
@@ -140,6 +190,7 @@ class CustomMLP(nn.Module):
 
             h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]])), dim=1)
 
+
         DrannDanninp = torch.mm(A1,self.layers[0].w)
 
 
@@ -147,6 +198,7 @@ class CustomMLP(nn.Module):
 
         DrannDw = torch.cat(DrannDw, dim=1)
         DrannDw = DrannDw.view(ny, tensor_size)
+
 
         return y, DrannDanninp, DrannDw
 

@@ -24,9 +24,13 @@ def computeDFDS(projhyb, fstate, state_symbols, NValues):
     else:
         DfDs = projhyb['mlm']['DFDS']
     print("DfDs",DfDs)
+
     DfDs = DfDs.subs(NValues)
     print("DfDs",DfDs)
+    
+        
     DfDs = np.array(DfDs).reshape(len(fstate), len(state_symbols))
+
     if np.iscomplexobj(DfDs):
         DfDs = DfDs.real
 
@@ -41,9 +45,11 @@ def computeDFDRANN(projhyb, fstate, rann_symbol, NValues):
         projhyb['mlm']['DFDRANN'] = DfDrann
     else:
         DfDrann = projhyb['mlm']['DFDRANN']
-    print("DfDrann",DfDrann)
+
+        
     DfDrann = DfDrann.subs(NValues)
     DfDrann = np.array(DfDrann).reshape(len(fstate), projhyb["mlm"]["ny"])
+
     if np.iscomplexobj(DfDrann):
         DfDrann = DfDrann.real
     DfDrann = torch.from_numpy(DfDrann.astype(np.float64))
@@ -56,8 +62,9 @@ def computeDANNINPDSTATE(projhyb, anninp, state_symbols, NValues):
         projhyb['mlm']['DANNINPDSTATE'] = DanninpDstate
     else:
         DanninpDstate = projhyb['mlm']['DANNINPDSTATE']
-    print("DanninpDstate",DanninpDstate)
+
     DanninpDstate = DanninpDstate.subs(NValues)
+
     DanninpDstate = np.array(DanninpDstate)
     if len(anninp) > 1:
         DanninpDstate = DanninpDstate.reshape(len(anninp), len(anninp)+1)
@@ -68,18 +75,16 @@ def computeDANNINPDSTATE(projhyb, anninp, state_symbols, NValues):
 
 def computeBackpropagation(ann, anninp_tensor, projhyb):
     y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor, projhyb['mlm']['ny'])
-    print("y",y)
-    print("DrannDanninp",DrannDanninp)
-    print("DrannDw",DrannDw)
+
     return y, DrannDanninp, DrannDw
 
 def computeDRANNDS(DrannDanninp, DanninpDstate):
-    print("DrannDanninp",DrannDanninp)
 
-    print("DanninpDstate",DanninpDstate.t())
     return torch.mm(DrannDanninp, DanninpDstate)
 
 def computeDfDrannDrannDw(DfDrann, DrannDw):
+
+
     return torch.mm(DfDrann, DrannDw)
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann):
@@ -88,6 +93,8 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
         NValues = {**values, **state}
         fstate = [expr.subs(NValues) for expr in fstate]
         return fstate
+
+    print("fstate",fstate)
 
 
     if projhyb['mode'] == 1:
@@ -118,7 +125,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
                 key = future_to_function[future]
                 results[key] = future.result()
 
-        print("Fsate",fstate)
 
         DfDs = results['DfDs']
         DfDrann = results['DfDrann']
@@ -142,8 +148,8 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
         DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann, DrannDs)
         fjac = torch.mm(DfDsDfDrannDrannDs, jac) + DfDrannDrannDw
 
+
         fstate = [expr.subs(NValues) for expr in fstate]
-        print(fstate)
         return fstate, fjac
 
     elif projhyb['mode'] == 3:

@@ -4,6 +4,7 @@ import json
 import sympy as sp
 from sympy import symbols, sympify, simplify, Matrix, Eq
 import numpy as np
+from sympy.parsing.sympy_parser import parse_expr
 
 
 
@@ -41,12 +42,15 @@ def fstate_func(projhyb,values):
         parametersvariables[symbols(projhyb["parameters"][str(i)]["id"])] = sympify(
             projhyb["parameters"][str(i)]["val"])
 
-    
     ruleassvariables = {}
-    for i in range(1, projhyb["nruleAss"]+1):
-        ruleassvariables[symbols(projhyb["ruleAss"][str(i)]["id"])] = sp.Symbol(
-            projhyb["ruleAss"][str(i)]["val"])
-    
+    for i in range(1, projhyb["nruleAss"] + 1):
+        rule_id = projhyb["ruleAss"][str(i)]["id"]
+        rule_val = projhyb["ruleAss"][str(i)]["val"]
+        
+        parsed_expr = parse_rule_val(rule_val)
+        
+        ruleassvariables[sp.Symbol(rule_id)] = parsed_expr
+        
 
     Raterules = []
     fRaterules = []
@@ -86,6 +90,8 @@ def fstate_func(projhyb,values):
     State = Species + Raterules
 
     fState = fSpecies + fRaterules
+
+    print("fState", fState)
     
     subout = {}
     for i in range(1, projhyb["mlm"]["ny"]+1):
@@ -95,13 +101,15 @@ def fstate_func(projhyb,values):
     fState = [expr.subs(subout) for expr in fState]
 
     print("fState", fState)
+
     print("ruleAss", ruleassvariables)
 
-    '''
-    fState = automate_substitution(fState, ruleassvariables)
-    '''
+    fState = [expr.subs(ruleassvariables) for expr in fState]
 
     print("fState", fState)
+
+
+
     '''
     nspecies = data["nspecies"]
     nraterules = data["nraterules"]
@@ -148,15 +156,12 @@ def fstate_func(projhyb,values):
     return fState
 
 
-def automate_substitution(fState, ruleassvariables):
-    all_symbols = set()
-    for expr in fState:
-        all_symbols.update(expr.free_symbols)
-
-    symbolic_ruleassvariables = {
-        sp.sympify(key): sp.sympify(val) for key, val in ruleassvariables.items()
-    }
-
-    fState_substituted = [expr.subs(symbolic_ruleassvariables) for expr in fState]
-
-    return fState_substituted
+def parse_rule_val(rule_val):
+    # Extract all unique variables from the string
+    symbols_in_expr = {}
+    for term in rule_val.replace('*', ' ').replace('/', ' ').split():
+        symbols_in_expr[term] = sp.Symbol(term)
+    
+    # Parse the expression using these symbols
+    parsed_expr = parse_expr(rule_val, local_dict=symbols_in_expr)
+    return parsed_expr

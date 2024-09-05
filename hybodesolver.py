@@ -10,30 +10,24 @@ from derivativeXY import numerical_derivativeXY
 import json 
 
 
-def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w, batch, projhyb):
+def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, jac, hess, w, batch, projhyb):
     t = t0
     hopt = []   
 
     state_symbols = []
 
     anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
-    print("anninp", anninp)
-    print("rann", rann)
-    print("anninp_mat", anninp_mat)
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
     anninp_tensor = anninp_tensor.view(-1, 1)       
 
-    activations = [anninp_tensor]
-    print("activations", activations)
-    
+    activations = [anninp_tensor]    
     y = activations[-1]
 
     rann_results = ann.forward(y)
-    print("rann_results", rann_results)
 
     rann_results = rann_results.detach().numpy()
-
+    
 
     state = extract_species_values(projhyb, state)
     values = {}
@@ -57,14 +51,9 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
     for i in range(1, projhyb["ncompartment"]+1):
         state_symbols.append(sp.Symbol(projhyb["compartment"][str(i)]["id"]))
     
-    print("state", state)
-    '''
-    print("state_dict", state_dict)
-    state_dict = {symbols(key): value for key, value in state_dict.items()}
-    print("state_dict", state_dict)
-    '''
-    print("State_Symbols", state_symbols)
 
+    for key, value in statedict.items():
+        values[key] = value
     
     if jac is not None:
         jac = torch.tensor(jac, dtype=torch.float64)
@@ -86,8 +75,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
             
         else:
             ucontrol1 = []
-        
-        print("values", values)
+
 
 
                 
@@ -101,21 +89,24 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
         h2 = h / 2
         h2 = torch.tensor(h2, dtype=torch.float64)
-        print("k1_state", k1_state)
         k1_state = np.array(k1_state)
         k1_state = k1_state.astype(np.float64)
         k1_state = torch.from_numpy(k1_state)
         
         if jac != None:
 
-            state1 = update_state(state, h2, k1_state)
+            state1, staterann1 = update_state(state, h2, k1_state)
+            
+            values = rannRecalc(projhyb, staterann1, ann, values)
+
             k2_state, k2_jac = odesfun(ann, t + h2, state1, jac + h2 * k1_jac, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
            
             k2_state = np.array(k2_state)
             k2_state = k2_state.astype(np.float64)
             k2_state = torch.from_numpy(k2_state)
 
-            state2 = update_state(state, h2, k2_state)
+            state2, staterann2 = update_state(state, h2, k2_state)
+            values = rannRecalc(projhyb, staterann2, ann, values)
 
             k3_state, k3_jac = odesfun(ann, t + h2, state2, jac + h2 * k2_jac, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
             
@@ -124,9 +115,16 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
             k3_state = torch.from_numpy(k3_state)
 
         else:
-            state1 = update_state(state, h2, k1_state)
+            state1, staterann1 = update_state(state, h2, k1_state)
+
+            values = rannRecalc(projhyb, staterann1, ann, values)
+
             k2_state = odesfun(ann, t + h2, state1, None, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
-            state2 = update_state(state, h2, k2_state)
+
+            state2, staterann2 = update_state(state, h2, k2_state)
+
+            staterann1 = rannRecalc(projhyb, staterann2, ann, values)
+
             k3_state = odesfun(ann, t + h2, state2, None, None, w, ucontrol2, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
 
         hl= h - h / 1e10
@@ -134,13 +132,19 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
         if jac != None:
 
-            state3 = update_state(state, hl, k3_state)
+            state3, staterann3 = update_state(state, hl, k3_state)
+
+            values = rannRecalc(projhyb, staterann3, ann, values)
+
             k4_state, k4_jac = odesfun(ann, t + hl, state3, jac + hl * k3_jac, None, w, ucontrol4, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
             k4_state = np.array(k4_state)
             k4_state = k4_state.astype(np.float64)
             k4_state = torch.from_numpy(k4_state)
         else:
-            state3 = update_state(state, hl, k3_state)
+            state3, staterann3 = update_state(state, hl, k3_state)
+
+            values = rannRecalc(projhyb, staterann3, ann, values)
+
             k4_state = odesfun(ann, t + hl, state3, None, None, w, ucontrol4, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann)
         
 
@@ -157,15 +161,11 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, jac, hess, w
 
         t = t + h
     
-    stateFinal.append(int(projhyb["compartment"]["1"]["val"]))
-
     return t, stateFinal, jac, hess
 
 def anninp_rann_func(projhyb, state):
 
     species_values = extract_species_values(projhyb, state)
-
-    print("species_values", species_values)
 
     totalsyms = ["t", "dummyarg1", "dummyarg2", "w"]
 
@@ -197,9 +197,6 @@ def anninp_rann_func(projhyb, state):
 
         val_str = projhyb["mlm"]["x"][str(i)]["val"]
         max_str = projhyb["mlm"]["x"][str(i)]["max"]
-
-        # Debugging statements
-
 
         try:
             val_expr = sp.sympify(val_str)
@@ -240,11 +237,14 @@ def extract_species_values(projhyb, state):
         species_val = state[int(key)-1]
         species_values[species_id] = species_val
 
+    species_values['V'] = state[-1]
+
     return species_values
 
 
 def update_state(state, h2, k1_state):
     new_state = {}
+    stateRann = []
     
     for index, (species_id, value) in enumerate(state.items()):
 
@@ -253,8 +253,10 @@ def update_state(state, h2, k1_state):
             new_state[species_id] = new_value
         else:
             new_state[species_id] = value
+
+        stateRann.append(new_value)
     
-    return new_state
+    return new_state, stateRann
 
 
 def calculate_state_final(state, h, k1_state, k2_state, k3_state, k4_state):
@@ -293,3 +295,24 @@ def ensure_dict(statedict):
         raise ValueError("statedict should be a dictionary or a compatible array.")
     
     return statedict
+
+
+def rannRecalc(projhyb, state, ann, values):
+    anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
+
+
+    anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
+    anninp_tensor = anninp_tensor.view(-1, 1)       
+
+    activations = [anninp_tensor]
+    
+    y = activations[-1]
+
+    rann_results = ann.forward(y)
+
+    rann_results = rann_results.detach().numpy()
+
+    for range_y in range(0, len(rann_results)):
+        values["rann"+str(range_y+1)] = rann_results[range_y].item()
+
+    return values

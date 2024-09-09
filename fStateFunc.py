@@ -68,6 +68,8 @@ def fstate_func(projhyb,values):
 
     for i in range(1, projhyb["nspecies"]+1):
         for j in range(1, projhyb["nreaction"]+1):
+            print(sympify(projhyb["reaction"][str(j)]["rate"]))
+            print(projhyb["reaction"][str(j)]["Y"][str(i)])
             nvalues = sympify(projhyb["reaction"][str(
                 j)]["rate"]) * projhyb["reaction"][str(j)]["Y"][str(i)]
             rates.append(sympify(nvalues))
@@ -91,7 +93,6 @@ def fstate_func(projhyb,values):
 
     fState = fSpecies + fRaterules
 
-    print("fState", fState)
     
     subout = {}
     for i in range(1, projhyb["mlm"]["ny"]+1):
@@ -100,13 +101,7 @@ def fstate_func(projhyb,values):
 
     fState = [expr.subs(subout) for expr in fState]
 
-    print("fState", fState)
-
-    print("ruleAss", ruleassvariables)
-
     fState = [expr.subs(ruleassvariables) for expr in fState]
-
-    print("fState", fState)
 
 
 

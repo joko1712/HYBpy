@@ -541,6 +541,43 @@ function FileUpload() {
         }
     };
 
+    const getTemplateDownloadLink = (templateType, fileType) => {
+        let url = "";
+
+        if (fileType === "csv") {
+            url = "http://localhost:5000/get-template-csv";
+        } else if (fileType === "hmod") {
+            url = "http://localhost:5000/get-template-hmod";
+        }
+
+        if (templateType === 3) {
+            fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ template_type: templateType }),
+            })
+                .then((blob) => {
+                    const fileUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = fileUrl;
+
+                    if (fileType === "csv") {
+                        a.download = "template.csv";
+                    } else if (fileType === "hmod") {
+                        a.download = "template.hmod";
+                    }
+
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(fileUrl);
+                })
+                .catch((error) => {
+                    console.error("Error fetching template:", error);
+                });
+        }
+    };
+
     // Fetch the template HMOD and CSV files from the server
     const getTemplate = (templateType) => {
         fetch("http://localhost:5000/get-template-csv", {
@@ -1129,11 +1166,25 @@ function FileUpload() {
                                         marginTop: "8px",
                                         justifyContent: "flex-end",
                                     }}>
+                                    <Button
+                                        onClick={() => getTemplateDownloadLink(3, "csv")}
+                                        variant='contained'
+                                        sx={{
+                                            height: "100%",
+                                            marginBottom: 2,
+                                            marginRight: 2,
+                                        }}
+                                        disabled={progress < 2}>
+                                        Get CSV Template
+                                    </Button>
                                     <label htmlFor='csv-upload'>
                                         <Button
-                                            fullWidth
                                             variant='contained'
-                                            sx={{ height: "60%", marginBottom: 2 }}
+                                            sx={{
+                                                height: "60%",
+                                                marginBottom: 2,
+                                                marginRight: 2,
+                                            }}
                                             disabled={progress < 1}
                                             component='span'>
                                             <PublishIcon fontSize='large' />
@@ -1150,7 +1201,6 @@ function FileUpload() {
                                         onClick={() => setModalOpen(true)}
                                         variant='contained'
                                         sx={{
-                                            marginLeft: "16px",
                                             height: "100%",
                                             marginBottom: 2,
                                         }}
@@ -1240,6 +1290,17 @@ function FileUpload() {
                                         marginTop: "8px",
                                         justifyContent: "flex-end",
                                     }}>
+                                    <Button
+                                        onClick={() => getTemplateDownloadLink(3, "hmod")}
+                                        variant='contained'
+                                        sx={{
+                                            height: "100%",
+                                            marginBottom: 2,
+                                            marginRight: 2,
+                                        }}
+                                        disabled={progress < 2}>
+                                        Get HMOD Template
+                                    </Button>
                                     <label htmlFor='hmod-upload'>
                                         <Button
                                             component='span'

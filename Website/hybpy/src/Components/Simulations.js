@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { auth } from "../firebase-config";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { db } from "../firebase-config";
 import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import MuiDrawer from "@mui/material/Drawer";
@@ -151,6 +153,74 @@ function Simulations() {
 
     const [mlmOptions, setMlmOptions] = useState({});
 
+    const [completedRuns, setCompletedRuns] = React.useState([]);
+    const [selectedRun, setSelectedRun] = React.useState(null);
+
+    const fetchCompletedRuns = async () => {
+        const userId = auth.currentUser.uid;
+        const runsCollectionRef = collection(db, "users", userId, "runs");
+        const q = query(
+            runsCollectionRef,
+            where("status", "==", "completed"),
+            where("userId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        const completedRuns = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        return completedRuns;
+    };
+
+    useEffect(() => {
+        const fetchRuns = async () => {
+            const runs = await fetchCompletedRuns();
+            setCompletedRuns(runs);
+        };
+
+        fetchRuns();
+    }, []);
+
+    const handleRunSelection = async (run) => {
+        setSelectedRun(run);
+        console.log("Selected Run: ", run);
+        console.log("run.response_data.new_hmod_url: ", run.response_data.new_hmod_url);
+
+        try {
+            const response = await fetch(`http://localhost:5000/get-new-hmod`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    url: run.response_data.new_hmod_url,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch the HMOD file from the server.");
+            }
+
+            const blob = await response.blob();
+
+            const fileName = run.response_data.new_hmod || "new_hmod.hmod";
+            const file = new File([blob], fileName, { type: "text/plain" });
+
+            const syntheticEvent = {
+                target: {
+                    files: [file],
+                },
+            };
+
+            handleFileChange1(syntheticEvent);
+
+            console.log("File downloaded and passed to handleFileChange1.");
+        } catch (error) {
+            console.error("Error handling the run selection: ", error);
+        }
+    };
+
     const handleMlmModalSave = (options) => {
         setMlmModalOpen(false);
         setMlmOptions(options);
@@ -228,13 +298,28 @@ function Simulations() {
     };
 
     const parseWeightsFromHmod = (content) => {
-        const weightRegex = /parameters\((\d+)\).id="w\d+"\s*parameters\(\d+\).val="([-\d.]+)"/g;
+        const prefixMatch = content.match(/(\w+)\.parameters\(\d+\)\.id="w\d+"/);
+        if (!prefixMatch) {
+            console.error("No prefix found in the HMOD file.");
+            return [];
+        }
+
+        const dynamicPrefix = prefixMatch[1];
+        console.log("Dynamic Prefix Found: ", dynamicPrefix);
+
+        const weightRegex = new RegExp(
+            `${dynamicPrefix}\\.parameters\\(\\d+\\)\\.id="w\\d+";\\s*${dynamicPrefix}\\.parameters\\(\\d+\\)\\.val=(-?[\\d\\.eE-]+);`,
+            "g"
+        );
+
         let weights = [];
         let match;
 
         while ((match = weightRegex.exec(content)) !== null) {
-            weights.push(parseFloat(match[2]));
+            weights.push(parseFloat(match[1]));
         }
+
+        console.log("Extracted Weights: ", weights);
 
         return weights;
     };
@@ -954,34 +1039,6 @@ function Simulations() {
         setSelectedFile1(updatedFileObject);
     };
 
-    // Fetch old HMOD file
-    const fetchOldHmodFile = async (userId, runId) => {
-        const response = await fetch(
-            `http://localhost:5000/get-old-hmod?user_id=${userId}&run_id=${runId}`
-        );
-        const data = await response.json();
-        if (response.ok) {
-            return data;
-        } else {
-            throw new Error(data.error);
-        }
-    };
-
-    // Use old HMOD file
-    const handleUseOldHmod = async (runId) => {
-        try {
-            const oldHmod = await fetchOldHmodFile(auth.currentUser.uid, runId);
-            setFile1Content(oldHmod.content);
-            const updatedFileObject = new File([oldHmod.content], "old_hmod.hmod", {
-                type: "text/plain",
-            });
-            setSelectedFile1(updatedFileObject);
-            console.log("Old HMOD content set successfully.");
-        } catch (error) {
-            console.error("Error fetching old HMOD file:", error);
-        }
-    };
-
     return (
         <ThemeProvider theme={defaultTheme}>
             <Box sx={{ display: "flex" }}>
@@ -1107,6 +1164,33 @@ function Simulations() {
                                             }
                                         }}
                                     />
+                                </Paper>
+                            </Grid>
+
+                            <Grid item xs={20}>
+                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                    <Typography variant='h5'>Select a Previous Run</Typography>
+                                    <Select
+                                        fullWidth
+                                        value={selectedRun}
+                                        onChange={(e) => handleRunSelection(e.target.value)}
+                                        renderValue={(selected) =>
+                                            selected ? selected.description : "Select a Run"
+                                        }
+                                        MenuProps={{
+                                            PaperProps: {
+                                                style: {
+                                                    maxHeight: 48 * 4.5,
+                                                },
+                                            },
+                                        }}>
+                                        {completedRuns.map((run) => (
+                                            <MenuItem key={run.id} value={run}>
+                                                {run.description} -{" "}
+                                                {new Date(run.createdAt.toDate()).toLocaleString()}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
                                 </Paper>
                             </Grid>
 
@@ -1324,17 +1408,6 @@ function Simulations() {
                                             marginBottom: 2,
                                         }}>
                                         Edit HMOD Options
-                                    </Button>
-                                    <Button
-                                        variant='contained'
-                                        onClick={() => handleUseOldHmod("old_run_id")}
-                                        disabled={progress < 2}
-                                        sx={{
-                                            marginLeft: "16px",
-                                            height: "100%",
-                                            marginBottom: 2,
-                                        }}>
-                                        Use Old HMOD
                                     </Button>
                                 </div>
                             </Grid>

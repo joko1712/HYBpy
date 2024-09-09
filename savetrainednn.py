@@ -175,7 +175,7 @@ def saveNN(modloc, inputs, hybout, orfile, nfile, orderedweights, ann):
                 skip -= 1
 
             else:
-                h.write(line.replace(orfile[:opos], nfile[:npos]))
+                h.write(line.replace("Newhmod", prefix))
 
                 
 def load_model_from_h5(model, file_path):

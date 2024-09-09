@@ -64,10 +64,10 @@ basic1.nevent=0
 %Reactions
 basic1.nreaction=3
 basic1.reaction(1).id="miu"
-basic1.reaction(1).rate="(miumax * S / (Ks + S)) * X"
+basic1.reaction(1).rate="(miumax*S/(Ks+S))*X"
 basic1.reaction(1).Y=["1", "-0.65"]
 basic1.reaction(2).id="rS"
-basic1.reaction(2).rate="beta * X * S"
+basic1.reaction(2).rate="beta*X*S"
 basic1.reaction(2).Y=["0", "-1"]
 basic1.reaction(3).id="rFeed"
 basic1.reaction(3).rate="Feedrate"

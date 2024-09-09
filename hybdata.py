@@ -59,6 +59,7 @@ def hybdata(filename):
     projId = ""
     inputs = []
     outputs = []
+    prefix = ""
 
     correctreac = 0
     correctl = 1
@@ -116,6 +117,7 @@ def hybdata(filename):
         if "nspecies" in line:
             # Get the number of species
             nspecies = int(line[line.find("=")+1:len(line)+1])
+            prefix = extract_prefix_from_line(line)
 
         # Check if line is a species
         if "species(" in line:
@@ -163,7 +165,7 @@ def hybdata(filename):
             # Get the number of compartments
             ncompartments = int(line[line.find("=")+1:len(line)+1])
 
-        if "compartment(" in line:
+        if "compartments(" in line:
             i = line[line.find("(")+1:line.find(")")]
 
             # Get the compartments id
@@ -586,6 +588,7 @@ def hybdata(filename):
         "addrop": addrop,
         "inputs": inputs,
         "outputs": outputs,
+        "filename": prefix
     }
 
     for i in range(1, proj_dict["mlm"]["nx"]+1):
@@ -593,6 +596,8 @@ def hybdata(filename):
 
     for i in range(1, proj_dict["mlm"]["ny"]+1):
         outputs.append(proj_dict["mlm"]["y"][str(i)]["id"])
+
+    
 
     proj_dict["inputs"] = inputs
     proj_dict["outputs"] = outputs
@@ -604,3 +609,13 @@ def hybdata(filename):
 
     
     return proj_dict
+
+
+
+def extract_prefix_from_line(line):
+    # Regular expression to match the prefix before the first dot
+    match = re.match(r"(\w+)\.", line)
+    if match:
+        prefix = match.group(1)
+        return prefix
+    return None

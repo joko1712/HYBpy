@@ -171,7 +171,7 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
     if projhyb['method'] == 1:
         print("   Optimiser:              Trust Region Reflective")
         options = {
-            'xtol': 1e-4, #1e-10
+            'xtol': 1e-15, #1e-10
             'verbose': projhyb['display'],
             'max_nfev': 1000 * projhyb['niter'],
             'method': 'trf',
@@ -233,6 +233,7 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
         ann = mlpnetcreate(projhyb, projhyb['mlm']['neuron'])
         projhyb['mlm']['fundata'] = ann
         weights, ann = ann.get_weights()
+        '''
         
         weights = [-2.08210221e+01, -2.92648787e+01, -2.99616485e+00, -3.91873435e-01,
                     3.45529229e-01,  2.67547769e+00,  3.70737593e-01, -3.88445614e-01,
@@ -240,16 +241,17 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
                     -8.27238985e+00,  9.76706417e-01, -1.80689630e+00,  2.59146860e-01,
                     -2.80553531e+00, -9.70047111e-01]
         
-        '''
+
         weights = [-20.8210221361445, -29.2648787002075, -2.99616485291983, -0.391873434528431, 0.345529228671208, 2.67547768790112, 0.370737593202186, -5.50984481311063, -8.27238985127028, -0.388445614425761, 2.70463125251191, 0.976706416952729, 0.0217403921016785, 0.000969372025403460, -1.80689629911906, 0.259146859752498, -2.80553530793061, -0.970047111391006]
         
         
         weights = [-0.05165798, -0.00395335,  0.0011845,  -0.00152316,  0.00073078, -0.00047021, -0.06688604,  0.00180839, -0.00095668,  0.06751172, -0.00933701,  0.00603163, -0.08951404, -0.00475901,  0.0039245,   0.2426019,   0.08341522,  0.04603258]
         
-        '''
+    
         weights = np.array(weights)
         
         ann.set_weights(weights)
+        '''
         
 
 
@@ -502,10 +504,8 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
             sY = torch.from_numpy(sY)
             
             state = np.array(file[l]["y"][0])
-
-            state = state[0:5]
-
-            print("state", state)
+            
+            state = state[0:ns+1]
 
             Sw = np.zeros((nt, nw))
 
@@ -514,8 +514,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
                 statedict = file[l]["key_value_array"][i-1]
 
                 dict_items_list = list(statedict.items())
-                statedict = dict(dict_items_list[5:8])
-
+                statedict =  dict(dict_items_list[len(state):len(dict_items_list)])
 
                 batch_data = file[l]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
@@ -540,33 +539,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
                 print("#################################################")
                 print("state", state)
 
-                ''' 
-                with open("state{i}.txt", "a") as f:
-                    f.write(str(state))
-                    f.write("Y\n")
-                    f.write(str(Y_select))
-                    f.write("\n")
-                    f.write("YState\n")
-                    f.write(str(Ystate))
-                    f.write("\n")
-                    f.write("sY[i, isresY].numpy()\n")
-                    f.write(str(sY[i, isresY].numpy()))
-                    f.write("\n")
-                    f.write("sresall\n")
-                    f.write(str(sresall))
-                    f.write("\n")
-                    f.write("SYrepeat\n")
-                    f.write(str(SYrepeat))
-                    f.write("\n")
-                    f.write("Sw\n")
-                    f.write(str(Sw))
-                    f.write("\n")
-                    f.write("result\n")
-                    f.write(str(result))
-                    f.write("\n")
-                    f.write("sjacall\n")
-                    f.write(str(sjacall))
-                '''
+
     valid_idx = ~np.isnan(sresall) & ~np.isinf(sresall)
     sresall = sresall[valid_idx]
     sjacall = sjacall[valid_idx, :]
@@ -913,7 +886,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         
         state = np.array(file[l]["y"][0])
 
-        state = state[0:5]
+        state = state[0:ns+1]
         Sw = np.zeros((nt, nw))
 
 
@@ -921,7 +894,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
             statedict = file[l]["key_value_array"][i-1]
 
             dict_items_list = list(statedict.items())
-            statedict = dict(dict_items_list[5:8])
+            statedict =  dict(dict_items_list[len(state):len(dict_items_list)])
 
             batch_data = file[l]
             _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, statedict, None, None, w, batch_data, projhyb)

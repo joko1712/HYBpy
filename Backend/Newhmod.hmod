@@ -35,15 +35,15 @@ parkramstandard.species(4).isres=1;
 
 % Compartments
 parkramstandard.ncompartments=1;
-parkramstandard.compartment(1).id="V";
-parkramstandard.compartment(1).val=1;
-parkramstandard.compartment(1).fixed=0;
-parkramstandard.compartment(1).min=0;
-parkramstandard.compartment(1).max=15;
-parkramstandard.compartment(1).isres=0;
+parkramstandard.compartments(1).id="V";
+parkramstandard.compartments(1).val=1;
+parkramstandard.compartments(1).fixed=0;
+parkramstandard.compartments(1).min=0;
+parkramstandard.compartments(1).max=15;
+parkramstandard.compartments(1).isres=0;
 
 % Parameters
-parkramstandard.nparameters=9;
+Newhmod.nparameters=18;
 parkramstandard.parameters(1).id="D";
 parkramstandard.parameters(1).val="0";
 parkramstandard.parameters(1).fixed=0;
@@ -80,11 +80,46 @@ parkramstandard.parameters(9).id="vPT";
 parkramstandard.parameters(9).val="0";
 parkramstandard.parameters(9).fixed=0;
 parkramstandard.parameters(9).reaction="global";
+parkramstandard.parameters(10).id="w1";
+parkramstandard.parameters(10).val=-12.729463298577896;
+parkramstandard.parameters(10).reaction="global";
+parkramstandard.parameters(11).id="w2";
+parkramstandard.parameters(11).val=0.3667387921656336;
+parkramstandard.parameters(11).reaction="global";
+parkramstandard.parameters(12).id="w3";
+parkramstandard.parameters(12).val=-0.15689139370437447;
+parkramstandard.parameters(12).reaction="global";
+parkramstandard.parameters(13).id="w4";
+parkramstandard.parameters(13).val=0.1997056458775411;
+parkramstandard.parameters(13).reaction="global";
+parkramstandard.parameters(14).id="w5";
+parkramstandard.parameters(14).val=-4.828178911876153;
+parkramstandard.parameters(14).reaction="global";
+parkramstandard.parameters(15).id="w6";
+parkramstandard.parameters(15).val=0.12790445658440633;
+parkramstandard.parameters(15).reaction="global";
+parkramstandard.parameters(16).id="w7";
+parkramstandard.parameters(16).val=0.2036979172281639;
+parkramstandard.parameters(16).reaction="global";
+parkramstandard.parameters(17).id="w8";
+parkramstandard.parameters(17).val=3.4664337775331004;
+parkramstandard.parameters(17).reaction="global";
+parkramstandard.parameters(18).id="H1";
+parkramstandard.parameters(18).val="0";
+parkramstandard.parameters(18).reaction="global";
 
 % Assignment rules
-parkramstandard.nruleAss=1;
+Newhmod.nruleAss=5;
 parkramstandard.ruleAss(1).id="D";
 parkramstandard.ruleAss(1).val="Feed / V";
+parkramstandard.ruleAss(2).id="H1";
+parkramstandard.ruleAss(2).val="tanh(w1*S+w2)";
+parkramstandard.ruleAss(3).id="miu";
+parkramstandard.ruleAss(3).val="w3*tanh(w1*S+w2)+w6";
+parkramstandard.ruleAss(4).id="vPT";
+parkramstandard.ruleAss(4).val="w4*tanh(w1*S+w2)+w7";
+parkramstandard.ruleAss(5).id="vPM";
+parkramstandard.ruleAss(5).val="w5*tanh(w1*S+w2)+w8";
 
 % Events
 parkramstandard.nevent=1;
@@ -161,7 +196,7 @@ parkramstandard.mlm.y(3).id = 'vPM';
 parkramstandard.mlm.y(3).val= 'rann3';
 parkramstandard.mlm.y(3).min= 0;
 parkramstandard.mlm.y(3).max= NaN;
-parkramstandard.mlm.options={'hidden nodes', [3]};
+parkramstandard.mlm.options={'hidden nodes', [1]};
 parkramstandard.mlm.layer=1;
 parkramstandard.mlm.xfun=str2func('autoA_hybmod_anninp');
 parkramstandard.mlm.yfun=str2func('autoA_hybmod_rann');

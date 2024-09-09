@@ -27,8 +27,6 @@ class CustomMLP(nn.Module):
 
     def forward(self, x):
         for layer in self.layers:
-            print("weights: ", layer.w)
-            print("biases: ", layer.b)
             x = x.to(dtype=torch.float64)
 
             x = layer(x)

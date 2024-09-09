@@ -23,10 +23,8 @@ def computeDFDS(projhyb, fstate, state_symbols, NValues):
         projhyb['mlm']['DFDS'] = DfDs
     else:
         DfDs = projhyb['mlm']['DFDS']
-    print("DfDs",DfDs)
 
     DfDs = DfDs.subs(NValues)
-    print("DfDs",DfDs)
     
         
     DfDs = np.array(DfDs).reshape(len(fstate), len(state_symbols))
@@ -38,8 +36,7 @@ def computeDFDS(projhyb, fstate, state_symbols, NValues):
     return DfDs
 
 def computeDFDRANN(projhyb, fstate, rann_symbol, NValues):
-    print("fstate",fstate)
-    print("rann_symbol",rann_symbol)
+
     if projhyb['mlm']['DFDRANN'] is None:
         DfDrann = numerical_diferentiation_torch(fstate, rann_symbol, NValues)
         projhyb['mlm']['DFDRANN'] = DfDrann
@@ -94,12 +91,10 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
         fstate = [expr.subs(NValues) for expr in fstate]
         return fstate
 
-    print("fstate",fstate)
 
 
     if projhyb['mode'] == 1:
         NValues = {**values, **state}
-        print("NValues",NValues)
         fstate = projhyb_cache.get('FSTATE', sp.sympify(fstate))
         state_symbols = projhyb_cache.get('STATE_SYMBOLS', sp.sympify(state_symbols))
         anninp = projhyb_cache.get('ANNINP', sp.sympify(anninp))

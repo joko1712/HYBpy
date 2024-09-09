@@ -258,6 +258,7 @@ export default function OldRuns() {
             const runsCollectionRef = collection(db, "users", userId, "runs");
             const q = query(
                 runsCollectionRef,
+                where("status", "==", "completed"),
                 where("userId", "==", userId),
                 orderBy("createdAt", "desc")
             );
@@ -279,8 +280,8 @@ export default function OldRuns() {
     const filteredRuns = runs.filter((run) => {
         return (
             searchQuery === "" ||
-            (run.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
-                run.file1_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            run.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            run.file1_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             run.file2_name.toLowerCase().includes(searchQuery.toLowerCase())
         );
     });

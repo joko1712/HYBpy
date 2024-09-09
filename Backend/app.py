@@ -16,6 +16,8 @@ import uuid
 import shutil
 matplotlib.use('Agg')
 import mimetypes
+import requests
+from tempfile import NamedTemporaryFile
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from hybtrain import hybtrain
@@ -27,8 +29,8 @@ from firebase_admin import credentials, firestore, storage
 
 load_dotenv()
 
-#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
-cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
+cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-ebfca8f109.json")
+#cred = credentials.Certificate("../hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
 firebase_admin.initialize_app(cred, {
     'storageBucket': os.getenv("STORAGE_BUCKET_NAME")
 })
@@ -135,6 +137,7 @@ def upload_file():
         Outputs = request.form.get('Outputs')
 
         trained_weights = request.form.get('trained_weights')
+        print("trained_weights", trained_weights)
         if trained_weights:
             trained_weights = trained_weights.strip('[]"').replace('\n', '').replace(' ', '')
             trained_weights = list(map(float, trained_weights.split(',')))
@@ -261,7 +264,7 @@ def upload_file():
 
         os.remove(file1.filename)
         os.remove(file2.filename)
-        os.remove(newHmodFile)
+        #os.remove(newHmodFile)
         os.remove("trained_model.h5")
 
         return json.dumps(response_data), 200
@@ -348,6 +351,11 @@ def get_template_hmod():
             blob_hmod = bucket.blob("Template/Hmod2/template2.hmod")
             hmod_file_path = "template2.hmod"
             blob_hmod.download_to_filename(hmod_file_path)
+
+        elif template_type == 3:
+            blob_hmod = bucket.blob("Template/Hmod/template.hmod")
+            hmod_file_path = "template.hmod"
+            blob_hmod.download_to_filename(hmod_file_path)
         else:
             return jsonify({"error": "Invalid template type"}), 400
 
@@ -357,6 +365,7 @@ def get_template_hmod():
     except Exception as e:
         logging.error("Error in get_template_hmod: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
+
 
 
 @app.route('/get-template-csv', methods=['POST'])
@@ -369,6 +378,8 @@ def get_template_csv():
             blob_csv = bucket.blob("Template/Csv/basicmodel1data.csv")
         elif template_type == 2:
             blob_csv = bucket.blob("Template/Csv/basicmodel2data.csv")
+        elif template_type == 3:
+            blob_csv = bucket.blob("Template/Csv/template.csv")
         else:
             return jsonify({"error": "Invalid template type"}), 400
 
@@ -464,6 +475,29 @@ def get_file_urls():
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/get-new-hmod", methods=['POST'])
+def get_new_hmod():
+    
+    data = request.json
+    url = data.get('url')
+   
+    print("url", url)
+
+    if not url:
+        return {"error": "URL is required"}, 400
+    
+    try:
+        response = requests.get(url)
+        temp_file = NamedTemporaryFile(delete=False)
+        temp_file.write(response.content)
+        temp_file.close()
+
+        return send_file(temp_file.name, as_attachment=True)
+    except Exception as e:
+        return {"error": str(e)}, 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)

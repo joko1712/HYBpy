@@ -86,12 +86,12 @@ chass.species(11).isres=1;
 
 % Compartments
 chass.ncompartments=1;
-chass.compartment(1).id="compartment";
-chass.compartment(1).val=1;
-chass.compartment(1).fixed=1;
-chass.compartment(1).min=0;
-chass.compartment(1).max=15;
-chass.compartment(1).isres=0;
+chass.compartments(1).id="compartment";
+chass.compartments(1).val=1;
+chass.compartments(1).fixed=1;
+chass.compartments(1).min=0;
+chass.compartments(1).max=15;
+chass.compartments(1).isres=0;
 
 % Parameters
 chass.nparameters=40;

@@ -1,0 +1,59 @@
+%--------------------------------------------------------------------------
+% hybrid model definition data structure
+
+%Timespan
+Biomassvolmodel.tspan=0:3:24
+
+%Species
+Biomassvolmodel.nspecies=1
+Biomassvolmodel.species(1).id="X"
+Biomassvolmodel.species(1).val=0.1
+Biomassvolmodel.species(1).compartment="V"
+Biomassvolmodel.species(1).fixed=0
+Biomassvolmodel.species(1).min= 0;
+Biomassvolmodel.species(1).max= 50;
+Biomassvolmodel.species(1).isres=1;
+
+%Compartments
+Biomassvolmodel.ncompartments=1
+Biomassvolmodel.compartments(1).id="V"
+Biomassvolmodel.compartments(1).val=1
+Biomassvolmodel.compartments(1).min= 0;
+Biomassvolmodel.compartments(1).max= 10;
+Biomassvolmodel.compartments(1).isres=0;
+
+%Parameters
+Biomassvolmodel.nparameters=3
+Biomassvolmodel.parameters(1).id="mumax"
+Biomassvolmodel.parameters(1).val="0.3"
+Biomassvolmodel.parameters(1).reaction="global"
+Biomassvolmodel.parameters(2).id="Xmax"
+Biomassvolmodel.parameters(2).val="47.3" 
+Biomassvolmodel.parameters(2).reaction="global"
+Biomassvolmodel.parameters(3).id="miu"
+Biomassvolmodel.parameters(3).val="0.15" 
+Biomassvolmodel.parameters(3).reaction="global"
+
+% Assignment rules
+Biomassvolmodel.nruleAss=0
+
+% Events
+Biomassvolmodel.nevent=0
+
+
+%Reactions
+Biomassvolmodel.nreaction=1
+Biomassvolmodel.reaction(1).id="rX"
+Biomassvolmodel.reaction(1).rate="miu*X"
+Biomassvolmodel.reaction(1).Y=["1"]
+
+
+%Rate rules
+Biomassvolmodel.nraterules=1
+Biomassvolmodel.raterules(1).id="V"
+Biomassvolmodel.raterules(1).val="Feed"
+Biomassvolmodel.raterules(1).min= 0;
+Biomassvolmodel.raterules(1).max= 10;
+Biomassvolmodel.raterules(1).isres= 0;
+
+end

@@ -497,7 +497,7 @@ def hybdata(filename):
         if "datafun" in line:
             datafun = line[line.find("=")+1:len(line)]
 
-        if "mode" in line:
+        if "mode=" in line:
             mode = int(line[line.find("=")+1:len(line)])
 
         if "method" in line:

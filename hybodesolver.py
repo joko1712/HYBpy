@@ -17,11 +17,12 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     state_symbols = []
 
     anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
+    anninp_mat = [expr.subs(statedict) for expr in anninp_mat]
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
     anninp_tensor = anninp_tensor.view(-1, 1)       
 
-    activations = [anninp_tensor]    
+    activations = [anninp_tensor]
     y = activations[-1]
 
     rann_results = ann.forward(y)
@@ -299,6 +300,7 @@ def ensure_dict(statedict):
 
 def rannRecalc(projhyb, state, ann, values):
     anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
+    anninp_mat = [expr.subs(values) for expr in anninp_mat]
 
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)

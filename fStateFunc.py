@@ -68,10 +68,13 @@ def fstate_func(projhyb,values):
 
     for i in range(1, projhyb["nspecies"]+1):
         for j in range(1, projhyb["nreaction"]+1):
-            print(sympify(projhyb["reaction"][str(j)]["rate"]))
-            print(projhyb["reaction"][str(j)]["Y"][str(i)])
-            nvalues = sympify(projhyb["reaction"][str(
-                j)]["rate"]) * projhyb["reaction"][str(j)]["Y"][str(i)]
+
+            if projhyb["reaction"][str(j)]["id"] in projhyb["outputs"]:
+                nvalues = sympify(projhyb["reaction"][str(j)]["id"]) * projhyb["reaction"][str(j)]["Y"][str(i)]
+
+            else: 
+                nvalues = sympify(projhyb["reaction"][str(j)]["rate"]) * projhyb["reaction"][str(j)]["Y"][str(i)]
+
             rates.append(sympify(nvalues))
 
 

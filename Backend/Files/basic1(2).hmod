@@ -24,11 +24,11 @@ basic1.species(2).isres=1;
 
 %Compartments
 basic1.ncompartments=1
-basic1.compartment(1).id="V"
-basic1.compartment(1).val=1
-basic1.compartment(1).min= 0;
-basic1.compartment(1).max= 10;
-basic1.compartment(1).isres=0;
+basic1.compartments(1).id="V"
+basic1.compartments(1).val=1
+basic1.compartments(1).min= 0;
+basic1.compartments(1).max= 10;
+basic1.compartments(1).isres=0;
 
 %Parameters
 basic1.nparameters=5

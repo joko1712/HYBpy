@@ -61,6 +61,9 @@ def hybdata(filename):
     outputs = []
     prefix = ""
 
+    stop_reading_parameters = False
+    stop_reading_ruleAss = False
+
     correctreac = 0
     correctl = 1
 
@@ -200,7 +203,11 @@ def hybdata(filename):
             # Get the number of parameters
             nparameters = int(line[line.find("=")+1:len(line)+1])
 
-        if "parameters(" in line:
+        if "parameters(" in line and not stop_reading_parameters:
+            match = re.search(r'parameters\((\d+)\)\.id="(.+)"', line)
+            if match and match.group(2) == "w1":
+                stop_reading_parameters = True
+                continue
             i = line[line.find("(")+1:line.find(")")]
 
             # Get the parameters id
@@ -225,7 +232,11 @@ def hybdata(filename):
             # Get the number of Assignment rules
             nruleAss = int(line[line.find("=")+1:len(line)+1])
 
-        if "ruleAss(" in line:
+        if "ruleAss(" in line and not stop_reading_ruleAss:
+            match = re.search(r'ruleAss\((\d+)\)\.id="(.+)"', line)
+            if match and match.group(2) == "H1":
+                stop_reading_ruleAss = True
+                continue
             i = line[line.find("(")+1:line.find(")")]
 
             # Get the Assignment rules id
@@ -512,8 +523,8 @@ def hybdata(filename):
         if "derivativecheck" in line:
             derivativecheck = line[line.find("=")+2:len(line)-1]
 
-        if "niter" in line:
-            niter = int(line[line.find("=")+1:len(line)])
+        if "niter=" in line:
+            niter = int(line[line.find("=")+1:len(line)+1])
 
         if "niteroptim" in line:
             niteroptim = int(line[line.find("=")+1:len(line)])

@@ -150,6 +150,7 @@ function Simulations() {
     const [speciesOptions, setSpeciesOptions] = useState([]);
     const [controlOptions, setControlOptions] = useState([]);
     const [parameterOptions, setParameterOptions] = useState([]);
+    const [compartmentOptions, setCompartmentOptions] = useState([]);
 
     const [mlmOptions, setMlmOptions] = useState({});
 
@@ -235,6 +236,8 @@ function Simulations() {
             regex = /(\w+)\.control\(\d+\)\.id\s*=\s*["']([^"']+)["']/g;
         } else if (type === "parameters") {
             regex = /(\w+)\.parameters\(\d+\)\.id\s*=\s*["']([^"']+)["']/g;
+        } else if (type === "compartment") {
+            regex = /(\w+)\.compartment\(\d+\)\.id\s*=\s*["']([^"']+)["']/g;
         } else {
             return [];
         }
@@ -265,6 +268,7 @@ function Simulations() {
                 speciesOptions,
                 controlOptions,
                 parameterOptions,
+                compartmentOptions,
                 onSave: saveMlmHandler,
                 handleClose: closeModalHandler,
             });
@@ -430,10 +434,12 @@ function Simulations() {
             const speciesOptions = extractOptionsFromHmod(updatedContent, "species");
             const controlOptions = extractOptionsFromHmod(updatedContent, "control");
             const parameterOptions = extractOptionsFromHmod(updatedContent, "parameters");
+            const compartmentOptions = extractOptionsFromHmod(updatedContent, "compartment");
 
             setSpeciesOptions(speciesOptions);
             setControlOptions(controlOptions);
             setParameterOptions(parameterOptions);
+            setCompartmentOptions(compartmentOptions);
 
             const mlmOptions = await openMlmModal();
             if (Object.keys(mlmOptions).length > 0) {
@@ -1594,6 +1600,7 @@ function Simulations() {
                 speciesOptions={speciesOptions}
                 controlOptions={controlOptions}
                 parameterOptions={parameterOptions}
+                compartmentOptions={compartmentOptions}
             />
         </ThemeProvider>
     );

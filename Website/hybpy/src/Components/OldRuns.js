@@ -355,7 +355,7 @@ export default function OldRuns() {
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
                         <h1>
-                            <strong>List of Projects</strong>
+                            <strong>List of Historical Projects</strong>
                         </h1>
                         <Box sx={{ mb: 2 }}>
                             <TextField
@@ -401,7 +401,7 @@ export default function OldRuns() {
                                         onClose={handleClose}
                                         aria-labelledby='modal-modal-title'
                                         aria-describedby='modal-modal-description'>
-                                        <Box sx={{ ...style, width: "80%", height: "90%" }}>
+                                        <Box sx={{ ...style, width: "80%", height: "100%" }}>
                                             {selectedRun && (
                                                 <div
                                                     style={{
@@ -557,7 +557,7 @@ export default function OldRuns() {
                                                 left: "50%",
                                                 transform: "translate(-50%, -50%)",
                                                 width: "80%",
-                                                height: "90%",
+                                                height: "100%",
                                                 bgcolor: "background.paper",
                                                 border: "2px solid #000",
                                                 boxShadow: 24,

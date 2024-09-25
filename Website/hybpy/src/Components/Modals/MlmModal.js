@@ -17,6 +17,7 @@ const MlmModal = ({
     speciesOptions,
     controlOptions,
     parameterOptions,
+    compartmentOptions,
 }) => {
     const [nx, setNx] = useState(1);
     const [ny, setNy] = useState(1);
@@ -86,8 +87,12 @@ const MlmModal = ({
                                     onChange={(e) =>
                                         handleXOptionChange(index, "val", e.target.value)
                                     }
-                                    helperText='Select from species or control'>
-                                    {[...speciesOptions, ...controlOptions].map((option) => (
+                                    helperText='Select from species, control or compartments'>
+                                    {[
+                                        ...speciesOptions,
+                                        ...controlOptions,
+                                        ...compartmentOptions,
+                                    ].map((option) => (
                                         <MenuItem key={option} value={option}>
                                             {option}
                                         </MenuItem>

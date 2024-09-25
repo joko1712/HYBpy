@@ -172,6 +172,7 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
         print("   Optimiser:              Trust Region Reflective")
         options = {
             'xtol': 1e-10, #1e-10
+            'xtol': 1e-10, #1e-10
             'gtol': 1e-10,
             'ftol': 1e-10,
             'verbose': projhyb['display'],
@@ -462,6 +463,33 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
 
                 optimized_weights, _ = ann.get_weights()
 
+                manual_optimizer = ManualAdamOptimizer(ann, lr=lr)
+                fobj_history = []
+
+                for epoch in range(num_epochs):
+                    print(f"Epoch {epoch + 1}/{num_epochs}")
+
+                    weights, ann = ann.get_weights()
+                    fobjs, gradient = evaluator.evaluate_adam(weights)
+
+                    print(f"Objective function value at start of epoch: {np.linalg.norm(fobjs)}")
+                    print(f"Norm of gradient at start of epoch: {np.linalg.norm(gradient)}")
+
+                    manual_optimizer.zero_grad()
+
+                    manual_optimizer.step(fobjs, gradient)
+
+                    updated_weights, ann = ann.get_weights()
+                    ann.set_weights(updated_weights)
+
+                    updated_fobjs, updated_gradient = evaluator.evaluate_adam(updated_weights)
+
+                    fobj_history.append(np.linalg.norm(updated_fobjs))
+                    print(f"Objective function value after epoch {epoch + 1}: {np.linalg.norm(updated_fobjs)}")
+                    print(f"Norm of gradient after epoch {epoch + 1}: {np.linalg.norm(updated_gradient)}")
+
+                optimized_weights, _ = ann.get_weights()
+
             save_model_to_h5(ann, "trained_model.h5")
             
             saveNN("trained_model.h5", projhyb["inputs"], projhyb["outputs"], hmod, "Newhmod.hmod", optimized_weights, ann)
@@ -595,6 +623,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
                 sjacall[COUNT:COUNT + nres, 0:nw] = result
                 COUNT += nres
                
+               
 
 
     valid_idx = ~np.isnan(sresall) & ~np.isinf(sresall)
@@ -605,6 +634,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 
         fobj = sresall
         jac = sjacall
+
 
         '''
         epsilon = 1e-8  

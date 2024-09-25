@@ -50,11 +50,11 @@ const ControlModalSelection = ({ open, headers, handleClose, onSave }) => {
                 ))}
             </DialogContent>
             <DialogActions>
-                <Button onClick={handleClose} color='primary'>
-                    Cancel
-                </Button>
                 <Button onClick={handleSave} color='primary'>
                     Save
+                </Button>
+                <Button onClick={handleClose} color='primary'>
+                    Cancel
                 </Button>
             </DialogActions>
         </Dialog>

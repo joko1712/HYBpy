@@ -23,14 +23,14 @@ basic1.species(2).isres=1;
 
 %Compartments
 basic1.ncompartments=1
-basic1.compartment(1).id="V"
-basic1.compartment(1).val=1
-basic1.compartment(1).min= 0;
-basic1.compartment(1).max= 10;
-basic1.compartment(1).isres=0;
+basic1.compartments(1).id="V"
+basic1.compartments(1).val=1
+basic1.compartments(1).min= 0;
+basic1.compartments(1).max= 10;
+basic1.compartments(1).isres=0;
 
 %Parameters
-basic1.nparameters=5
+basic1.nparameters=6
 basic1.parameters(1).id="alpha"
 basic1.parameters(1).val="0.65"
 basic1.parameters(1).reaction="global"
@@ -63,14 +63,16 @@ basic1.nevent=0
 %Reactions
 basic1.nreaction=3
 basic1.reaction(1).id="miu"
-basic1.reaction(1).rate="(miumax * S / (Ks + S))"
-basic1.reaction(1).Y=["0", "-0.65"]
+basic1.reaction(1).rate="(miumax*S/(ks+S))*X"
+basic1.reaction(1).Y=["1", "-0.65"]
 basic1.reaction(2).id="rS"
-basic1.reaction(2).rate="S"
+basic1.reaction(2).rate="S*X"
 basic1.reaction(2).Y=["0", "-0.075"]
 basic1.reaction(3).id="rFeed"
-basic1.reaction(3).rate="Feedrate"  
+basic1.reaction(3).rate="Feedrate"
 basic1.reaction(3).Y=["0","1"]
+
+
 
 
 

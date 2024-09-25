@@ -146,6 +146,7 @@ function FileUpload() {
     const [speciesOptions, setSpeciesOptions] = useState([]);
     const [controlOptions, setControlOptions] = useState([]);
     const [parameterOptions, setParameterOptions] = useState([]);
+    const [compartmentOptions, setCompartmentOptions] = useState([]);
 
     const [mlmOptions, setMlmOptions] = useState({});
 
@@ -163,6 +164,8 @@ function FileUpload() {
             regex = /(\w+)\.control\(\d+\)\.id\s*=\s*["']([^"']+)["']/g;
         } else if (type === "parameters") {
             regex = /(\w+)\.parameters\(\d+\)\.id\s*=\s*["']([^"']+)["']/g;
+        } else if (type === "compartments") {
+            regex = /(\w+)\.compartments\(\d+\)\.id\s*=\s*["']([^"']+)["']/g;
         } else {
             return [];
         }
@@ -193,6 +196,7 @@ function FileUpload() {
                 speciesOptions,
                 controlOptions,
                 parameterOptions,
+                compartmentOptions,
                 onSave: saveMlmHandler,
                 handleClose: closeModalHandler,
             });
@@ -331,10 +335,12 @@ function FileUpload() {
             const speciesOptions = extractOptionsFromHmod(updatedContent, "species");
             const controlOptions = extractOptionsFromHmod(updatedContent, "control");
             const parameterOptions = extractOptionsFromHmod(updatedContent, "parameters");
+            const compartmentOptions = extractOptionsFromHmod(updatedContent, "compartments");
 
             setSpeciesOptions(speciesOptions);
             setControlOptions(controlOptions);
             setParameterOptions(parameterOptions);
+            setCompartmentOptions(compartmentOptions);
 
             const mlmOptions = await openMlmModal();
             if (Object.keys(mlmOptions).length > 0) {
@@ -1111,7 +1117,10 @@ function FileUpload() {
                                         overflow: "auto",
                                     }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'> Step 2: Load CSV</Typography>
+                                        <Typography variant='h5'>
+                                            {" "}
+                                            Step 2: Load CSV containing the experimental data
+                                        </Typography>
                                         <Tooltip
                                             title='Upload the CSV file which is a file containing the experimental data. See template structure.'
                                             arrow>
@@ -1257,7 +1266,7 @@ function FileUpload() {
                                         overflow: "auto",
                                     }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'> Step 2: Load HMOD</Typography>
+                                        <Typography variant='h5'> Step 3: Load HMOD</Typography>
                                         <Tooltip
                                             title='Upload the HMOD file (see template structure) or use SBML2HYB tool to generate the HMOD file.'
                                             arrow>
@@ -1486,6 +1495,7 @@ function FileUpload() {
                 speciesOptions={speciesOptions}
                 controlOptions={controlOptions}
                 parameterOptions={parameterOptions}
+                compartmentOptions={compartmentOptions}
             />
         </ThemeProvider>
     );

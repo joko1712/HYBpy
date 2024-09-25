@@ -2,7 +2,7 @@ from __future__ import division
 
 import json
 import sympy as sp
-from sympy import symbols, sympify, simplify, Matrix, Eq
+from sympy import symbols, sympify, simplify, Matrix, Eq, Symbol
 import numpy as np
 from sympy.parsing.sympy_parser import parse_expr
 
@@ -11,8 +11,13 @@ from sympy.parsing.sympy_parser import parse_expr
 def fstate_func(projhyb,values):
     Species = []
 
+    species_dict = {}
+    parameters_dict = {}
+
     for i in range(1, projhyb["nspecies"]+1):
         Species.append(sp.sympify(projhyb["species"][str(i)]["id"]))
+        species_name = projhyb["species"][str(i)]["id"]
+        species_dict[species_name] = sp.Symbol(species_name)
 
         projhyb["species"][str(i)]["dcomp"] = 0
 
@@ -39,6 +44,8 @@ def fstate_func(projhyb,values):
 
     parametersvariables = {}
     for i in range(1, projhyb["nparameters"]+1):
+        param_name = projhyb["parameters"][str(i)]["id"]
+        parameters_dict[param_name] = sp.Symbol(param_name)
         parametersvariables[symbols(projhyb["parameters"][str(i)]["id"])] = sympify(
             projhyb["parameters"][str(i)]["val"])
 
@@ -50,7 +57,9 @@ def fstate_func(projhyb,values):
         parsed_expr = parse_rule_val(rule_val)
         
         ruleassvariables[sp.Symbol(rule_id)] = parsed_expr
+    
         
+    combined_dict = {**species_dict, **parameters_dict}
 
     Raterules = []
     fRaterules = []
@@ -73,7 +82,7 @@ def fstate_func(projhyb,values):
                 nvalues = sympify(projhyb["reaction"][str(j)]["id"]) * projhyb["reaction"][str(j)]["Y"][str(i)]
 
             else: 
-                nvalues = sympify(projhyb["reaction"][str(j)]["rate"]) * projhyb["reaction"][str(j)]["Y"][str(i)]
+                nvalues = sympify(projhyb["reaction"][str(j)]["rate"], locals=combined_dict) * projhyb["reaction"][str(j)]["Y"][str(i)]
 
             rates.append(sympify(nvalues))
 

@@ -171,11 +171,11 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
     if projhyb['method'] == 1:
         print("   Optimiser:              Trust Region Reflective")
         options = {
-            'xtol': 1e-15, #1e-10
+            'xtol': 1e-10, #1e-10
             'gtol': 1e-10,
             'ftol': 1e-10,
             'verbose': projhyb['display'],
-            'max_nfev': 1000 * projhyb['niter'],
+            'max_nfev': projhyb['niter'],
             'method': 'trf',
         }
 
@@ -185,22 +185,35 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
         options = {
             'method': algorithm,
             'options': {
+                'gtol': 1e-10,
+                'xtol': 1e-10,
+                'barrier_tol': 1e-10,
                 'verbose': projhyb['display'],
-                'maxiter':100 * projhyb['niter'] * projhyb['niteroptim']
+                'maxiter': projhyb['niter']
             } 
         }
     elif projhyb['method'] == 3:
+        '''
         print("   Optimiser:              Simulated Annealing")
         bounds = species_bounds * projhyb['mlm']['nw']
         options = {
             'maxiter': 100 * projhyb['niter'] * projhyb['niteroptim'],
             'verbose': projhyb['display']
         }
+        '''
+        options = {
+            'xtol': 1e-10, #1e-10
+            'gtol': 1e-10,
+            'ftol': 1e-10,
+            'verbose': projhyb['display'],
+            'max_nfev': projhyb['niter'],
+            'method': 'lm',
+        }
 
     elif projhyb['method'] == 4:
         print("   Optimiser:              Adam")
-        num_epochs = 100  
-        lr = 0.001  
+        num_epochs = projhyb['niter']
+        lr = 0.01  
 #######################################################################################################################
 
     print("\n\n")
@@ -248,12 +261,27 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
         
         
         weights = [-0.05165798, -0.00395335,  0.0011845,  -0.00152316,  0.00073078, -0.00047021, -0.06688604,  0.00180839, -0.00095668,  0.06751172, -0.00933701,  0.00603163, -0.08951404, -0.00475901,  0.0039245,   0.2426019,   0.08341522,  0.04603258]
-        
+
+        weights = [-3.53128530e-03, -3.64901283e-03, -6.95024195e-04, -2.85856595e-03,
+                    -5.72278609e-03,  8.94225432e-03, -7.36665101e-03, -1.41053907e-04,
+                    -5.15862938e-03, -5.09503627e-03, -2.84337087e-04,  6.03933941e-03,
+                    9.41305666e-04, 6.22917697e-03, -1.12921277e-02,  2.65024872e-03,
+                    5.76868488e-03, -6.40813954e-04,  5.44998166e-03,  3.45273420e-04,
+                    6.07342871e-03, -3.29895230e-03,  4.99788226e-04, 9.35608992e-04,
+                    2.32294709e-03,  9.51788165e-03,  1.51280977e-03, -5.63223687e-03,
+                    -7.07439327e-03,  7.08675558e-03,  2.00843228e-03, -4.95971486e-03,
+                    1.95212150e-03, -1.47335719e-04,  2.43811046e-04, -2.69257092e-04,
+                    4.67362160e-03, -2.73212714e-03,  1.09595711e-02, -6.76758513e-03,
+                    3.36307047e-03, -8.42507510e-03, -2.45127986e-03,  7.38494327e-03,
+                    -1.94209984e-03, -1.27761048e-03,  2.03488980e-03, -2.40765340e-03,
+                    9.57643390e-04,  1.86669282e-03, -1.14740347e-03, -2.87645922e-03,
+                    7.78870967e-03,  3.95378095e-03,  4.50924730e-03, -6.77753730e-03,
+                    -4.73618884e-03, -2.22725296e-02,  1.69542144e-02,  3.56126289e-04,
+                    1.34426003e-02,  6.97196956e-07,  9.26678843e-05, -4.25188021e-09]
     
         weights = np.array(weights)
-        
-        ann.set_weights(weights)
         '''
+        ann.set_weights(weights)
         
 
 
@@ -397,12 +425,42 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
                 print("result", result.x)
 
 
-            elif projhyb["method"] == 3:  # SIMULATED ANNEALING
+            elif projhyb["method"] == 3:  # Dual ANNEALING
+                '''
                 result = dual_annealing(evaluator.fobj_func, bounds=bounds, **options)
+                optimized_weights = result.x
+                '''
+                result = least_squares(evaluator.fobj_func, x0=weights, **options)
                 optimized_weights = result.x
 
             elif projhyb["method"] == 4:  # ADAM
-                optimized_weights = adam_optimizer_train(ann, projhyb, evaluator, num_epochs, lr)
+
+                manual_optimizer = ManualAdamOptimizer(ann, lr=lr)
+                fobj_history = []
+
+                for epoch in range(num_epochs):
+                    print(f"Epoch {epoch + 1}/{num_epochs}")
+
+                    weights, ann = ann.get_weights()
+                    fobjs, gradient = evaluator.evaluate_adam(weights)
+
+                    print(f"Objective function value at start of epoch: {np.linalg.norm(fobjs)}")
+                    print(f"Norm of gradient at start of epoch: {np.linalg.norm(gradient)}")
+
+                    manual_optimizer.zero_grad()
+
+                    manual_optimizer.step(fobjs, gradient)
+
+                    updated_weights, ann = ann.get_weights()
+                    ann.set_weights(updated_weights)
+
+                    updated_fobjs, updated_gradient = evaluator.evaluate_adam(updated_weights)
+
+                    fobj_history.append(np.linalg.norm(updated_fobjs))
+                    print(f"Objective function value after epoch {epoch + 1}: {np.linalg.norm(updated_fobjs)}")
+                    print(f"Norm of gradient after epoch {epoch + 1}: {np.linalg.norm(updated_gradient)}")
+
+                optimized_weights, _ = ann.get_weights()
 
             save_model_to_h5(ann, "trained_model.h5")
             
@@ -536,10 +594,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
                 result = (- Sw[isresY, :].detach().numpy()) / SYrepeat
                 sjacall[COUNT:COUNT + nres, 0:nw] = result
                 COUNT += nres
-                print("#################################################")
-                print("------------------LOOP", i, "------------------")
-                print("#################################################")
-                print("state", state)
+               
 
 
     valid_idx = ~np.isnan(sresall) & ~np.isinf(sresall)
@@ -550,6 +605,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 
         fobj = sresall
         jac = sjacall
+
         '''
         epsilon = 1e-8  
         jac_max_abs = np.max(np.abs(sjacall), axis=1, keepdims=True)
@@ -750,25 +806,32 @@ def resfun_direct_jac(ann, w, istrain, projhyb, file, method=1):
 
     return fobj, jac
 
-def adam_optimizer_train(ann, projhyb, evaluator, num_epochs, lr):
-    weights, _ = ann.get_weights()
-    weights_tensor = torch.tensor(weights, dtype=torch.float32, requires_grad=True)
+class ManualAdamOptimizer:
+    def __init__(self, model, lr=0.001, betas=(0.9, 0.999), eps=1e-8):
+        self.optimizer = optim.Adam(model.parameters(), lr=lr, betas=betas, eps=eps)
+        self.model = model
+    
+    def step(self, fobj, gradient):
+        start = 0
+        for param in self.model.parameters():
+            num_elements = param.numel()
 
-    optimizer = optim.Adam([weights_tensor], lr=lr)
+            grad_slice = gradient[start:start + num_elements]
 
-    for epoch in range(num_epochs):
-        optimizer.zero_grad()
+            manual_grad = torch.from_numpy(grad_slice).view_as(param).to(param.device)
 
-        fobj = evaluator.torch_fobj_func(weights_tensor)
-        
-        fobj.backward()
-        
-        optimizer.step()
+            param.grad = manual_grad
 
-        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {fobj.item()}')
+            start += num_elements
 
-    optimized_weights = weights_tensor.detach().cpu().numpy()
-    return optimized_weights
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+
+        self.optimizer.step()
+
+    def zero_grad(self):
+        self.optimizer.zero_grad()
+
+
 
 class IndirectFunctionEvaluator:
     def __init__(self, ann, projhyb, file, evaluation_function):
@@ -795,6 +858,29 @@ class IndirectFunctionEvaluator:
                 print(f"Error evaluating function: {e}")
                 raise
             return self.last_fobj, self.last_jac
+
+    def evaluate_adam(self, weights):
+        if np.array_equal(weights, self.last_weights):
+            return self.last_fobj, self.last_gradient
+        else:
+            try:
+                residuals, jacobian = self.evaluation_function(
+                    self.ann, weights, self.projhyb['istrain'],
+                    self.projhyb, self.file, self.projhyb['method']
+                )
+                self.last_weights = weights
+                self.last_fobj = residuals
+                self.last_jac = jacobian
+
+                gradient = jacobian.T @ residuals
+                self.last_gradient = gradient
+
+                self.fobj_history.append(np.linalg.norm(self.last_fobj))
+                self.jac_norm_history.append(np.linalg.norm(gradient))
+            except Exception as e:
+                print(f"Error evaluating function: {e}")
+                raise
+            return self.last_fobj, self.last_gradient
 
     def fobj_func(self, weights):
         fobj, _ = self.evaluate(weights)

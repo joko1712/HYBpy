@@ -112,7 +112,7 @@ const extractValue = (content, key, defaultValue) => {
 function FileUpload() {
     const navigate = useNavigate();
     const navigateToUpload = () => {
-        navigate("/Dashboard");
+        navigate("/");
     };
     const [open, setOpen] = useState(true);
     const toggleDrawer = () => {
@@ -205,7 +205,7 @@ function FileUpload() {
 
     const handleCloseTrainingModal = () => {
         setTrainingModalOpen(false);
-        navigate("/Dashboard");
+        navigate("/results");
     };
 
     const handleOpenHeaderModal = (headers) => {
@@ -868,7 +868,7 @@ function FileUpload() {
                 } else {
                     clearInterval(intervalId);
                     setRunInProgress(false);
-                    navigate("/Dashboard");
+                    navigate("/results");
                 }
             } catch (error) {
                 console.error("Error checking run status:", error);

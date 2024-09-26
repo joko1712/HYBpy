@@ -9,6 +9,7 @@ import Dashboard from "./Components/Dashboard";
 import LandingPage from "./Components/LandingPage";
 import { auth } from "./firebase-config";
 import Simulations from "./Components/Simulations";
+import Help from "./Components/Help";
 
 function App() {
     const [currentUser, setCurrentUser] = useState(null);
@@ -46,10 +47,11 @@ function App() {
                     {currentUser != null && currentUser.emailVerified ? (
                         <>
                             <Route path='/' element={<LandingPage />} />
-                            <Route path='/dashboard' element={<Dashboard />} />
+                            <Route path='/results' element={<Dashboard />} />
                             <Route path='/upload' element={<FileUpload />} />
-                            <Route path='/old-runs' element={<OldRuns />} />
+                            <Route path='/historical' element={<OldRuns />} />
                             <Route path='/simulations' element={<Simulations />} />
+                            <Route path='/help' element={<Help />} />
                         </>
                     ) : (
                         <>

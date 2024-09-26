@@ -177,7 +177,8 @@ export default function LandingPage() {
                     }}>
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
-                        <h1>Welcome to HYBpy</h1>
+                        <h1>Guide for the HYBpy Website</h1>
+
                         <Typography variant='subtitle1' gutterBottom>
                             This tool is design to combine state-of-the-art machine learning
                             algorithms with the reliability of mechanistic models within a unified

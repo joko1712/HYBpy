@@ -141,7 +141,7 @@ export default function OldRuns() {
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
-        navigate("/Dashboard");
+        navigate("/");
     };
     const [open, setOpen] = React.useState(true);
     const toggleDrawer = () => {

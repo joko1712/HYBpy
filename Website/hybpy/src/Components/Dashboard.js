@@ -99,7 +99,7 @@ export default function Dashboard() {
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
-        navigate("/Dashboard");
+        navigate("/");
     };
 
     const [open, setOpen] = useState(true);

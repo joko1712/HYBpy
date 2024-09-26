@@ -194,27 +194,17 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
             } 
         }
     elif projhyb['method'] == 3:
-        '''
         print("   Optimiser:              Simulated Annealing")
         bounds = species_bounds * projhyb['mlm']['nw']
         options = {
             'maxiter': 100 * projhyb['niter'] * projhyb['niteroptim'],
             'verbose': projhyb['display']
         }
-        '''
-        options = {
-            'xtol': 1e-10, #1e-10
-            'gtol': 1e-10,
-            'ftol': 1e-10,
-            'verbose': projhyb['display'],
-            'max_nfev': projhyb['niter'],
-            'method': 'lm',
-        }
 
     elif projhyb['method'] == 4:
         print("   Optimiser:              Adam")
         num_epochs = projhyb['niter']
-        lr = 0.01  
+        lr = 0.001  
 #######################################################################################################################
 
     print("\n\n")
@@ -279,6 +269,9 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
                     7.78870967e-03,  3.95378095e-03,  4.50924730e-03, -6.77753730e-03,
                     -4.73618884e-03, -2.22725296e-02,  1.69542144e-02,  3.56126289e-04,
                     1.34426003e-02,  6.97196956e-07,  9.26678843e-05, -4.25188021e-09]
+        
+        weights = [ 0.46595111,  0.10995199,  0.15210865,  0.13458372,  0.10450351, -0.05684199,  0.3605971,  -1.14533527,
+          1.08100574, 0.49413338, -0.6545019,   1.12397129, -0.78435885, -2.40410101, -0.28280282,  0.24305272, -0.02864941,  0.88284648]
     
         weights = np.array(weights)
         '''
@@ -427,11 +420,7 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
 
 
             elif projhyb["method"] == 3:  # Dual ANNEALING
-                '''
                 result = dual_annealing(evaluator.fobj_func, bounds=bounds, **options)
-                optimized_weights = result.x
-                '''
-                result = least_squares(evaluator.fobj_func, x0=weights, **options)
                 optimized_weights = result.x
 
             elif projhyb["method"] == 4:  # ADAM
@@ -444,6 +433,7 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
 
                     weights, ann = ann.get_weights()
                     fobjs, gradient = evaluator.evaluate_adam(weights)
+                    print("weights", weights)
 
                     print(f"Objective function value at start of epoch: {np.linalg.norm(fobjs)}")
                     print(f"Norm of gradient at start of epoch: {np.linalg.norm(gradient)}")
@@ -453,36 +443,12 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
                     manual_optimizer.step(fobjs, gradient)
 
                     updated_weights, ann = ann.get_weights()
+                    print("updated_weights", updated_weights)
                     ann.set_weights(updated_weights)
 
                     updated_fobjs, updated_gradient = evaluator.evaluate_adam(updated_weights)
 
-                    fobj_history.append(np.linalg.norm(updated_fobjs))
-                    print(f"Objective function value after epoch {epoch + 1}: {np.linalg.norm(updated_fobjs)}")
-                    print(f"Norm of gradient after epoch {epoch + 1}: {np.linalg.norm(updated_gradient)}")
-
-                optimized_weights, _ = ann.get_weights()
-
-                manual_optimizer = ManualAdamOptimizer(ann, lr=lr)
-                fobj_history = []
-
-                for epoch in range(num_epochs):
-                    print(f"Epoch {epoch + 1}/{num_epochs}")
-
-                    weights, ann = ann.get_weights()
-                    fobjs, gradient = evaluator.evaluate_adam(weights)
-
-                    print(f"Objective function value at start of epoch: {np.linalg.norm(fobjs)}")
-                    print(f"Norm of gradient at start of epoch: {np.linalg.norm(gradient)}")
-
-                    manual_optimizer.zero_grad()
-
-                    manual_optimizer.step(fobjs, gradient)
-
-                    updated_weights, ann = ann.get_weights()
-                    ann.set_weights(updated_weights)
-
-                    updated_fobjs, updated_gradient = evaluator.evaluate_adam(updated_weights)
+                    manual_optimizer.step(updated_fobjs, updated_gradient)
 
                     fobj_history.append(np.linalg.norm(updated_fobjs))
                     print(f"Objective function value after epoch {epoch + 1}: {np.linalg.norm(updated_fobjs)}")
@@ -568,7 +534,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 
     sjacall = np.zeros((npall * nres, nw))
 
-    print("npall", npall*nres)
+    print("sresall", npall*nres)
     print("npall", nres)
 
     print("nn:", ann)
@@ -1116,7 +1082,6 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
 
         x = file[train_batches[0]]["time"][:-1]
         
-        # Time series plot
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
         ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
@@ -1138,7 +1103,6 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         plt.savefig(time_series_plot_filename, dpi=300)
         plt.close(fig)
 
-        # Predicted vs Actual plot
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.scatter(predicted_train, actual_train, color='blue', label='Train', alpha=0.5)
         ax.scatter(predicted_test, actual_test, color='red', label='Test', alpha=0.5)

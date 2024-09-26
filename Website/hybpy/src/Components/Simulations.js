@@ -114,7 +114,7 @@ const extractValue = (content, key, defaultValue) => {
 function Simulations() {
     const navigate = useNavigate();
     const navigateToUpload = () => {
-        navigate("/Dashboard");
+        navigate("/");
     };
     const [open, setOpen] = useState(true);
     const toggleDrawer = () => {
@@ -277,7 +277,7 @@ function Simulations() {
 
     const handleCloseTrainingModal = () => {
         setTrainingModalOpen(false);
-        navigate("/Dashboard");
+        navigate("/results");
     };
 
     const handleOpenHeaderModal = (headers) => {
@@ -934,7 +934,7 @@ function Simulations() {
                 } else {
                     clearInterval(intervalId);
                     setRunInProgress(false);
-                    navigate("/Dashboard");
+                    navigate("/results");
                 }
             } catch (error) {
                 console.error("Error checking run status:", error);

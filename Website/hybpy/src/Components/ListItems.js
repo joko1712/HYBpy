@@ -9,6 +9,8 @@ import InventoryIcon from "@mui/icons-material/Inventory";
 import FlightLandIcon from "@mui/icons-material/FlightLand";
 import HomeIcon from "@mui/icons-material/Home";
 import BatchPredictionIcon from "@mui/icons-material/BatchPrediction";
+import QueryStatsIcon from "@mui/icons-material/QueryStats";
+import SupportIcon from "@mui/icons-material/Support";
 import { auth } from "../firebase-config";
 
 const logout = (navigate) => {
@@ -23,7 +25,7 @@ const logout = (navigate) => {
 
 export const mainListItems = (navigate) => (
     <React.Fragment>
-        <ListItemButton onClick={() => navigate("/Dashboard")}>
+        <ListItemButton onClick={() => navigate("/")}>
             <ListItemIcon>
                 <HomeIcon />
             </ListItemIcon>
@@ -44,23 +46,23 @@ export const mainListItems = (navigate) => (
             <ListItemText primary='Simulation ' />
         </ListItemButton>
 
-        <ListItemButton onClick={() => navigate("/")}>
+        <ListItemButton onClick={() => navigate("/results")}>
             <ListItemIcon>
-                <HomeIcon />
+                <QueryStatsIcon />
             </ListItemIcon>
             <ListItemText primary='Results' />
         </ListItemButton>
 
-        <ListItemButton onClick={() => navigate("/old-runs")}>
+        <ListItemButton onClick={() => navigate("/historical")}>
             <ListItemIcon>
                 <InventoryIcon />
             </ListItemIcon>
             <ListItemText primary='Historical' />
         </ListItemButton>
 
-        <ListItemButton onClick={() => navigate("/")}>
+        <ListItemButton onClick={() => navigate("/help")}>
             <ListItemIcon>
-                <FlightLandIcon />
+                <SupportIcon />
             </ListItemIcon>
             <ListItemText primary='Help' />
         </ListItemButton>

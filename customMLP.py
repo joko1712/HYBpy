@@ -153,7 +153,7 @@ class CustomMLP(nn.Module):
         for i in reversed(range(len(self.layers))):
 
             h1 = activations[i]
-            h1l = self.layers[i-1].derivative(h1)
+            h1l = self.layers[i-1].derivative()
             h1l_reshaped = h1l.t()        
 
             '''
@@ -211,28 +211,31 @@ class TanhLayer(nn.Module):
         nn.init.zeros_(self.b)
 
     def forward(self, x):
-        return torch.tanh(torch.mm(self.w, x) + self.b)
+        self.pre_activation = torch.mm(self.w, x) + self.b 
+        self.activation = torch.tanh(self.pre_activation)
+        return self.activation
 
-    def derivative(self, x):
-        return (x ** 2) -1 
+    def derivative(self):
+        return 1 - self.activation ** 2  
 
 
 class ReLULayer(nn.Module):
     def __init__(self, input_size, output_size):
+        self.input_size = input_size
+        self.output_size = output_size
         super(ReLULayer, self).__init__()
         self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
         self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
-        nn.init.kaiming_uniform_(self.w, mode='fan_in', nonlinearity='relu')
+        nn.init.kaiming_uniform_(self.w, nonlinearity='relu')
         nn.init.zeros_(self.b)
 
     def forward(self, x):
-        xin = torch.mm(self.w, x) + self.b
-        return F.leaky_relu(xin, negative_slope=0.003)
+        self.pre_activation = torch.mm(self.w, x) + self.b
+        self.activation = F.relu(self.pre_activation)
+        return self.activation
 
-    def derivative(self, x):
-        xin = torch.mm(self.w, x) + self.b
-        return torch.where(xin > 0, torch.ones_like(xin), torch.zeros_like(xin))
-
+    def derivative(self):
+        return torch.where(self.pre_activation > 0, torch.ones_like(self.pre_activation), torch.zeros_like(self.pre_activation))
 
 class LSTMLayer(nn.Module):
     def __init__(self, input_size, hidden_size, batch_first=True):
@@ -266,7 +269,8 @@ class Linear(nn.Module):
         nn.init.zeros_(self.b) 
 
     def forward(self, x):
-        return torch.mm(self.w, x) + self.b
+        self.pre_activation = torch.mm(self.w, x) + self.b 
+        return self.pre_activation  
 
-    def derivative(self, x):
-        return torch.ones_like(x) 
+    def derivative(self):
+        return torch.ones_like(self.pre_activation)

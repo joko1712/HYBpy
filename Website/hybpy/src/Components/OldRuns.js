@@ -268,10 +268,6 @@ export default function OldRuns() {
                 ...doc.data(),
             }));
             setRuns(latestRun);
-            if (latestRun.length > 0) {
-                setMode(latestRun[0].mode === 1 ? "Manual" : "Automatic");
-                setDate(latestRun[0].createdAt.toDate().toLocaleString());
-            }
         };
 
         fetchLatestRun();
@@ -285,6 +281,16 @@ export default function OldRuns() {
             run.file2_name.toLowerCase().includes(searchQuery.toLowerCase())
         );
     });
+
+    const Modesetter = (mode) => {
+        if (mode === "1") {
+            return "Manual";
+        } else if (mode === "2") {
+            return "Automatic";
+        } else {
+            return "Error";
+        }
+    };
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -382,7 +388,13 @@ export default function OldRuns() {
                                                 onClick={() => handleOpen(run)}>
                                                 <ListItemText
                                                     primary={`Title: ${run.description}`}
-                                                    secondary={`HMOD:${run.file1_name} - CSV:${run.file2_name} - Mode:${mode} - CreatedAt:${date}`}
+                                                    secondary={`HMOD:${run.file1_name} - CSV:${
+                                                        run.file2_name
+                                                    } - Mode:${Modesetter(
+                                                        run.mode
+                                                    )} - CreatedAt:${run.createdAt
+                                                        .toDate()
+                                                        .toLocaleString()}`}
                                                 />
 
                                                 <IconButton

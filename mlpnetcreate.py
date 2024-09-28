@@ -9,16 +9,17 @@ def mlpnetcreate(projhyb, neuron):
     NH = projhyb['mlm']['options']
     H = len(NH)
 
+    neuron = projhyb['mlm']['layer']
     assert H <= 5, 'more than 5 hidden layers not implemented'
 
     layer_sizes = [ninp] + NH + [nout]
 
 
-    if neuron == 1:
+    if neuron == "1":
         layer_types = ['tanh'] * H
-    elif neuron == 2:
+    elif neuron == "2":
         layer_types = ['relu'] * H
-    elif neuron == 3:
+    elif neuron == "3":
         layer_types = ['lstm'] * H
 
     ann = CustomMLP(layer_sizes, layer_types)

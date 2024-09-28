@@ -153,7 +153,7 @@ class CustomMLP(nn.Module):
         for i in reversed(range(len(self.layers))):
 
             h1 = activations[i]
-            h1l = self.layers[i-1].derivative()
+            h1l = self.layers[i-1].derivative(h1)
             h1l_reshaped = h1l.t()        
 
             '''
@@ -211,12 +211,10 @@ class TanhLayer(nn.Module):
         nn.init.zeros_(self.b)
 
     def forward(self, x):
-        self.pre_activation = torch.mm(self.w, x) + self.b 
-        self.activation = torch.tanh(self.pre_activation)
-        return self.activation
+        return torch.tanh(torch.mm(self.w, x) + self.b)
 
-    def derivative(self):
-        return 1 - self.activation ** 2  
+    def derivative(self, x):
+        return (x ** 2) -1 
 
 
 class ReLULayer(nn.Module):
@@ -230,12 +228,12 @@ class ReLULayer(nn.Module):
         nn.init.zeros_(self.b)
 
     def forward(self, x):
-        self.pre_activation = torch.mm(self.w, x) + self.b
-        self.activation = F.relu(self.pre_activation)
-        return self.activation
+        xin = torch.mm(self.w, x) + self.b
+        return F.relu(xin)
 
-    def derivative(self):
-        return torch.where(self.pre_activation > 0, torch.ones_like(self.pre_activation), torch.zeros_like(self.pre_activation))
+    def derivative(self, x):
+        return (x > 0).double()
+
 
 class LSTMLayer(nn.Module):
     def __init__(self, input_size, hidden_size, batch_first=True):
@@ -269,8 +267,7 @@ class Linear(nn.Module):
         nn.init.zeros_(self.b) 
 
     def forward(self, x):
-        self.pre_activation = torch.mm(self.w, x) + self.b 
-        return self.pre_activation  
+        return torch.mm(self.w, x) + self.b
 
-    def derivative(self):
-        return torch.ones_like(self.pre_activation)
+    def derivative(self, x):
+        return torch.ones_like(x) 

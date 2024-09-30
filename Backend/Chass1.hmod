@@ -1,0 +1,409 @@
+%--------------------------------------------------------------------------
+% hybrid model definition data structure
+
+%Timespan
+chass.tspan=0:1:100
+
+% Species
+chass.nspecies=11;
+chass.species(1).id="adp";
+chass.species(1).val=0;
+chass.species(1).compartment="compartment";
+chass.species(1).fixed=0;
+chass.species(1).min=0;
+chass.species(1).max=15;
+chass.species(1).isres=1;
+chass.species(2).id="asa";
+chass.species(2).val=0;
+chass.species(2).compartment="compartment";
+chass.species(2).fixed=0;
+chass.species(2).min=0;
+chass.species(2).max=15;
+chass.species(2).isres=1;
+chass.species(3).id="asp";
+chass.species(3).val=2;
+chass.species(3).compartment="compartment";
+chass.species(3).fixed=0;
+chass.species(3).min=0;
+chass.species(3).max=15;
+chass.species(3).isres=1;
+chass.species(4).id="aspp";
+chass.species(4).val=0;
+chass.species(4).compartment="compartment";
+chass.species(4).fixed=0;
+chass.species(4).min=0;
+chass.species(4).max=15;
+chass.species(4).isres=1;
+chass.species(5).id="atp";
+chass.species(5).val=10;
+chass.species(5).compartment="compartment";
+chass.species(5).fixed=0;
+chass.species(5).min=0;
+chass.species(5).max=15;
+chass.species(5).isres=1;
+chass.species(6).id="hs";
+chass.species(6).val=0;
+chass.species(6).compartment="compartment";
+chass.species(6).fixed=0;
+chass.species(6).min=0;
+chass.species(6).max=15;
+chass.species(6).isres=1;
+chass.species(7).id="hsp";
+chass.species(7).val=0;
+chass.species(7).compartment="compartment";
+chass.species(7).fixed=0;
+chass.species(7).min=0;
+chass.species(7).max=15;
+chass.species(7).isres=1;
+chass.species(8).id="nadp";
+chass.species(8).val=0;
+chass.species(8).compartment="compartment";
+chass.species(8).fixed=0;
+chass.species(8).min=0;
+chass.species(8).max=15;
+chass.species(8).isres=1;
+chass.species(9).id="nadph";
+chass.species(9).val=2;
+chass.species(9).compartment="compartment";
+chass.species(9).fixed=0;
+chass.species(9).min=0;
+chass.species(9).max=15;
+chass.species(9).isres=1;
+chass.species(10).id="phos";
+chass.species(10).val=0;
+chass.species(10).compartment="compartment";
+chass.species(10).fixed=0;
+chass.species(10).min=0;
+chass.species(10).max=15;
+chass.species(10).isres=1;
+chass.species(11).id="thr";
+chass.species(11).val=2;
+chass.species(11).compartment="compartment";
+chass.species(11).fixed=0;
+chass.species(11).min=0;
+chass.species(11).max=15;
+chass.species(11).isres=1;
+
+% Compartments
+chass.ncompartments=1;
+chass.compartments(1).id="compartment";
+chass.compartments(1).val=1;
+chass.compartments(1).fixed=1;
+chass.compartments(1).min=0;
+chass.compartments(1).max=15;
+chass.compartments(1).isres=0;
+
+% Parameters
+chass.nparameters=40;
+chass.parameters(1).id="keqak";
+chass.parameters(1).val="0.00064";
+chass.parameters(1).reaction="global";
+chass.parameters(2).id="k11";
+chass.parameters(2).val="0.97";
+chass.parameters(2).reaction="global";
+chass.parameters(3).id="k1thr";
+chass.parameters(3).val="0.167";
+chass.parameters(3).reaction="global";
+chass.parameters(4).id="nak1";
+chass.parameters(4).val="4.09";
+chass.parameters(4).reaction="global";
+chass.parameters(5).id="alpha1";
+chass.parameters(5).val="2.47";
+chass.parameters(5).reaction="global";
+chass.parameters(6).id="k1aspp";
+chass.parameters(6).val="0.017";
+chass.parameters(6).reaction="global";
+chass.parameters(7).id="k1atp";
+chass.parameters(7).val="0.98";
+chass.parameters(7).reaction="global";
+chass.parameters(8).id="k1adp";
+chass.parameters(8).val="0.25";
+chass.parameters(8).reaction="global";
+chass.parameters(9).id="vm13";
+chass.parameters(9).val="0.0722";
+chass.parameters(9).reaction="global";
+chass.parameters(10).id="lys";
+chass.parameters(10).val="0.46";
+chass.parameters(10).reaction="global";
+chass.parameters(11).id="k1lys";
+chass.parameters(11).val="0.391";
+chass.parameters(11).reaction="global";
+chass.parameters(12).id="nak3";
+chass.parameters(12).val="2.8";
+chass.parameters(12).reaction="global";
+chass.parameters(13).id="k13";
+chass.parameters(13).val="0.32";
+chass.parameters(13).reaction="global";
+chass.parameters(14).id="k13aspp";
+chass.parameters(14).val="0.017";
+chass.parameters(14).reaction="global";
+chass.parameters(15).id="k13atp";
+chass.parameters(15).val="0.22";
+chass.parameters(15).reaction="global";
+chass.parameters(16).id="k13adp";
+chass.parameters(16).val="0.25";
+chass.parameters(16).reaction="global";
+chass.parameters(17).id="k2eq";
+chass.parameters(17).val="56.4150334574039";
+chass.parameters(17).reaction="global";
+chass.parameters(18).id="k2aspp";
+chass.parameters(18).val="0.022";
+chass.parameters(18).reaction="global";
+chass.parameters(19).id="k2asa";
+chass.parameters(19).val="0.11";
+chass.parameters(19).reaction="global";
+chass.parameters(20).id="k2p";
+chass.parameters(20).val="10";
+chass.parameters(20).reaction="global";
+chass.parameters(21).id="k2nadph";
+chass.parameters(21).val="0.029";
+chass.parameters(21).reaction="global";
+chass.parameters(22).id="k2nadp";
+chass.parameters(22).val="0.144";
+chass.parameters(22).reaction="global";
+chass.parameters(23).id="prot";
+chass.parameters(23).val="202";
+chass.parameters(23).reaction="global";
+chass.parameters(24).id="k3eq";
+chass.parameters(24).val="3162.27766016838";
+chass.parameters(24).reaction="global";
+chass.parameters(25).id="k3thr";
+chass.parameters(25).val="0.097";
+chass.parameters(25).reaction="global";
+chass.parameters(26).id="nhdh1";
+chass.parameters(26).val="1.41";
+chass.parameters(26).reaction="global";
+chass.parameters(27).id="alpha3";
+chass.parameters(27).val="3.93";
+chass.parameters(27).reaction="global";
+chass.parameters(28).id="k3asa";
+chass.parameters(28).val="0.24";
+chass.parameters(28).reaction="global";
+chass.parameters(29).id="k3hs";
+chass.parameters(29).val="3.39";
+chass.parameters(29).reaction="global";
+chass.parameters(30).id="k3nadph";
+chass.parameters(30).val="0.037";
+chass.parameters(30).reaction="global";
+chass.parameters(31).id="k3nadp";
+chass.parameters(31).val="0.067";
+chass.parameters(31).reaction="global";
+chass.parameters(32).id="lys";
+chass.parameters(32).val="0.46";
+chass.parameters(32).reaction="global";
+chass.parameters(33).id="k4lys";
+chass.parameters(33).val="9.45";
+chass.parameters(33).reaction="global";
+chass.parameters(34).id="k4atp";
+chass.parameters(34).val="0.072";
+chass.parameters(34).reaction="global";
+chass.parameters(35).id="k4ihs";
+chass.parameters(35).val="4.7";
+chass.parameters(35).reaction="global";
+chass.parameters(36).id="k4hs";
+chass.parameters(36).val="0.11";
+chass.parameters(36).reaction="global";
+chass.parameters(37).id="k4thr";
+chass.parameters(37).val="1.09";
+chass.parameters(37).reaction="global";
+chass.parameters(38).id="k4iatp";
+chass.parameters(38).val="4.35";
+chass.parameters(38).reaction="global";
+chass.parameters(39).id="prot";
+chass.parameters(39).val="202";
+chass.parameters(39).reaction="global";
+chass.parameters(40).id="k5hsp";
+chass.parameters(40).val="0.31";
+chass.parameters(40).reaction="global";
+
+% Assignment rules
+chass.nruleAss=0;
+
+% Events
+chass.nevent=0;
+
+% Reactions
+chass.nreaction=7;
+chass.reaction(1).id="vak";
+chass.reaction(1).rate="compartment * (vm11 * (asp * atp - aspp * adp / keqak) / ((k11 * (1 + (thr / k1thr)^ nak1) / (1 +(thr / (alpha1 * k1thr))^ nak1) + k11 * aspp / k1aspp + asp) * (k1atp * (1 + adp / k1adp) + atp)) + vm13 * (asp * atp - aspp * adp / keqak) / ((1 + (lys / k1lys)^ nak3) * (k13 * (1 + aspp / k13aspp) + asp) * (k13atp * (1 + adp / k13adp) + atp)))";
+chass.reaction(1).Y=["1", "0", "-1", "1", "-1", "0", "0", "0", "0", "0", "0"];
+chass.reaction(2).id="vasd";
+chass.reaction(2).rate="compartment * (vm2f * (aspp * nadph - asa * nadp * phos / k2eq) / ((k2aspp * (1 + asa / k2asa) * (1 + phos / k2p) + aspp) * (k2nadph * (1 + nadp / k2nadp) + nadph)))";
+chass.reaction(2).Y=["0", "1", "0", "-1", "0", "0", "0", "1", "-1", "1", "0"];
+chass.reaction(3).id="vatpase";
+chass.reaction(3).rate="compartment * prot * katpase";
+chass.reaction(3).Y=["1", "0", "0", "0", "-1", "0", "0", "0", "0", "1", "0"];
+chass.reaction(4).id="vhdh";
+chass.reaction(4).rate="compartment * (vm3f * (asa * nadph - hs * nadp / k3eq) / ((1 + (thr / k3thr)^ nhdh1) / (1 + (thr / (alpha3 * k3thr))^ nhdh1) * (k3asa + asa + hs * k3asa / k3hs) * (k3nadph * (1 + nadp / k3nadp) + nadph)))";
+chass.reaction(4).Y=["0", "-1", "0", "0", "0", "1", "0", "1", "-1", "0", "0"];
+chass.reaction(5).id="vhk";
+chass.reaction(5).rate="compartment * (vm4f * hs * atp / ((1 + lys / k4lys) * (atp + k4atp * (1 + hs / k4ihs)) * (hs + k4hs * (1 + thr / k4thr) * (1 + atp / k4iatp))))";
+chass.reaction(5).Y=["1", "0", "0", "0", "-1", "-1", "1", "0", "0", "0", "0"];
+chass.reaction(6).id="vnadph_endo";
+chass.reaction(6).rate="compartment * prot * knadph * nadph";
+chass.reaction(6).Y=["0", "0", "0", "0", "0", "0", "0", "1", "-1", "0", "0"];
+chass.reaction(7).id="vtsy";
+chass.reaction(7).rate="compartment * vm5 * hsp / (hsp + k5hsp)";
+chass.reaction(7).Y=["0", "0", "0", "0", "0", "0", "-1", "0", "0", "1", "1"];
+
+% Rate rules
+chass.nraterules=1
+chass.raterules(1).id="compartment";
+chass.raterules(1).val="0";
+chass.raterules(1).min=0;
+chass.raterules(1).max=10;
+chass.raterules(1).isres=0;
+
+% %model configuration
+chass.time.min=0;
+chass.time.max=300;
+chass.time.id='t[h]';
+chass.time.TAU=0.25;
+chass.time.tspan=0:3:300;
+
+% control---------------------------
+chass.ncontrol=1;
+chass.control(1).id= 'None';
+chass.control(1).val= 0;
+chass.control(1).min= 0;
+chass.control(1).max= 2;
+chass.control(1).constant = 0;
+chass.fun_control=@control_function_chass;
+chass.fun_event=[];
+% 
+% % MLM - Machine Learning Model --------------------------------------------
+chass.mlm.id = 'mlpnet'; %'user-defined'; %'mlpnet' %mlp1H
+chass.mlm.nx = 11;
+chass.mlm.x(1).id = 'anninp1';
+chass.mlm.x(1).val= 'adp';
+chass.mlm.x(1).min= 0; 
+chass.mlm.x(1).max= 5;
+chass.mlm.x(2).id = 'anninp2';
+chass.mlm.x(2).val= 'asa';
+chass.mlm.x(2).min= 0; 
+chass.mlm.x(2).max= 0.1;
+chass.mlm.x(3).id = 'anninp3';
+chass.mlm.x(3).val= 'asp';
+chass.mlm.x(3).min= 0;
+chass.mlm.x(3).max= 3;
+chass.mlm.x(4).id = 'anninp4';
+chass.mlm.x(4).val= 'aspp';
+chass.mlm.x(4).min= 0; 
+chass.mlm.x(4).max= 0.01;
+chass.mlm.x(5).id = 'anninp5';
+chass.mlm.x(5).val= 'atp';
+chass.mlm.x(5).min= 0; 
+chass.mlm.x(5).max= 15;
+chass.mlm.x(6).id = 'anninp6';
+chass.mlm.x(6).val= 'hs';
+chass.mlm.x(6).min= 0; 
+chass.mlm.x(6).max= 0.3;
+chass.mlm.x(7).id = 'anninp7';
+chass.mlm.x(7).val= 'hsp';
+chass.mlm.x(7).min= 0; 
+chass.mlm.x(7).max= 0.15;
+chass.mlm.x(8).id = 'anninp8';
+chass.mlm.x(8).val= 'nadp';
+chass.mlm.x(8).min= 0; 
+chass.mlm.x(8).max= 2;
+chass.mlm.x(9).id = 'anninp9';
+chass.mlm.x(9).val= 'nadph';
+chass.mlm.x(9).min= 0; 
+chass.mlm.x(9).max= 3;
+chass.mlm.x(10).id = 'anninp10';
+chass.mlm.x(10).val= 'phos';
+chass.mlm.x(10).min= 0;
+chass.mlm.x(10).max= 5;
+chass.mlm.x(11).id = 'anninp11';
+chass.mlm.x(11).val= 'thr';
+chass.mlm.x(11).min= 0;
+chass.mlm.x(11).max= 3;
+chass.mlm.ny = 7;
+chass.mlm.y(1).id = 'vm11';
+chass.mlm.y(1).val= 'rann1';
+chass.mlm.y(1).min= 0; 
+chass.mlm.y(1).max= 0.5;
+chass.mlm.y(2).id = 'vm2f';
+chass.mlm.y(2).val= 'rann2';
+chass.mlm.y(2).min= 0; 
+chass.mlm.y(2).max= 0.4;
+chass.mlm.y(3).id = 'katpase';
+chass.mlm.y(3).val= 'rann3';
+chass.mlm.y(3).min= 0; 
+chass.mlm.y(3).max= 4;
+chass.mlm.y(4).id = 'vm3f';
+chass.mlm.y(4).val= 'rann4';
+chass.mlm.y(4).min= 0; 
+chass.mlm.y(4).max= 4;
+chass.mlm.y(5).id = 'vm4f';
+chass.mlm.y(5).val= 'rann5';
+chass.mlm.y(5).min= 0; 
+chass.mlm.y(5).max= 4;
+chass.mlm.y(6).id = 'knadph';
+chass.mlm.y(6).val= 'rann6';
+chass.mlm.y(6).min= 0; 
+chass.mlm.y(6).max= 4;
+chass.mlm.y(7).id = 'vm5';
+chass.mlm.y(7).val= 'rann7';
+chass.mlm.y(7).min= 0; 
+chass.mlm.y(7).max= 4;
+chass.mlm.options={'hidden nodes', [1]};
+chass.mlm.layer=1; %1-tanh 2-ReLu
+chass.mlm.xfun=str2func('autoA_hybmod_anninp'); %generated automatically
+chass.mlm.yfun=str2func('autoA_hybmod_rann'); %only used if 'user-defined'
+chass.symbolic='full-symbolic';
+chass.symbolic='semi-symbolic';
+
+%Model configuration
+
+chass.id='chass';
+
+chass.time.min=0;
+chass.time.max=100;
+chass.time.id='t[h]';
+chass.time.TAU=0.25;
+chass.time.tspan=0:1:100;
+
+chass.datasource=3; %1 - text file; 2- excel file; 3-userdefined function
+chass.datafun=@chassdata;
+
+%training configuration
+chass.mode=1;%;    %1-indirect, 2-direct, 3-semidirect
+chass.method=1;    %1-lev-marquardt, 2-quasi-Newton   3- Simulated Annealing
+chass.jacobian=1;  %1-ON, 0- OFF   [ONLY FOR LEVENBERG-MARQUARDT]
+chass.hessian=0;   %1-ON  0- OFF   [only for quasi-Newton]
+chass.derivativecheck='off'; %'on' or 'off' [ONLY FOR LEVENBERG-MARQUARDT]
+chass.niter=100;
+chass.niteroptim=1;
+chass.nstep=2;
+chass.display=2;   %'off','Iter'
+chass.bootstrap=0; %1-do bootstrap; 0-no boostrapp
+chass.nensemble=1; %number of models to aggregate >=1; if >1 confidence intervals are computed
+chass.crossval=0;  %0 - no cross-validation; 1 - do crossvalidation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+end

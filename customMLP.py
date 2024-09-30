@@ -224,7 +224,7 @@ class ReLULayer(nn.Module):
         super(ReLULayer, self).__init__()
         self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
         self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
-        nn.init.kaiming_uniform_(self.w, nonlinearity='relu')
+        nn.init.kaiming_uniform(self.w)
         nn.init.zeros_(self.b)
 
     def forward(self, x):

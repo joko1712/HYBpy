@@ -11,6 +11,8 @@ import json
 
 
 def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, jac, hess, w, batch, projhyb):
+
+    print("state start of hybodesolver", state)
     t = t0
     hopt = []   
 
@@ -232,13 +234,24 @@ def anninp_rann_func(projhyb, state):
 
 
 def extract_species_values(projhyb, state):
+    print("state", state)
     species_values = {}
+    '''
     for key, species in projhyb['species'].items():
         species_id = species['id']
         species_val = state[int(key)-1]
         species_values[species_id] = species_val
+    '''
+
+
+    for i in range(0, len(state)-1):
+        species_id = projhyb['species'][str(i+1)]["id"]
+        species_val = state[i]
+        species_values[species_id] = species_val
 
     species_values['V'] = state[-1]
+
+    print("species_values", species_values)
 
     return species_values
 

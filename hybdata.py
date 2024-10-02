@@ -205,9 +205,7 @@ def hybdata(filename):
 
         if "parameters(" in line and not stop_reading_parameters:
             match = re.search(r'parameters\((\d+)\)\.id="(.+)"', line)
-            if match and match.group(2) == "w1":
-                stop_reading_parameters = True
-                continue
+           
             i = line[line.find("(")+1:line.find(")")]
 
             # Get the parameters id
@@ -216,7 +214,7 @@ def hybdata(filename):
 
             # Get the parameters value
             if "val" in line:
-                val = line[line.find("=")+2:len(line)-1]
+                val = line[line.find("=")+1:len(line)-1]
 
             # Get the parameters min value
             if "reaction" in line:

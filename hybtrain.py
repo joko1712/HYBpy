@@ -272,9 +272,9 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
         
         weights = [ 0.46595111,  0.10995199,  0.15210865,  0.13458372,  0.10450351, -0.05684199,  0.3605971,  -1.14533527,
           1.08100574, 0.49413338, -0.6545019,   1.12397129, -0.78435885, -2.40410101, -0.28280282,  0.24305272, -0.02864941,  0.88284648]
-    
-        weights = np.array(weights)
+
         '''
+        weights = np.array(trainedWeights)
         ann.set_weights(weights)
         
 
@@ -396,7 +396,9 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
         trainedWeights = w
         '''
 
-        if trainedWeights == None:
+        print("trainedWeights", trainedWeights)
+
+        if trainedWeights == 0:
     
             if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
                 print("optios", options)

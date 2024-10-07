@@ -19,6 +19,8 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     state_symbols = []
 
     anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
+    print("anninp", anninp)
+    print("len(anninp)", len(anninp))
     anninp_mat = [expr.subs(statedict) for expr in anninp_mat]
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
@@ -49,12 +51,20 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
         values[projhyb["parameters"][str(i)]["id"]] = projhyb["parameters"][str(i)]["val"]
     
     for i in range(1, projhyb["nspecies"]+1):
-        state_symbols.append(sp.Symbol(projhyb["species"][str(i)]["id"]))
+        species_id = projhyb["species"][str(i)]["id"]
+        if species_id.startswith("chybrid"):
+            continue
+        state_symbols.append(sp.Symbol(species_id))
 
     for i in range(1, projhyb["ncompartment"]+1):
+        compartment_id = projhyb["compartment"][str(i)]["id"]
+        if compartment_id.startswith("chybrid"):
+            continue
         state_symbols.append(sp.Symbol(projhyb["compartment"][str(i)]["id"]))
     
-
+    print("state_symbols", state_symbols)
+    print("len(state_symbols)", len(state_symbols)) 
+    
     for key, value in statedict.items():
         values[key] = value
     
@@ -234,24 +244,22 @@ def anninp_rann_func(projhyb, state):
 
 
 def extract_species_values(projhyb, state):
-    print("state", state)
     species_values = {}
     '''
     for key, species in projhyb['species'].items():
         species_id = species['id']
         species_val = state[int(key)-1]
         species_values[species_id] = species_val
+
+
     '''
-
-
     for i in range(0, len(state)-1):
         species_id = projhyb['species'][str(i+1)]["id"]
         species_val = state[i]
         species_values[species_id] = species_val
-
+    
     species_values['V'] = state[-1]
 
-    print("species_values", species_values)
 
     return species_values
 

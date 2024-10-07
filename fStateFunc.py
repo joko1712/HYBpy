@@ -89,6 +89,9 @@ def fstate_func(projhyb,values):
 
     fSpecies = []
     for i in range(1, projhyb["nspecies"]+1):
+        species_id = projhyb["species"][str(i)]["id"]
+        if species_id.startswith("chybrid"):
+            continue
         rates_sum = sum(rates[(i-1)*projhyb["nreaction"]:i*projhyb["nreaction"]])
         fSpecies.append(
             rates_sum - (projhyb["species"][str(i)]["dcomp"]/sympify(projhyb["species"]
@@ -110,10 +113,13 @@ def fstate_func(projhyb,values):
     for i in range(1, projhyb["mlm"]["ny"]+1):
         subout[symbols(projhyb["mlm"]["y"][str(i)]["id"])] = sympify(
             projhyb["mlm"]["y"][str(i)]["val"])
-
+    
     fState = [expr.subs(subout) for expr in fState]
 
     fState = [expr.subs(ruleassvariables) for expr in fState]
+
+    print("fState", fState)
+    print("len(fState)", len(fState))
 
 
 

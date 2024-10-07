@@ -91,6 +91,14 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
         fstate = [expr.subs(NValues) for expr in fstate]
         return fstate
 
+    print("fst", fstate)
+    print("state", state)
+    print("jac", jac)
+    print("anninp", anninp)
+    print("anninp_tensor", anninp_tensor)
+    print("state_symbols", state_symbols)
+    print("values", values)
+    print("rann", rann)
 
 
     if projhyb['mode'] == 1:

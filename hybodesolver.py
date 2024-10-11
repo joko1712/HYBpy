@@ -178,7 +178,10 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
 
 def anninp_rann_func(projhyb, state):
 
+
     species_values = extract_species_values(projhyb, state)
+
+    print("species_values", species_values)
 
     totalsyms = ["t", "dummyarg1", "dummyarg2", "w"]
 
@@ -245,11 +248,16 @@ def anninp_rann_func(projhyb, state):
 
 def extract_species_values(projhyb, state):
     species_values = {}
-    '''
+
+    print("state",state)
+    
     for key, species in projhyb['species'].items():
         species_id = species['id']
+        print("species_id", species_id)
         species_val = state[int(key)-1]
-        species_values[species_id] = species_val
+        print("species_val", species_val)
+        species_values[species_id] = float(species_val)
+        print("species_values", species_values)
 
 
     '''
@@ -257,9 +265,11 @@ def extract_species_values(projhyb, state):
         species_id = projhyb['species'][str(i+1)]["id"]
         species_val = state[i]
         species_values[species_id] = species_val
+    '''
     
-    species_values['V'] = state[-1]
+    species_values['V'] = float(state[-1])
 
+    print("species_values_extra", species_values)
 
     return species_values
 

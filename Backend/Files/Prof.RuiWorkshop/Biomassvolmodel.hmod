@@ -27,6 +27,7 @@ Biomassvolmodel.nparameters=3
 Biomassvolmodel.parameters(1).id="mumax"
 Biomassvolmodel.parameters(1).val="0.3"
 Biomassvolmodel.parameters(1).reaction="global"
+
 Biomassvolmodel.parameters(2).id="Xmax"
 Biomassvolmodel.parameters(2).val="47.3" 
 Biomassvolmodel.parameters(2).reaction="global"

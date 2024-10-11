@@ -5,6 +5,7 @@
 HYBpy is a python-based tool for hybrid modeling of bioprocesses and biological systems.
 This repository contains the source code for the web-based application available at the www.hybpy.com website.
 
+
 ________________________________________________________________
 
 ## Installation
@@ -42,6 +43,8 @@ python app.py
 ## ⸎ Developed at
 
 -   HYBpy is developed and maintaned at NOVA School of Science and Technology, Universidade NOVA de Lisboa.
+
+*Authors:* [José Pereira](https://github.com/joko1712), [Rafael Costa](https://github.com/r-costa), José Pinto
 
 ## License
 

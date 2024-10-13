@@ -215,6 +215,8 @@ def upload_file():
                     data[current_time_group][current_time][h] = value
 
         if mode == "1":
+            train_batches =  list(map(int, train_batches))
+            test_batches =  list(map(int, test_batches))
             for batch in train_batches:
                 if batch in data:
                     data[batch]["istrain"] = 1

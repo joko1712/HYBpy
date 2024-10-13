@@ -34,7 +34,7 @@ const ControlModalSelection = ({ open, headers, handleClose, onSave }) => {
 
     return (
         <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>Select Control Headers</DialogTitle>
+            <DialogTitle>Select Control Variables ID</DialogTitle>
             <DialogContent>
                 {headers.map((header) => (
                     <FormControlLabel

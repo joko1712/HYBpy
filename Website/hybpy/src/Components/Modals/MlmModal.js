@@ -27,13 +27,17 @@ const MlmModal = ({
     const handleNxChange = (event) => {
         const newNx = Number(event.target.value);
         setNx(newNx);
-        setXOptions(Array.from({ length: newNx }, (_, i) => xOptions[i] || { val: "" }));
+        setXOptions(
+            Array.from({ length: newNx }, (_, i) => xOptions[i] || { val: "" })
+        );
     };
 
     const handleNyChange = (event) => {
         const newNy = Number(event.target.value);
         setNy(newNy);
-        setYOptions(Array.from({ length: newNy }, (_, i) => yOptions[i] || { id: "" }));
+        setYOptions(
+            Array.from({ length: newNy }, (_, i) => yOptions[i] || { id: "" })
+        );
     };
 
     const handleXOptionChange = (index, key, value) => {
@@ -81,11 +85,15 @@ const MlmModal = ({
                             <Grid item xs={12}>
                                 <TextField
                                     fullWidth
-                                    label={`Value ${index + 1}`}
+                                    label={`Input ID ${index + 1}`}
                                     select
                                     value={x.val}
                                     onChange={(e) =>
-                                        handleXOptionChange(index, "val", e.target.value)
+                                        handleXOptionChange(
+                                            index,
+                                            "val",
+                                            e.target.value
+                                        )
                                     }
                                     helperText='Select from species, control or compartments'>
                                     {[
@@ -115,11 +123,15 @@ const MlmModal = ({
                             <Grid item xs={12}>
                                 <TextField
                                     fullWidth
-                                    label={`Y ID ${index + 1}`}
+                                    label={`Output ID ${index + 1}`}
                                     select
                                     value={y.id}
                                     onChange={(e) =>
-                                        handleYOptionChange(index, "id", e.target.value)
+                                        handleYOptionChange(
+                                            index,
+                                            "id",
+                                            e.target.value
+                                        )
                                     }
                                     helperText='Select from parameters'>
                                     {parameterOptions.map((option) => (

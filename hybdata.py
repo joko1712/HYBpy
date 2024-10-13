@@ -216,7 +216,7 @@ def hybdata(filename):
 
             # Get the parameters value
             if "val" in line:
-                val = line[line.find("=")+2:len(line)-1]
+                val = line[line.find("=")+1:len(line)-1]
 
             # Get the parameters min value
             if "reaction" in line:
@@ -302,10 +302,9 @@ def hybdata(filename):
                 rate = line[line.find("=")+2:len(line)-1]
 
             # Get the Y of the reaction
-            if "Y" in line:
-                j = line[line.find("=")+2:len(line)-1]
-                y_values = j.split(",")
-                y_values = [float(i.strip().strip('\"')) for i in y_values]
+            if f".{id}" in line:
+                j = line[line.find("=")+2:len(line)-1].strip().strip('"').strip('[]')
+                y_values = [float(i.strip()) for i in j.split(",")]
 
                 y_dict = {str(index+1): value for index,
                             value in enumerate(y_values)}

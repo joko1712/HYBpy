@@ -21,7 +21,9 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
     print("anninp", anninp)
     print("len(anninp)", len(anninp))
+    print("statedict", statedict)
     anninp_mat = [expr.subs(statedict) for expr in anninp_mat]
+    print("anninp_mat", anninp_mat)
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
     anninp_tensor = anninp_tensor.view(-1, 1)       
@@ -33,7 +35,6 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
 
     rann_results = rann_results.detach().numpy()
     
-
     state = extract_species_values(projhyb, state)
     values = {}
 
@@ -251,6 +252,7 @@ def extract_species_values(projhyb, state):
 
     print("state",state)
     
+    '''
     for key, species in projhyb['species'].items():
         species_id = species['id']
         print("species_id", species_id)
@@ -258,14 +260,14 @@ def extract_species_values(projhyb, state):
         print("species_val", species_val)
         species_values[species_id] = float(species_val)
         print("species_values", species_values)
-
-
     '''
+
+    
     for i in range(0, len(state)-1):
         species_id = projhyb['species'][str(i+1)]["id"]
         species_val = state[i]
         species_values[species_id] = species_val
-    '''
+    
     
     species_values['V'] = float(state[-1])
 

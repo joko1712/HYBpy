@@ -7,6 +7,7 @@ import scipy.io
 import json
 import time
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 from mlpnetinit import mlpnetinitw
 from mlpnetcreate import mlpnetcreate
 import torch
@@ -568,7 +569,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
                 statedict = file[l]["key_value_array"][i-1]
 
                 dict_items_list = list(statedict.items())
-                statedict =  dict(dict_items_list[len(state):len(dict_items_list)])
+                statedict =  dict(dict_items_list[ns:len(dict_items_list)])
 
                 batch_data = file[l]
                 _, state, Sw, hess = hybodesolver(ann,odesfun,
@@ -1082,19 +1083,28 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
 
         x = file[train_batches[0]]["time"][:-1]
         
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig = plt.subplots(figsize=(12, 6))
+
+        gs = gridspec.GridSpec(1, 2, width_ratios=[1, 3])
+
+        ax = fig.add_subplot(gs[1])
+
         ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
         ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
         ax.fill_between(x, lower_bound[:len(x)], upper_bound[:len(x)], color='gray', label="Confidence Interval", alpha=0.5)
 
         plt.xlabel('Time (s)')
         plt.ylabel('Concentration')
-        plt.title(f"Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+        plt.title(f"Species {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)
+
+        ax_left = fig.add_subplot(gs[0])
+        ax_left.axis('off')
+
+        ax_left.text(0.05, 0.85, textstr, transform=ax_left.transAxes, fontsize=10, verticalalignment='top', bbox=props)
+        ax_left.legend(*ax.get_legend_handles_labels(), loc='upper left')
         
-        plt.legend()
         user_dir = os.path.join('plots', user_id)
         date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
         os.makedirs(date_dir, exist_ok=True)
@@ -1108,7 +1118,7 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         ax.scatter(predicted_test, actual_test, color='red', label='Test', alpha=0.5)
         plt.xlabel('Predicted')
         plt.ylabel('Observed')
-        plt.title(f"Predicted vs Observed for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+        plt.title(f"Observed vs Predicted for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
         plt.legend()
         
         predicted_vs_actual_plot_filename = os.path.join(date_dir, f'predicted_vs_observed_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')

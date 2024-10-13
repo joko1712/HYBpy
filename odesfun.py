@@ -24,10 +24,13 @@ def computeDFDS(projhyb, fstate, state_symbols, NValues):
     else:
         DfDs = projhyb['mlm']['DFDS']
 
+    print("DfDs before subs", DfDs)
+    
     DfDs = DfDs.subs(NValues)
     
         
     DfDs = np.array(DfDs).reshape(len(fstate), len(state_symbols))
+
 
     if np.iscomplexobj(DfDs):
         DfDs = DfDs.real
@@ -47,6 +50,9 @@ def computeDFDRANN(projhyb, fstate, rann_symbol, NValues):
     DfDrann = DfDrann.subs(NValues)
     DfDrann = np.array(DfDrann).reshape(len(fstate), projhyb["mlm"]["ny"])
 
+    print("DfDrann", DfDrann)
+    print("DFdrann size", DfDrann.size)
+
     if np.iscomplexobj(DfDrann):
         DfDrann = DfDrann.real
     DfDrann = torch.from_numpy(DfDrann.astype(np.float64))
@@ -56,6 +62,7 @@ def computeDANNINPDSTATE(projhyb, anninp, state_symbols, NValues):
     if projhyb['mlm']['DANNINPDSTATE'] is None:
 
         DanninpDstate = numerical_diferentiation_torch(anninp, state_symbols, NValues)
+
         projhyb['mlm']['DANNINPDSTATE'] = DanninpDstate
     else:
         DanninpDstate = projhyb['mlm']['DANNINPDSTATE']
@@ -64,7 +71,9 @@ def computeDANNINPDSTATE(projhyb, anninp, state_symbols, NValues):
 
     DanninpDstate = np.array(DanninpDstate)
     if len(anninp) > 1:
-        DanninpDstate = DanninpDstate.reshape(len(anninp), len(anninp)+1)
+        
+        DanninpDstate = DanninpDstate.reshape(len(anninp), len(state_symbols))
+
     if np.iscomplexobj(DanninpDstate):
         DanninpDstate = DanninpDstate.real
     DanninpDstate = torch.from_numpy(DanninpDstate.astype(np.float64))
@@ -147,9 +156,17 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
         DrannDs = results['DrannDs']
         DfDrannDrannDw = results['DfDrannDrannDw']
+        print("DrannDs size", DrannDs.size())
+        print("DfDrannDrannDw size", DfDrannDrannDw.size())
+        print("DfDrann size", DfDrann.size())
+        print("DfDs size", DfDs.size())
 
         DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann, DrannDs)
+        print("DfDsDfDrannDrannDs size", DfDsDfDrannDrannDs.size())
+
+        print(" torch.mm(DfDsDfDrannDrannDs, jac) size", torch.mm(DfDsDfDrannDrannDs, jac).size())
         fjac = torch.mm(DfDsDfDrannDrannDs, jac) + DfDrannDrannDw
+        print("fjac size", fjac.size()) 
 
 
         fstate = [expr.subs(NValues) for expr in fstate]

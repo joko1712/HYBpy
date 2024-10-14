@@ -51,12 +51,13 @@ CellGrowthModel.reaction(2).reaction2="[0,1]";
 
 
 %Rate rules
-CellGrowthModel.nraterules=1
-CellGrowthModel.raterules(1).id="reactor"
-CellGrowthModel.raterules(1).val="0"
-CellGrowthModel.raterules(1).min= 0;
-CellGrowthModel.raterules(1).max= 10;
-CellGrowthModel.raterules(1).isres= 0;
+CellGrowthModel.nraterules=1;
+CellGrowthModel.raterules(1).id="reactor";
+CellGrowthModel.raterules(1).val="0";
+CellGrowthModel.raterules(1).min=0;
+CellGrowthModel.raterules(1).max=1.5;
+CellGrowthModel.raterules(1).isres=1;
+
 
 % Assignment rules
 CellGrowthModel.nruleAss=0;
@@ -128,6 +129,8 @@ CellGrowthModel.display='off';
 CellGrowthModel.bootstrap=0;
 CellGrowthModel.nensemble=1;
 CellGrowthModel.crossval=1;
+
+
 
 
 end

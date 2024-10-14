@@ -266,7 +266,7 @@ def extract_species_values(projhyb, state):
     for i in range(0, len(state)-1):
         species_id = projhyb['species'][str(i+1)]["id"]
         species_val = state[i]
-        species_values[species_id] = species_val
+        species_values[species_id] = float(species_val)
     
     
     species_values['V'] = float(state[-1])

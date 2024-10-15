@@ -6,6 +6,8 @@ from scipy.optimize import dual_annealing
 import scipy.io
 import json
 import time
+import matplotlib
+matplotlib.use('Agg')  
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mlpnetinit import mlpnetinitw
@@ -37,7 +39,7 @@ def save_model_to_h5(model, file_path):
             h5file.create_dataset(key, data=value.cpu().numpy())
 
 
-def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
+def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
     print("USer ID", user_id)
     fobj = default_fobj
 
@@ -456,13 +458,15 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
                     print(f"Norm of gradient after epoch {epoch + 1}: {np.linalg.norm(updated_gradient)}")
 
                 optimized_weights, _ = ann.get_weights()
-
-            save_model_to_h5(ann, "trained_model.h5")
             
-            saveNN("trained_model.h5", projhyb["inputs"], projhyb["outputs"], hmod, "Newhmod.hmod", optimized_weights, ann)
-            newHmodFile = "Newhmod.hmod"
 
-            testing = teststate(ann, user_id, projhyb, file, optimized_weights, projhyb['method'])
+            model_path = os.path.join(temp_dir, "trained_model.h5")
+            save_model_to_h5(ann, model_path)
+
+            newHmodFile = os.path.join(temp_dir, "Newhmod.hmod")
+            saveNN(model_path, projhyb["inputs"], projhyb["outputs"], hmod, newHmodFile, optimized_weights, ann)
+
+            testing = teststate(ann, user_id, projhyb, file, optimized_weights, temp_dir, projhyb['method'])
 
             plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
 
@@ -479,12 +483,13 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod):
 
             ann.set_weights(trainedWeights)
 
-            save_model_to_h5(ann, "trained_model.h5")
+            model_path = os.path.join(temp_dir, "trained_model.h5")
+            save_model_to_h5(ann, model_path)
 
-            saveNN("trained_model.h5", projhyb["inputs"], projhyb["outputs"], hmod, "Newhmod.hmod", trainedWeights, ann)
-            newHmodFile = "Newhmod.hmod"
+            newHmodFile = os.path.join(temp_dir, "Newhmod.hmod")
+            saveNN(model_path, projhyb["inputs"], projhyb["outputs"], hmod, newHmodFile, optimized_weights, ann)
 
-            testing = teststate(ann, user_id, projhyb, file, trainedWeights, projhyb['method'])
+            testing = teststate(ann, user_id, projhyb, file, trainedWeights, temp_dir, projhyb['method'])
 
             plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
 
@@ -933,7 +938,7 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
 
     plt.tight_layout()
 
-def teststate(ann, user_id, projhyb, file, w, method=1):
+def teststate(ann, user_id, projhyb, file, w, temp_dir, method=1):
     dictState = {}
     w = np.array(w)
 
@@ -1097,7 +1102,8 @@ def teststate(ann, user_id, projhyb, file, w, method=1):
         plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)
         
         plt.legend()
-        user_dir = os.path.join('plots', user_id)
+        temp = os.path.join(temp_dir, 'plots')
+        user_dir = os.path.join(temp, user_id)
         date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
         os.makedirs(date_dir, exist_ok=True)
         

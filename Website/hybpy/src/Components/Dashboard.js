@@ -201,7 +201,7 @@ export default function Dashboard() {
             }));
             setRuns(latestRun);
             if (latestRun.length > 0) {
-                if (latestRun[0].mode === 1) {
+                if (latestRun[0].mode === "1") {
                     setMode("Manual");
                 } else {
                     setMode("Automatic");

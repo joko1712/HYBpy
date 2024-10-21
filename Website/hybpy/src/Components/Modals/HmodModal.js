@@ -62,7 +62,12 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
     }, [initialValues]);
 
     return (
-        <Dialog open={open} onClose={handleClose}>
+        <Dialog
+            open={open}
+            disableEscapeKeyDown
+            PaperProps={{
+                onClick: (e) => e.stopPropagation(),
+            }}>
             <DialogTitle>Edit HMOD Settings</DialogTitle>
 
             <DialogContent>

@@ -23,21 +23,18 @@ const MlmModal = ({
     const [ny, setNy] = useState(1);
     const [xOptions, setXOptions] = useState([{ val: "" }]);
     const [yOptions, setYOptions] = useState([{ id: "" }]);
+    const [error, setError] = useState(false);
 
     const handleNxChange = (event) => {
-        const newNx = Number(event.target.value);
+        const newNx = Math.max(0, Number(event.target.value));
         setNx(newNx);
-        setXOptions(
-            Array.from({ length: newNx }, (_, i) => xOptions[i] || { val: "" })
-        );
+        setXOptions(Array.from({ length: newNx }, (_, i) => xOptions[i] || { val: "" }));
     };
 
     const handleNyChange = (event) => {
-        const newNy = Number(event.target.value);
+        const newNy = Math.max(0, Number(event.target.value));
         setNy(newNy);
-        setYOptions(
-            Array.from({ length: newNy }, (_, i) => yOptions[i] || { id: "" })
-        );
+        setYOptions(Array.from({ length: newNy }, (_, i) => yOptions[i] || { id: "" }));
     };
 
     const handleXOptionChange = (index, key, value) => {
@@ -53,6 +50,19 @@ const MlmModal = ({
     };
 
     const handleSaveChanges = () => {
+        const allInputsSelected = xOptions.every((x) => x.val !== "");
+        const allOutputsSelected = yOptions.every((y) => y.id !== "");
+
+        if (nx > 0 && !allInputsSelected) {
+            setError(true);
+            return;
+        }
+        if (ny > 0 && !allOutputsSelected) {
+            setError(true);
+            return;
+        }
+
+        setError(false);
         handleSave({ nx, ny, xOptions, yOptions });
         handleClose();
     };
@@ -63,11 +73,17 @@ const MlmModal = ({
             setNy(1);
             setXOptions([{ val: "" }]);
             setYOptions([{ id: "" }]);
+            setError(false);
         }
     }, [open]);
 
     return (
-        <Dialog open={open} onClose={handleClose}>
+        <Dialog
+            open={open}
+            disableEscapeKeyDown
+            PaperProps={{
+                onClick: (e) => e.stopPropagation(),
+            }}>
             <DialogTitle>Add ML Block to HMOD</DialogTitle>
             <DialogContent>
                 <Grid container spacing={2} marginTop={2}>
@@ -78,6 +94,12 @@ const MlmModal = ({
                             type='number'
                             value={nx}
                             onChange={handleNxChange}
+                            error={error && nx > 0 && !xOptions.every((x) => x.val !== "")}
+                            helperText={
+                                error && nx > 0 && !xOptions.every((x) => x.val !== "")
+                                    ? "Please select all input options"
+                                    : ""
+                            }
                         />
                     </Grid>
                     {xOptions.map((x, index) => (
@@ -89,11 +111,7 @@ const MlmModal = ({
                                     select
                                     value={x.val}
                                     onChange={(e) =>
-                                        handleXOptionChange(
-                                            index,
-                                            "val",
-                                            e.target.value
-                                        )
+                                        handleXOptionChange(index, "val", e.target.value)
                                     }
                                     helperText='Select from species, control or compartments'>
                                     {[
@@ -116,6 +134,12 @@ const MlmModal = ({
                             type='number'
                             value={ny}
                             onChange={handleNyChange}
+                            error={error && ny > 0 && !yOptions.every((y) => y.id !== "")}
+                            helperText={
+                                error && ny > 0 && !yOptions.every((y) => y.id !== "")
+                                    ? "Please select all output options"
+                                    : ""
+                            }
                         />
                     </Grid>
                     {yOptions.map((y, index) => (
@@ -127,11 +151,7 @@ const MlmModal = ({
                                     select
                                     value={y.id}
                                     onChange={(e) =>
-                                        handleYOptionChange(
-                                            index,
-                                            "id",
-                                            e.target.value
-                                        )
+                                        handleYOptionChange(index, "id", e.target.value)
                                     }
                                     helperText='Select from parameters'>
                                     {parameterOptions.map((option) => (

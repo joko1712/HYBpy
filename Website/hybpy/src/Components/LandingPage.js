@@ -19,7 +19,7 @@ import { auth } from "../firebase-config";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { useEffect } from "react";
-import logo from "../Image/HYBpyINVIS_logo.png";
+import logo from "../Image/HYBpyINVIS_logo_BETA.png";
 import hybrid from "../Image/hybridmodel.jpg";
 
 const drawerWidth = 200;
@@ -71,6 +71,22 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
 const defaultTheme = createTheme();
 
 export default function LandingPage() {
+    useEffect(() => {
+        const email1 = process.env.EMAIL1;
+        const email2 = "rs" + ".costa" + "@" + ".fct" + ".unl" + ".pt"; //
+
+        const email1Element = document.getElementById("email1");
+        const email2Element = document.getElementById("email2");
+
+        if (email1Element) {
+            email1Element.innerHTML = `<a href="mailto:${email1}">José Pedreira</a>`;
+        }
+
+        if (email2Element) {
+            email2Element.innerHTML = `<a href="mailto:${email2}">Rafael Costa</a>`;
+        }
+    }, []);
+
     const navigate = useNavigate();
 
     const navigateToUpload = () => {
@@ -255,13 +271,36 @@ export default function LandingPage() {
                                     color='inherit'
                                     variant='text'
                                     onClick={() => navigateToCreateRun()}>
-                                    Create Run
+                                    New Project
                                 </Button>{" "}
                                 tab to start using the tool. If you have any questions or need
-                                assistance, please feel free to contact us.
+                                assistance, please feel free to contact us contact us at:{" "}
+                                <span id='email1'></span> or <span id='email2'></span>.
                             </b>
                         </Typography>
                     </Container>
+                    <footer
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "1em",
+                            background: "#f1f1f1",
+                            width: "100%",
+                            marginTop: "auto",
+                        }}>
+                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
+                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
+                            Universidade NOVA de Lisboa 2024. All rights reserved.
+                        </p>
+
+                        <img
+                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                            width='200px'
+                            alt='FCT Logo'
+                            style={{ marginLeft: "auto" }}
+                        />
+                    </footer>
                 </Box>
             </Box>
         </ThemeProvider>

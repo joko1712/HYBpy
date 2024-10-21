@@ -1,16 +1,24 @@
 import * as React from "react";
+import { useState } from "react";
 import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
-import MuiDrawer from "@mui/material/Drawer";
-import Box from "@mui/material/Box";
-import MuiAppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import List from "@mui/material/List";
-import Typography from "@mui/material/Typography";
-import Divider from "@mui/material/Divider";
-import IconButton from "@mui/material/IconButton";
-import Button from "@mui/material/Button";
-import Container from "@mui/material/Container";
+import {
+    CssBaseline,
+    AppBar as MuiAppBar,
+    Drawer as MuiDrawer,
+    Box,
+    Toolbar,
+    List,
+    Typography,
+    Divider,
+    IconButton,
+    Container,
+    RadioGroup,
+    FormControlLabel,
+    Radio,
+    Button,
+} from "@mui/material";
+import { useEffect } from "react";
+
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
@@ -18,9 +26,22 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase-config";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase-config";
-import { useEffect } from "react";
-import logo from "../Image/HYBpyINVIS_logo.png";
-import hybrid from "../Image/hybridmodel.jpg";
+import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import step1 from "../Image/Guide Print/Step1.png";
+import step2 from "../Image/Guide Print/Step2.png";
+import step3 from "../Image/Guide Print/Step3.png";
+import step4 from "../Image/Guide Print/Step4.png";
+import step41 from "../Image/Guide Print/Step4.1.png";
+import step42 from "../Image/Guide Print/Step4.2.png";
+import step5 from "../Image/Guide Print/Step5.png";
+import step51 from "../Image/Guide Print/Step5.1.png";
+import step61 from "../Image/Guide Print/Step6.1.png";
+import step62 from "../Image/Guide Print/Step6.2.png";
+import step7 from "../Image/Guide Print/Step7.png";
+import step3a from "../Image/Guide Print/Step3a.png";
+import step4b from "../Image/Guide Print/Step4b.png";
+import step41b from "../Image/Guide Print/Step4.1b.png";
+import step42b from "../Image/Guide Print/Step4.2b.png";
 
 const drawerWidth = 200;
 
@@ -72,16 +93,31 @@ const defaultTheme = createTheme();
 
 export default function LandingPage() {
     const navigate = useNavigate();
+    const [open, setOpen] = React.useState(true);
+    const [hasFiles, setHasFiles] = useState("");
+    const [hasHmod, setHasHmod] = useState("");
+    const [hasMlm, setHasMlm] = useState("");
 
     const navigateToUpload = () => {
         navigate("/");
+    };
+
+    const handleFileSelection = (event) => {
+        setHasFiles(event.target.value);
+    };
+
+    const handleHmodSelection = (event) => {
+        setHasHmod(event.target.value);
+    };
+
+    const handleMlmSelection = (event) => {
+        setHasMlm(event.target.value);
     };
 
     const navigateToCreateRun = () => {
         navigate("/upload");
     };
 
-    const [open, setOpen] = React.useState(true);
     const toggleDrawer = () => {
         setOpen(!open);
     };
@@ -163,6 +199,7 @@ export default function LandingPage() {
                         {secondaryListItems(navigate)}
                     </List>
                 </Drawer>
+
                 <Box
                     component='main'
                     sx={{
@@ -174,94 +211,415 @@ export default function LandingPage() {
                         height: "98vh",
                         overflow: "auto",
                         hideScrollbar: { scrollbarWidth: "none" },
+                        display: "flex",
+                        flexDirection: "column",
                     }}>
                     <Toolbar />
-                    <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
-                        <h1>Guide for the HYBpy Website</h1>
+                    <Container maxWidth='lg' sx={{ mt: 1, mb: 4, flex: 1 }}>
+                        <h1>Guide</h1>
 
-                        <Typography variant='subtitle1' gutterBottom>
-                            This tool is design to combine state-of-the-art machine learning
-                            algorithms with the reliability of mechanistic models within a unified
-                            structure and to simplify the construction and analyses of a hybrid
-                            model. This innovative approach offers a user-friendly interface that
-                            bridges the gap between complex hybrid modeling techniques and practical
-                            applications in bioprocesses engineering.
-                        </Typography>
-                        <h2>What is Hybrid Modeling?</h2>
-                        <Typography variant='subtitle1' gutterBottom>
-                            Hybrid modeling is a cutting-edge approach that integrates the
-                            predictive power of machine learning algorithms (Nonparametric model)
-                            with the foundational principles of mechanistic models (Parametric
-                            model). This synergy allows for the creation of models that are not only
-                            highly accurate but also deeply insightful, providing a comprehensive
-                            understanding of bioprocesses and bio (chemical) systems.
-                        </Typography>
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                            }}>
-                            <img src={hybrid} alt='hybrid model' width='600' height='270' />
-                        </div>
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                marginTop: "10px",
-                            }}>
-                            <Typography variant='caption'>
-                                Example of a typical structure for a hybrid model.
-                            </Typography>
-                        </div>
-                        <h2>Why HYBpy?</h2>
-                        <Typography variant='subtitle1' gutterBottom>
-                            Despite the proven effectiveness of hybrid models in the process systems
-                            engineering field, their adoption has been limited. The primary barrier
-                            has been the lack of accessible tools that offer both the sophistication
-                            needed for advanced modeling and the simplicity required for widespread
-                            use. Our Python tool is the solution to this challenge, offering an
-                            open-source, user-friendly platform for analyzing, and simulating hybrid
-                            models.
-                        </Typography>
-                        <h2>Features</h2>
-                        <Typography variant='subtitle1' gutterBottom>
-                            Our tool is designed with the user in mind, simplifying the complex
-                            process of hybrid modeling without compromising on power or precision.
-                            It enables researchers and practitioners in the bioprocesses engineering
-                            community to:
-                            <ul>
-                                <li>
-                                    <b>Construct Hybrid Models:</b> Easily integrate machine
-                                    learning algorithms with mechanistic models to address complex
-                                    modeling challenges.
-                                </li>
-                                <li>
-                                    <b>Analyze and Simulate:</b> Perform detailed analyses and
-                                    simulations to understand and predict the behavior of
-                                    bioprocesses and bio (chemical) systems.
-                                </li>
-                                <li>
-                                    <b>Accelerate Research and Development:</b> Reduce the time and
-                                    resources required to develop and test computational models,
-                                    speeding up innovation.
-                                </li>
-                            </ul>
-                        </Typography>
-                        <Typography variant='h6' gutterBottom>
-                            <b>
-                                Just proceed to the{" "}
-                                <Button
-                                    color='inherit'
-                                    variant='text'
-                                    onClick={() => navigateToCreateRun()}>
-                                    Create Run
-                                </Button>{" "}
-                                tab to start using the tool. If you have any questions or need
-                                assistance, please feel free to contact us.
-                            </b>
-                        </Typography>
+                        <h2>Step 1: Navigate to "New Project"</h2>
+                        <p>
+                            To start navigate to "New Project". Here you will be able to start a new
+                            training project by uploading your data.
+                        </p>
+                        <img src={step1} alt='Step 1' width='100%' />
+
+                        <h2>Step 2: Set Title</h2>
+                        <p>
+                            Once in the "New Project" page, you will be able to set a title for your
+                            project.
+                        </p>
+                        <img src={step2} alt='Step 2' width='100%' />
+
+                        <p>
+                            After giving a title you can proceed to upload the files necessary for
+                            the trainning.
+                        </p>
+
+                        <RadioGroup
+                            row
+                            aria-label='files'
+                            name='files'
+                            value={hasFiles}
+                            onChange={handleFileSelection}>
+                            <FormControlLabel
+                                value='ownFiles'
+                                control={<Radio />}
+                                label='I have my own files'
+                            />
+                            <FormControlLabel
+                                value='exampleFiles'
+                                control={<Radio />}
+                                label='Use example files from the website'
+                            />
+                        </RadioGroup>
+
+                        {hasFiles === "ownFiles" ? (
+                            <>
+                                <h2>Step 3: Upload your data file. </h2>
+                                <p>
+                                    You can upload you data file by clicking on the "Upload CSV"
+                                    button. It needs to be a csv file, if you are not sure of the
+                                    format press "Get CSV Template" to download a explanatory file.
+                                    After uploading the file there is also a button called "View
+                                    Batches" that will show you the data that was uploaded in a
+                                    graphical way.
+                                </p>
+                                <img src={step3} alt='Step 3' width='100%' />
+
+                                <p>
+                                    After uploading the data you now need to upload the file
+                                    containing the model
+                                </p>
+
+                                <RadioGroup
+                                    row
+                                    aria-label='files'
+                                    name='files'
+                                    value={hasHmod}
+                                    onChange={handleHmodSelection}>
+                                    <FormControlLabel
+                                        value='ownHmod'
+                                        control={<Radio />}
+                                        label='I have my own hmod file'
+                                    />
+                                    <FormControlLabel
+                                        value='ownSBML'
+                                        control={<Radio />}
+                                        label='I have a SBML file'
+                                    />
+                                </RadioGroup>
+
+                                {hasHmod === "ownHmod" ? (
+                                    <>
+                                        <h2>Step 4: Upload your hmod file. </h2>
+
+                                        <p>
+                                            {" "}
+                                            You can upload you hmod file by clicking on the "Upload
+                                            HMOD" button.{" "}
+                                        </p>
+
+                                        <img src={step4} alt='Step 4' width='100%' />
+
+                                        <p>
+                                            After uploading your hmod file, if it does not have a
+                                            mlm component a pop up will appear so that you can add
+                                            it.
+                                        </p>
+
+                                        <RadioGroup
+                                            row
+                                            aria-label='files'
+                                            name='files'
+                                            value={hasMlm}
+                                            onChange={handleMlmSelection}>
+                                            <FormControlLabel
+                                                value='ownMlm'
+                                                control={<Radio />}
+                                                label='My hmod file has a mlm component'
+                                            />
+                                            <FormControlLabel
+                                                value='noMlm'
+                                                control={<Radio />}
+                                                label='My hmod file does not have a mlm component'
+                                            />
+                                        </RadioGroup>
+
+                                        {hasMlm === "ownMlm" ? (
+                                            <>
+                                                <h2>Step 5: Verify and Modify Mlm settings</h2>
+
+                                                <p>
+                                                    After uploading the hmod file, you can verify
+                                                    the mlm settings and modify them if necessary by
+                                                    clicking on the "Edit HMOD Settings" button.
+                                                </p>
+
+                                                <img src={step5} alt='Step 5' width='100%' />
+
+                                                <p>
+                                                    After clicking on the "Edit HMOD Settings"
+                                                    button a pop up will appear with the mlm
+                                                    settings and you can modify them as you wish.
+                                                    There is also advanced settings that can be
+                                                    modified (we recommend to not change them if you
+                                                    are not sure about them).
+                                                </p>
+
+                                                <img src={step51} alt='Step 5.1' width='100%' />
+
+                                                <h2>Step 6: Select Batch Selection Method</h2>
+
+                                                <p>
+                                                    After all the files are uploaded. You can select
+                                                    a batch selection method. Ther are two options:
+                                                    Random and Manual. Random will select the
+                                                    batches randomly and Manual will allow you to
+                                                    select the batches you want to use.
+                                                </p>
+
+                                                <>
+                                                    <img src={step61} alt='Step 6.1' width='100%' />
+                                                    <img src={step62} alt='Step 6.2' width='100%' />
+                                                </>
+
+                                                <h2>Step 7: Create Run</h2>
+
+                                                <p>
+                                                    After all the files are uploaded, the settings
+                                                    are set and batches selected, you can create the
+                                                    run by clicking on the "Create Training" button.
+                                                </p>
+
+                                                <img src={step7} alt='Step 7' width='100%' />
+                                            </>
+                                        ) : hasMlm === "noMlm" ? (
+                                            <>
+                                                <h2>Step 4.1: Add Control Variables</h2>
+
+                                                <p>
+                                                    The first pop up will apear and you can select
+                                                    with variables are going to be used as control
+                                                    variables.
+                                                </p>
+
+                                                <img src={step41} alt='Step 4.1' width='100%' />
+
+                                                <h2>
+                                                    Step 4.2: Set inputs and outputs of the network
+                                                </h2>
+
+                                                <p>
+                                                    The second pop up will apear and you can select
+                                                    the number of inputs and their variables and the
+                                                    number of outputs and their variables.
+                                                </p>
+
+                                                <img src={step42} alt='Step 4.2' width='100%' />
+
+                                                <h2>Step 5: Verify and Modify Mlm Settings</h2>
+
+                                                <p>
+                                                    After adding the mlm component to the hmod file,
+                                                    you can verify the mlm settings and modify them
+                                                    if necessary by clicking on the "Edit HMOD
+                                                    Settings" button.
+                                                </p>
+
+                                                <img src={step5} alt='Step 5' width='100%' />
+
+                                                <p>
+                                                    After clicking on the "Edit HMOD Settings"
+                                                    button a pop up will appear with the mlm
+                                                    settings and you can modify them as you wish.
+                                                    There is also advanced settings that can be
+                                                    modified (we recommend to not change them if you
+                                                    are not sure about them).
+                                                </p>
+
+                                                <img src={step51} alt='Step 5.1' width='100%' />
+
+                                                <h2>Step 6: Select Batch Selection Method</h2>
+
+                                                <p>
+                                                    After all the files are uploaded. You can select
+                                                    a batch selection method. Ther are two options:
+                                                    Random and Manual. Random will select the
+                                                    batches randomly and Manual will allow you to
+                                                    select the batches you want to use.
+                                                </p>
+
+                                                <>
+                                                    <img src={step61} alt='Step 6.1' width='100%' />
+                                                    <img src={step62} alt='Step 6.2' width='100%' />
+                                                </>
+
+                                                <h2>Step 7: Create Run</h2>
+
+                                                <p>
+                                                    After all the files are uploaded, the settings
+                                                    are set and batches selected, you can create the
+                                                    run by clicking on the "Create Training" button.
+                                                </p>
+
+                                                <img src={step7} alt='Step 7' width='100%' />
+                                            </>
+                                        ) : null}
+                                    </>
+                                ) : hasHmod === "ownSBML" ? (
+                                    <>
+                                        <h2>Step 4: Download SBML2HYB</h2>
+
+                                        <p>
+                                            If you have a SBML file you can download the SBML2HYB
+                                            tool that will convert the SBML file to a hmod file.
+                                        </p>
+
+                                        <img src={step4b} alt='Step 4b' width='100%' />
+                                        <p>
+                                            After downloading the SBML2HYB tool you can convert the
+                                            SBML file to a hmod file by running the tool and
+                                            clicking the button "Translate SBML File" and select the
+                                            SBML file.
+                                        </p>
+
+                                        <img src={step41b} alt='Step 4.1b' width='100%' />
+
+                                        <p>
+                                            After converting the SBML file to a hmod file you can
+                                            save the file and upload it to the website.
+                                        </p>
+
+                                        <img src={step42b} alt='Step 4.2b' width='100%' />
+
+                                        <h2>Step 5: Upload your hmod file. </h2>
+
+                                        <p>
+                                            {" "}
+                                            You can upload you hmod file by clicking on the "Upload
+                                            HMOD" button.{" "}
+                                        </p>
+
+                                        <img src={step4} alt='Step 4' width='100%' />
+
+                                        <p>
+                                            After uploading your hmod file, if it does not have a
+                                            mlm component a pop up will appear so that you can add
+                                            it.
+                                        </p>
+
+                                        <h2>Step 5.1: Add Control Variables</h2>
+
+                                        <p>
+                                            The first pop up will apear and you can select with
+                                            variables are going to be used as control variables.
+                                        </p>
+
+                                        <img src={step41} alt='Step 4.1' width='100%' />
+
+                                        <h2>Step 5.2: Set inputs and outputs of the network</h2>
+
+                                        <p>
+                                            The second pop up will apear and you can select the
+                                            number of inputs and their variables and the number of
+                                            outputs and their variables.
+                                        </p>
+
+                                        <img src={step42} alt='Step 4.2' width='100%' />
+
+                                        <h2>Step 6: Verify and Modify Mlm Settings</h2>
+
+                                        <p>
+                                            After adding the mlm component to the hmod file, you can
+                                            verify the mlm settings and modify them if necessary by
+                                            clicking on the "Edit HMOD Settings" button.
+                                        </p>
+
+                                        <img src={step5} alt='Step 5' width='100%' />
+
+                                        <p>
+                                            After clicking on the "Edit HMOD Settings" button a pop
+                                            up will appear with the mlm settings and you can modify
+                                            them as you wish. There is also advanced settings that
+                                            can be modified (we recommend to not change them if you
+                                            are not sure about them).
+                                        </p>
+
+                                        <img src={step51} alt='Step 5.1' width='100%' />
+
+                                        <h2>Step 7: Select Batch Selection Method</h2>
+
+                                        <p>
+                                            After all the files are uploaded. You can select a batch
+                                            selection method. Ther are two options: Random and
+                                            Manual. Random will select the batches randomly and
+                                            Manual will allow you to select the batches you want to
+                                            use.
+                                        </p>
+
+                                        <>
+                                            <img src={step61} alt='Step 6.1' width='100%' />
+                                            <img src={step62} alt='Step 6.2' width='100%' />
+                                        </>
+
+                                        <h2>Step 8: Create Run</h2>
+
+                                        <p>
+                                            After all the files are uploaded, the settings are set
+                                            and batches selected, you can create the run by clicking
+                                            on the "Create Training" button.
+                                        </p>
+
+                                        <img src={step7} alt='Step 7' width='100%' />
+                                    </>
+                                ) : null}
+                            </>
+                        ) : hasFiles === "exampleFiles" ? (
+                            <>
+                                <h2>Step 3: Select Example </h2>
+
+                                <p>
+                                    If you don't have your own files you can use the example files
+                                    provided on the website. There are 2 examples available.
+                                </p>
+
+                                <img src={step3a} alt='Step 3a' width='100%' />
+
+                                <h2>Step 4: Verify Data</h2>
+
+                                <p>
+                                    After selecting the example files you can verify the data by
+                                    clicking on the "View Batches" button that will show you the
+                                    data that was uploaded in a graphical way.
+                                </p>
+
+                                <img src={step3a} alt='Step 3a' width='100%' />
+
+                                <h2>Step 5: Verify and Modify Mlm settings</h2>
+
+                                <p>
+                                    You can verify the mlm settings and modify them if necessary by
+                                    clicking on the "Edit HMOD Settings" button.
+                                </p>
+
+                                <img src={step5} alt='Step 5' width='100%' />
+
+                                <p>
+                                    After clicking on the "Edit HMOD Settings" button a pop up will
+                                    appear with the mlm settings and you can modify them as you
+                                    wish. There is also advanced settings that can be modified (we
+                                    recommend to not change them if you are not sure about them).
+                                </p>
+
+                                <img src={step51} alt='Step 5.1' width='100%' />
+
+                                <h2>Step 6: Select Batch Selection Method</h2>
+
+                                <p>
+                                    After all the files are uploaded. You can select a batch
+                                    selection method. Ther are two options: Random and Manual.
+                                    Random will select the batches randomly and Manual will allow
+                                    you to select the batches you want to use.
+                                </p>
+
+                                <>
+                                    <img src={step61} alt='Step 6.1' width='100%' />
+                                    <img src={step62} alt='Step 6.2' width='100%' />
+                                </>
+
+                                <h2>Step 7: Create Run</h2>
+
+                                <p>
+                                    After all the files are uploaded, the settings are set and
+                                    batches selected, you can create the run by clicking on the
+                                    "Create Training" button.
+                                </p>
+
+                                <img src={step7} alt='Step 7' width='100%' />
+                            </>
+                        ) : null}
                     </Container>
                 </Box>
             </Box>

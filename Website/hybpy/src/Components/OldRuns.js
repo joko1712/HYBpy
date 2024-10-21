@@ -21,9 +21,12 @@ import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { useEffect } from "react";
 import ListItemText from "@mui/material/ListItemText";
+import CloseIcon from "@mui/icons-material/Close";
+import ListItemIcon from "@mui/material/ListItemIcon";
+
 import { red } from "@mui/material/colors";
 import Modal from "@mui/material/Modal";
-import logo from "../Image/HYBpyINVIS_logo.png";
+import logo from "../Image/HYBpyINVIS_logo_BETA.png";
 import DeleteIcon from "@mui/icons-material/Delete";
 import {
     ListItemButton,
@@ -413,7 +416,7 @@ export default function OldRuns() {
                                         onClose={handleClose}
                                         aria-labelledby='modal-modal-title'
                                         aria-describedby='modal-modal-description'>
-                                        <Box sx={{ ...style, width: "80%", height: "100%" }}>
+                                        <Box sx={{ ...style, width: "80%", height: "90%" }}>
                                             {selectedRun && (
                                                 <div
                                                     style={{
@@ -569,17 +572,34 @@ export default function OldRuns() {
                                                 left: "50%",
                                                 transform: "translate(-50%, -50%)",
                                                 width: "80%",
-                                                height: "100%",
+                                                height: "90%",
                                                 bgcolor: "background.paper",
                                                 border: "2px solid #000",
                                                 boxShadow: 24,
                                                 p: 4,
                                                 overflow: "auto",
+                                                alignContent: "center",
+                                                justifyContent: "center",
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                position: "relative",
                                             }}>
+                                            <IconButton
+                                                onClick={() => setSelectedPlot(null)}
+                                                sx={{
+                                                    position: "absolute",
+                                                    top: "5%",
+                                                    right: "5%",
+                                                }}>
+                                                <CloseIcon sx={{ height: 50, width: 50 }} />
+                                            </IconButton>
                                             <img
                                                 src={selectedPlot}
                                                 alt='Selected Plot'
-                                                style={{ width: "100%" }}
+                                                style={{
+                                                    height: "100%",
+                                                    width: "97%",
+                                                }}
                                             />
                                         </Box>
                                     </Modal>
@@ -617,6 +637,28 @@ export default function OldRuns() {
                             </Grid>
                         </Grid>
                     </Container>
+                    <footer
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "1em",
+                            background: "#f1f1f1",
+                            width: "100%",
+                            marginTop: "auto",
+                        }}>
+                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
+                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
+                            Universidade NOVA de Lisboa 2024. All rights reserved.
+                        </p>
+
+                        <img
+                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                            width='200px'
+                            alt='FCT Logo'
+                            style={{ marginLeft: "auto" }}
+                        />
+                    </footer>
                 </Box>
             </Box>
         </ThemeProvider>

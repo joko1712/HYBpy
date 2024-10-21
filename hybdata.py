@@ -216,7 +216,8 @@ def hybdata(filename):
 
             # Get the parameters value
             if "val" in line:
-                val = line[line.find("=")+1:len(line)-1]
+                val = line[line.find("=")+1:len(line)]
+                
 
             # Get the parameters min value
             if "reaction" in line:
@@ -472,7 +473,7 @@ def hybdata(filename):
                 if "min" in line:
                     min = line[line.find("=")+1:len(line)+1]
 
-                if "max" in line:
+                if ".max" in line:
                     max = line[line.find("=")+1:len(line)+1]
 
                 if "val" in line:

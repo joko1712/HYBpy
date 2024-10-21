@@ -107,6 +107,7 @@ def ensure_json_serializable(data):
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    run_ref = None
     try:
         temp_dir = tempfile.mkdtemp()  # Create a unique temporary directory
         logging.debug("Form data received: %s", request.form)
@@ -224,6 +225,11 @@ def upload_file():
                 if batch in data:
                     data[batch]["istrain"] = 3
 
+            all_batches = set(data.keys())
+            for batch in all_batches:
+                if batch not in train_batches and batch not in test_batches:
+                    data[batch]["istrain"] = 0
+
             projhyb["train_batches"] = train_batches
             projhyb["test_batches"] = test_batches
 
@@ -259,11 +265,18 @@ def upload_file():
 
         # Upload plots to storage
         plot_urls = upload_plots_to_gcs(temp_dir, user_id, folder_id)
-        run_ref.update({
+        if trainData == {}:
+            run_ref.update({
+            "status": "error",
+            })
+            return jsonify({"error": "No data to train"}), 400
+        
+        else:
+            run_ref.update({
             "response_data": response_data,
             "status": "completed",
             "plots": plot_urls
-        })
+            })
 
         # Clean up temporary directory
         shutil.rmtree(temp_dir)
@@ -272,8 +285,8 @@ def upload_file():
 
     except Exception as e:
         logging.error("Error during file upload: %s", str(e), exc_info=True)
-        if 'run_ref' in locals():
-            run_ref.update({"status": "failed"})
+        
+       
         return jsonify({"error": str(e)}), 500
 
 @app.route("/get-available-batches", methods=['POST'])
@@ -344,11 +357,11 @@ def get_template_hmod():
     try:
         template_type = request.json.get('template_type')
         if template_type == 1:
-            blob_hmod = bucket.blob("Template/Hmod1/template1.hmod")
-            hmod_file_path = "template1.hmod"
+            blob_hmod = bucket.blob("Template/CellGrowthModel/CellGrowthModel3.hmod")
+            hmod_file_path = "CellGrowthModel3.hmod"
         elif template_type == 2:
-            blob_hmod = bucket.blob("Template/Hmod2/template2.hmod")
-            hmod_file_path = "template2.hmod"
+            blob_hmod = bucket.blob("Template/Hmod1/basic1.hmod")
+            hmod_file_path = "basic1.hmod"
         elif template_type == 3:
             blob_hmod = bucket.blob("Template/Hmod/template.hmod")
             hmod_file_path = "template.hmod"
@@ -358,7 +371,7 @@ def get_template_hmod():
         temp_file = NamedTemporaryFile(delete=False)
         blob_hmod.download_to_filename(temp_file.name)
 
-        return send_file(temp_file.name, as_attachment=True, attachment_filename=hmod_file_path)
+        return send_file(temp_file.name, as_attachment=True, download_name=hmod_file_path)
 
     except Exception as e:
         logging.error("Error in get_template_hmod: %s", str(e), exc_info=True)
@@ -371,11 +384,11 @@ def get_template_csv():
     try:
         template_type = request.json.get('template_type')
         if template_type == 1:
+            blob_csv = bucket.blob("Template/CellGrowthModelCSV/CellGrowth.csv")
+            csv_file_path = "CellGrowth.csv"
+        elif template_type == 2:
             blob_csv = bucket.blob("Template/Csv/basicmodel1data.csv")
             csv_file_path = "basicmodel1data.csv"
-        elif template_type == 2:
-            blob_csv = bucket.blob("Template/Csv/basicmodel2data.csv")
-            csv_file_path = "basicmodel2data.csv"
         elif template_type == 3:
             blob_csv = bucket.blob("Template/Csv/template.csv")
             csv_file_path = "template.csv"
@@ -385,7 +398,7 @@ def get_template_csv():
         temp_file = NamedTemporaryFile(delete=False)
         blob_csv.download_to_filename(temp_file.name)
 
-        return send_file(temp_file.name, as_attachment=True, attachment_filename=csv_file_path)
+        return send_file(temp_file.name, as_attachment=True, download_name=csv_file_path)
 
     except Exception as e:
         logging.error("Error in get_template_csv: %s", str(e), exc_info=True)

@@ -38,7 +38,7 @@ import {
 } from "@mui/material";
 import * as XLSX from "xlsx";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
-import logo from "../Image/HYBpyINVIS_logo.png";
+import logo from "../Image/HYBpyINVIS_logo_BETA.png";
 import { LineChart } from "./LineChart";
 import InfoIcon from "@mui/icons-material/Info";
 import TrainingModal from "./Modals/TrainingModal";
@@ -1114,6 +1114,7 @@ function Simulations() {
                     <Container maxWidth='lg' sx={{}}>
                         <div style={{ overflow: "auto", marginTop: 20 }}>
                             <h2 style={{ float: "left", marginTop: 0 }}>Simulate Model</h2>
+                            {/* 
                             <Button
                                 onClick={() => getTemplate(2)}
                                 variant='contained'
@@ -1126,7 +1127,9 @@ function Simulations() {
                                 style={{ float: "right", marginTop: 0, margin: 5 }}>
                                 Use Template Model 1
                             </Button>
+                            */}
                         </div>
+
                         <Grid container spacing={3} columns={20}>
                             <Grid item xs={20} columns={20}>
                                 <Paper
@@ -1575,6 +1578,28 @@ function Simulations() {
                             </Grid>
                         </Grid>
                     </Container>
+                    <footer
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "1em",
+                            background: "#f1f1f1",
+                            width: "100%",
+                            marginTop: "auto",
+                        }}>
+                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
+                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
+                            Universidade NOVA de Lisboa 2024. All rights reserved.
+                        </p>
+
+                        <img
+                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                            width='200px'
+                            alt='FCT Logo'
+                            style={{ marginLeft: "auto" }}
+                        />
+                    </footer>
                 </Box>
             </Box>
             <HmodModal

@@ -1,0 +1,132 @@
+CellGrowthModel.time.tspan=0:1:24
+%--------------------------------------------------------------------------
+% hybrid model definition data structure
+
+%Species
+CellGrowthModel.nspecies=2;
+CellGrowthModel.species(1).id="X";
+CellGrowthModel.species(1).val=0.1;
+CellGrowthModel.species(1).compartment="reactor";
+CellGrowthModel.species(1).fixed=0;
+CellGrowthModel.species(1).min=0;
+CellGrowthModel.species(1).max=50;
+CellGrowthModel.species(1).isres=1;
+CellGrowthModel.species(2).id="V";
+CellGrowthModel.species(2).val=0.1;
+CellGrowthModel.species(2).compartment="reactor";
+CellGrowthModel.species(2).fixed=0;
+CellGrowthModel.species(2).min=0;
+CellGrowthModel.species(2).max=50;
+CellGrowthModel.species(2).isres=1;
+
+
+%Compartments
+CellGrowthModel.ncompartments=1;
+CellGrowthModel.compartments(1).id="reactor";
+CellGrowthModel.compartments(1).val=1;
+CellGrowthModel.compartments(1).min=0;
+CellGrowthModel.compartments(1).max=10;
+CellGrowthModel.compartments(1).isres=0;
+CellGrowthModel.compartments(1).fixed=0;
+
+%Parameters
+CellGrowthModel.nparameters=2;
+CellGrowthModel.parameters(1).id="rX";
+CellGrowthModel.parameters(1).val=0.15; 
+CellGrowthModel.parameters(1).reaction="global";
+CellGrowthModel.parameters(1).fixed=0;
+CellGrowthModel.parameters(2).id="rV";
+CellGrowthModel.parameters(2).val=0.15; 
+CellGrowthModel.parameters(2).reaction="global";
+CellGrowthModel.parameters(2).fixed=0;
+
+%Reactions
+CellGrowthModel.nreaction=2;
+CellGrowthModel.reaction(1).id="reaction1";
+CellGrowthModel.reaction(1).rate="rX";
+CellGrowthModel.reaction(1).reaction1="[1,0]";
+CellGrowthModel.reaction(2).id="reaction2";
+CellGrowthModel.reaction(2).rate="rV";
+CellGrowthModel.reaction(2).reaction2="[0,1]";
+
+
+%Rate rules
+CellGrowthModel.nraterules=1;
+CellGrowthModel.raterules(1).id="reactor";
+CellGrowthModel.raterules(1).val="0";
+CellGrowthModel.raterules(1).min=0;
+CellGrowthModel.raterules(1).max=1.5;
+CellGrowthModel.raterules(1).isres=1;
+
+
+% Assignment rules
+CellGrowthModel.nruleAss=0;
+
+% Events
+CellGrowthModel.nevents=0;
+
+
+% control---------------------------
+CellGrowthModel.ncontrol=1;
+CellGrowthModel.control(1).id= 'Feed';
+CellGrowthModel.control(1).val= 0;
+CellGrowthModel.control(1).min= 0;
+CellGrowthModel.control(1).max= 0.5;
+CellGrowthModel.control(1).constant= 1;
+CellGrowthModel.fun_control=@control_function_CellGrowthModel;
+CellGrowthModel.fun_event=[];
+
+% %model configuration
+CellGrowthModel.time.min=0;
+CellGrowthModel.time.max=24;
+CellGrowthModel.time.id='t[h]';
+CellGrowthModel.time.TAU=0.48;
+CellGrowthModel.time.tspan=0:1:24;
+
+% % MLM - Machine Learning Model --------------------------------------------
+CellGrowthModel.mlm.id = 'mlpnet';
+CellGrowthModel.mlm.nx = 3;
+CellGrowthModel.mlm.x(1).id = 'anninp1';
+CellGrowthModel.mlm.x(1).val= 'X';
+CellGrowthModel.mlm.x(1).min= 0;
+CellGrowthModel.mlm.x(1).max= 46.7556911;
+CellGrowthModel.mlm.x(2).id = 'anninp2';
+CellGrowthModel.mlm.x(2).val= 'V';
+CellGrowthModel.mlm.x(2).min= 0;
+CellGrowthModel.mlm.x(2).max= 14.26339491;
+CellGrowthModel.mlm.x(3).id = 'anninp3';
+CellGrowthModel.mlm.x(3).val= 'Feed';
+CellGrowthModel.mlm.x(3).min= 0;
+CellGrowthModel.mlm.x(3).max= 0.5;
+CellGrowthModel.mlm.ny = 2;
+CellGrowthModel.mlm.y(1).id = 'rX';
+CellGrowthModel.mlm.y(1).val= 'rann1';
+CellGrowthModel.mlm.y(1).min= 0;
+CellGrowthModel.mlm.y(1).max= NaN;
+CellGrowthModel.mlm.y(2).id = 'rV';
+CellGrowthModel.mlm.y(2).val= 'rann2';
+CellGrowthModel.mlm.y(2).min= 0;
+CellGrowthModel.mlm.y(2).max= NaN;
+CellGrowthModel.mlm.options={'hidden nodes', [1]};
+CellGrowthModel.mlm.layer=1;
+CellGrowthModel.mlm.xfun=str2func('autoA_hybmod_anninp');
+CellGrowthModel.mlm.yfun=str2func('autoA_hybmod_rann');
+CellGrowthModel.symbolic='full-symbolic';
+CellGrowthModel.symbolic='semi-symbolic';
+CellGrowthModel.datasource=3;
+CellGrowthModel.datafun=@CellGrowthModel;
+%training configuration
+CellGrowthModel.mode=1;
+CellGrowthModel.method=1;
+CellGrowthModel.jacobian=1;
+CellGrowthModel.hessian=0;
+CellGrowthModel.derivativecheck='off';
+CellGrowthModel.niter=400;
+CellGrowthModel.niteroptim=1;
+CellGrowthModel.nstep=2;
+CellGrowthModel.display='off';
+CellGrowthModel.bootstrap=0;
+CellGrowthModel.nensemble=1;
+CellGrowthModel.crossval=1;
+
+end

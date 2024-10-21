@@ -87,77 +87,109 @@ function Register() {
 
     return (
         <ThemeProvider theme={defaultTheme}>
-            <Container component='main' maxWidth='xs'>
-                <CssBaseline />
-                <Box
-                    sx={{
-                        marginTop: 8,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                    }}>
-                    <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-                        <LockOutlinedIcon />
-                    </Avatar>
-                    <Typography component='h1' variant='h5'>
-                        Sign up
-                    </Typography>
-                    <Box component='form' noValidate onSubmit={registerUser} sx={{ mt: 3 }}>
-                        <Grid container spacing={2}>
-                            <Grid item xs={12}>
-                                <TextField
-                                    error={!!emailError}
-                                    required
-                                    fullWidth
-                                    id='email'
-                                    label='Email Address'
-                                    name='email'
-                                    autoComplete='email'
-                                    value={email}
-                                    onChange={handleEmailChange}
-                                />
+            <Box
+                sx={{
+                    minHeight: "100vh",
+                    display: "flex",
+                    flexDirection: "column",
+                }}>
+                <Container component='main' maxWidth='xs' sx={{ flex: 1 }}>
+                    <CssBaseline />
+                    <Box
+                        sx={{
+                            marginTop: 8,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                        }}>
+                        <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+                            <LockOutlinedIcon />
+                        </Avatar>
+                        <Typography component='h1' variant='h5'>
+                            Sign up
+                        </Typography>
+                        <Box component='form' noValidate onSubmit={registerUser} sx={{ mt: 3 }}>
+                            <Grid container spacing={2}>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        error={!!emailError}
+                                        required
+                                        fullWidth
+                                        id='email'
+                                        label='Email Address'
+                                        name='email'
+                                        autoComplete='email'
+                                        value={email}
+                                        onChange={handleEmailChange}
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        required
+                                        fullWidth
+                                        name='password'
+                                        label='Password'
+                                        type='password'
+                                        id='password'
+                                        autoComplete='new-password'
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        required
+                                        fullWidth
+                                        name='confirmPassword'
+                                        label='Confirm Password'
+                                        type='password'
+                                        id='confirmPassword'
+                                        autoComplete='new-password'
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                    />
+                                </Grid>
                             </Grid>
-                            <Grid item xs={12}>
-                                <TextField
-                                    required
-                                    fullWidth
-                                    name='password'
-                                    label='Password'
-                                    type='password'
-                                    id='password'
-                                    autoComplete='new-password'
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
+                            {error && <p>{error}</p>}
+                            <Button
+                                type='submit'
+                                fullWidth
+                                variant='contained'
+                                sx={{ mt: 3, mb: 2 }}>
+                                Sign Up
+                            </Button>
+                            <Grid container justifyContent='flex-end'>
+                                <Grid item>
+                                    <Link href='/' variant='body2'>
+                                        Already have an account? Sign in
+                                    </Link>
+                                </Grid>
                             </Grid>
-                            <Grid item xs={12}>
-                                <TextField
-                                    required
-                                    fullWidth
-                                    name='confirmPassword'
-                                    label='Confirm Password'
-                                    type='password'
-                                    id='confirmPassword'
-                                    autoComplete='new-password'
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                />
-                            </Grid>
-                        </Grid>
-                        {error && <p>{error}</p>}
-                        <Button type='submit' fullWidth variant='contained' sx={{ mt: 3, mb: 2 }}>
-                            Sign Up
-                        </Button>
-                        <Grid container justifyContent='flex-end'>
-                            <Grid item>
-                                <Link href='/' variant='body2'>
-                                    Already have an account? Sign in
-                                </Link>
-                            </Grid>
-                        </Grid>
+                        </Box>
                     </Box>
-                </Box>
-            </Container>
+                </Container>
+                <footer
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "1em",
+                        background: "#f1f1f1",
+                        width: "100%",
+                    }}>
+                    <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
+                        &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
+                        Universidade NOVA de Lisboa 2024. All rights reserved.
+                    </p>
+
+                    <img
+                        src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                        width='200px'
+                        alt='FCT Logo'
+                        style={{ marginLeft: "auto" }}
+                    />
+                </footer>
+            </Box>
         </ThemeProvider>
     );
 }

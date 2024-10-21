@@ -175,7 +175,6 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
         print("   Optimiser:              Trust Region Reflective")
         options = {
             'xtol': 1e-10, #1e-10
-            'xtol': 1e-10, #1e-10
             'gtol': 1e-10,
             'ftol': 1e-10,
             'verbose': projhyb['display'],
@@ -306,8 +305,12 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
 
 #######################################################################################################################
     
-    for istep in range(1, projhyb['nstep']):
+    bestWeights = None
+    bestPerformance = float('inf')
+
+    for istep in range(1, projhyb['nstep']+1):
         print("TESTING")
+
         for i in range(1, file['nbatch'] + 1):
             istrain = file[i]["istrain"]
             projhyb['istrain'] = [0] * file['nbatch']
@@ -322,9 +325,15 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
         
         if istep > 1:
             print('Weights initialization...2')
-            weights, ann = ann.reinitialize_weights()
+            ann = mlpnetcreate(projhyb, projhyb['mlm']['neuron'])
+            projhyb['mlm']['fundata'] = ann
+            weights, ann = ann.get_weights()
+            ann.set_weights(weights)
 
-            projhyb["w"] = weights
+            with open("filetest.json", "w") as f:
+                json.dump(convert_numpy(weights), f)
+                json.dump("weights", f)
+
         print(
             'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
 
@@ -402,16 +411,12 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
         if trainedWeights == None:
     
             if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
-                print("optios", options)
-                print("weights", weights)
                 result = least_squares(evaluator.fobj_func, x0=weights, **options)
                 print("result", result.x)
                 optimized_weights = result.x
 
 
             elif projhyb["method"] == 2:  # QUASI-NEWTON
-                print("optios", options)
-                print("weights", weights)
 
                 if options.get('method', None) == 'trust-constr':
                     result = minimize(evaluator.fobj_func, x0=weights, hess=None, **options)
@@ -458,44 +463,39 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
                     print(f"Norm of gradient after epoch {epoch + 1}: {np.linalg.norm(updated_gradient)}")
 
                 optimized_weights, _ = ann.get_weights()
-            
-
-            model_path = os.path.join(temp_dir, "trained_model.h5")
-            save_model_to_h5(ann, model_path)
-
-            newHmodFile = os.path.join(temp_dir, "Newhmod.hmod")
-            saveNN(model_path, projhyb["inputs"], projhyb["outputs"], hmod, newHmodFile, optimized_weights, ann)
-
-            testing = teststate(ann, user_id, projhyb, file, optimized_weights, temp_dir, projhyb['method'])
-
-            plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
-
-            return projhyb, optimized_weights, testing, newHmodFile
         
         else:
-            print("ANN", ann)
-            print("input", projhyb["inputs"])
-            print("output", projhyb["outputs"])
-            print("hmod", hmod)
-            print("trainedWeights", trainedWeights)
+
 
             trainedWeights = np.array(trainedWeights)
 
             ann.set_weights(trainedWeights)
 
-            model_path = os.path.join(temp_dir, "trained_model.h5")
-            save_model_to_h5(ann, model_path)
-
-            newHmodFile = os.path.join(temp_dir, "Newhmod.hmod")
-            saveNN(model_path, projhyb["inputs"], projhyb["outputs"], hmod, newHmodFile, optimized_weights, ann)
-
-            testing = teststate(ann, user_id, projhyb, file, trainedWeights, temp_dir, projhyb['method'])
-
-            plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
+        fobj_value = evaluator.fobj_func(optimized_weights)
+        fobj_norm = np.linalg.norm(fobj_value)
 
 
-            return projhyb, trainedWeights, testing, newHmodFile
-    
+        if bestPerformance == None:
+            bestPerformance = fobj_norm
+            bestWeights = optimized_weights
+
+        if bestPerformance > fobj_norm:
+            bestPerformance = fobj_norm
+            bestWeights = optimized_weights
+
+    model_path = os.path.join(temp_dir, "trained_model.h5")
+    save_model_to_h5(ann, model_path)
+
+    newHmodFile = os.path.join(temp_dir, "Newhmod.hmod")
+    saveNN(model_path, projhyb["inputs"], projhyb["outputs"], hmod, newHmodFile, bestWeights, ann)
+
+    testing = teststate(ann, user_id, projhyb, file, bestWeights, temp_dir, projhyb['method'])
+
+    plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
+
+
+    return projhyb, bestWeights, testing, newHmodFile
+
 
 def convert_numpy(obj):
     if isinstance(obj, np.ndarray):
@@ -1092,14 +1092,14 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, method=1):
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
         ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
-        ax.fill_between(x, lower_bound[:len(x)], upper_bound[:len(x)], color='gray', label="Confidence Interval", alpha=0.5)
+        #ax.fill_between(x, lower_bound[:len(x)], upper_bound[:len(x)], color='gray', label="Confidence Interval", alpha=0.5)
 
         plt.xlabel('Time (s)')
         plt.ylabel('Concentration')
         plt.title(f"Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)
+        #plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)
         
         plt.legend()
         temp = os.path.join(temp_dir, 'plots')

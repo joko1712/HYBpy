@@ -1,0 +1,51 @@
+%--------------------------------------------------------------------------
+% hybrid model definition data structure
+
+%Species
+CellGrowthModel2.nspecies=1;
+CellGrowthModel2.species(1).id="X";
+CellGrowthModel2.species(1).val=0.1;
+CellGrowthModel2.species(1).compartment="V";
+CellGrowthModel2.species(1).fixed=0;
+CellGrowthModel2.species(1).min=0;
+CellGrowthModel2.species(1).max=50;
+CellGrowthModel2.species(1).isres=1;
+
+%Compartments
+CellGrowthModel2.ncompartments=1;
+CellGrowthModel2.compartments(1).id="V";
+CellGrowthModel2.compartments(1).val=1;
+CellGrowthModel2.compartments(1).min=0;
+CellGrowthModel2.compartments(1).max=10;
+CellGrowthModel2.compartments(1).isres=0;
+CellGrowthModel2.compartments(1).fixed=0;
+
+%Parameters
+CellGrowthModel2.nparameters=1;
+CellGrowthModel2.parameters(1).id="miu";
+CellGrowthModel2.parameters(1).val=0.15; 
+CellGrowthModel2.parameters(1).reaction="global";
+CellGrowthModel2.parameters(1).fixed=0;
+
+%Reactions
+CellGrowthModel2.nreaction=1;
+CellGrowthModel2.reaction(1).id="reaction1";
+CellGrowthModel2.reaction(1).rate="miu*X";
+CellGrowthModel2.reaction(1).reaction1="[1]";
+
+%Rate rules
+CellGrowthModel2.nraterules=1;
+CellGrowthModel2.raterules(1).id="V";
+CellGrowthModel2.raterules(1).val="Feed";
+CellGrowthModel2.raterules(1).min=0;
+CellGrowthModel2.raterules(1).max=10;
+CellGrowthModel2.raterules(1).isres=0;
+
+% Assignment rules
+CellGrowthModel2.nruleAss=0;
+
+% Events
+CellGrowthModel2.nevents=0;
+
+
+end

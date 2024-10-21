@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase-config";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase-config";
-import logo from "../Image/HYBpyINVIS_logo.png";
+import logo from "../Image/HYBpyINVIS_logo_BETA.png";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
 import Modal from "@mui/material/Modal";
@@ -443,6 +443,28 @@ export default function Dashboard() {
                             </Box>
                         </Modal>
                     </Container>
+                    <footer
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "1em",
+                            background: "#f1f1f1",
+                            width: "100%",
+                            marginTop: "auto",
+                        }}>
+                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
+                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
+                            Universidade NOVA de Lisboa 2024. All rights reserved.
+                        </p>
+
+                        <img
+                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                            width='200px'
+                            alt='FCT Logo'
+                            style={{ marginLeft: "auto" }}
+                        />
+                    </footer>
                 </Box>
             </Box>
         </ThemeProvider>

@@ -22,7 +22,7 @@ class CustomMLP(nn.Module):
         self.layers.append(Linear(layer_sizes[-2], layer_sizes[-1]))
 
 
-        self.scale_weights(scaling_factor=0.01)
+        self.scale_weights(scaling_factor=0.001)
 
 
     def forward(self, x):
@@ -52,7 +52,7 @@ class CustomMLP(nn.Module):
             if hasattr(layer, 'b'):
                 nn.init.constant_(layer.b, 0)
 
-        self.scale_weights(scaling_factor=0.0001)
+        self.scale_weights(scaling_factor=0.001)
 
         weights = []
         for layer in self.layers:

@@ -33,7 +33,12 @@ const ControlModalSelection = ({ open, headers, handleClose, onSave }) => {
     };
 
     return (
-        <Dialog open={open} onClose={handleClose}>
+        <Dialog
+            open={open}
+            disableEscapeKeyDown
+            PaperProps={{
+                onClick: (e) => e.stopPropagation(),
+            }}>
             <DialogTitle>Select Control Variables ID</DialogTitle>
             <DialogContent>
                 {headers.map((header) => (

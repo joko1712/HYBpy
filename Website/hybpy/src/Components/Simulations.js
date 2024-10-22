@@ -993,6 +993,15 @@ function Simulations() {
         });
     };
 
+    const isStartTrainingDisabled = () => {
+        if (mode === "1") {
+            return train_batches.size === 0 || test_batches.size === 0 || description === "";
+        } else if (mode === "2") {
+            return description === "";
+        }
+        return true;
+    };
+
     const handleTabChange = (event, newValue) => {
         setTabIndex(newValue);
     };
@@ -1113,7 +1122,8 @@ function Simulations() {
                     <Toolbar />
                     <Container maxWidth='lg' sx={{}}>
                         <div style={{ overflow: "auto", marginTop: 20 }}>
-                            <h2 style={{ float: "left", marginTop: 0 }}>Simulate Model</h2>
+                            <h2 style={{ float: "left", marginTop: 0 }}>Simulate Model </h2>
+                            <h3 style={{ color: "red" }}>(Under Development)</h3>
                             {/* 
                             <Button
                                 onClick={() => getTemplate(2)}
@@ -1457,15 +1467,16 @@ function Simulations() {
                                             p: 2,
                                             display: "flex",
                                             flexDirection: "column",
+                                            marginBottom: 0.5,
                                             overflow: "auto",
                                         }}>
-                                        <Typography variant='h6'>
+                                        <Typography variant='h5'>
                                             {" "}
-                                            Step 4: Please select the batch selection mode.{" "}
+                                            Step 4: Select data split (train/test sets)
                                         </Typography>
                                     </Paper>
                                 </Grid>
-                                <Grid item xs={10}>
+                                <Grid item xs={20}>
                                     <Paper
                                         sx={{
                                             p: 2,
@@ -1473,7 +1484,11 @@ function Simulations() {
                                             flexDirection: "column",
                                             marginBottom: 2,
                                         }}>
-                                        <div style={{ display: "flex", alignItems: "center" }}>
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                            }}>
                                             <Typography variant='h5'>Batch Selection</Typography>
                                             <Tooltip
                                                 title='The experimental dataset selections can be manually adjust or automatically split into training/test sets (2/3 of the data split for the trainning).'
@@ -1498,79 +1513,121 @@ function Simulations() {
 
                                 {mode === "1" && progress >= 4 && (
                                     <>
-                                        <Grid item xs={12}>
-                                            <Typography variant='h6'>
-                                                Available Batches: {availableBatches.join(", ")}
-                                            </Typography>
+                                        <Grid item xs={20}>
+                                            <Paper
+                                                sx={{
+                                                    p: 2,
+                                                    display: "flex",
+                                                    flexDirection: "row",
+                                                    marginBottom: -0.5,
+                                                    overflow: "auto",
+                                                }}>
+                                                <Typography variant='h6'>
+                                                    Available Batches: {availableBatches.join(", ")}
+                                                </Typography>
+                                            </Paper>
                                         </Grid>
-                                        <Grid item xs={6}>
-                                            <Typography variant='h6'>
-                                                Select Train Batches:{" "}
-                                            </Typography>
-                                            {availableBatches.map((batch) => (
-                                                <div key={batch}>
-                                                    <Checkbox
-                                                        checked={train_batches.has(batch)}
-                                                        onChange={() =>
-                                                            handleTrainBatchSelection(batch)
-                                                        }
-                                                    />
-                                                    {batch}
-                                                </div>
-                                            ))}
+                                        <Grid item xs={20}>
+                                            <Paper
+                                                sx={{
+                                                    p: 2,
+                                                    display: "flex",
+                                                    flexDirection: "row",
+                                                    marginBottom: -0.5,
+                                                    overflow: "auto",
+                                                }}>
+                                                <Typography variant='h6'>
+                                                    Select Train Batches:{" "}
+                                                </Typography>
+                                                {availableBatches.map((batch) => (
+                                                    <div key={batch}>
+                                                        <Checkbox
+                                                            checked={train_batches.has(batch)}
+                                                            onChange={() =>
+                                                                handleTrainBatchSelection(batch)
+                                                            }
+                                                        />
+                                                        {batch}
+                                                    </div>
+                                                ))}
+                                            </Paper>
                                         </Grid>
-                                        <Grid item xs={6}>
-                                            <Typography variant='h6'>
-                                                Select Test Batches:{" "}
-                                            </Typography>
-                                            {availableBatches.map((batch) => (
-                                                <div key={batch}>
-                                                    <Checkbox
-                                                        checked={test_batches.has(batch)}
-                                                        onChange={() =>
-                                                            handleTestBatchSelection(batch)
-                                                        }
-                                                    />
-                                                    {batch}
-                                                </div>
-                                            ))}
+                                        <Grid item xs={20}>
+                                            <Paper
+                                                sx={{
+                                                    p: 2,
+                                                    display: "flex",
+                                                    flexDirection: "row",
+                                                    marginBottom: 0.5,
+                                                    overflow: "auto",
+                                                }}>
+                                                <Typography variant='h6'>
+                                                    Select Test Batches:{" "}
+                                                </Typography>
+                                                {availableBatches.map((batch) => (
+                                                    <div key={batch}>
+                                                        <Checkbox
+                                                            checked={test_batches.has(batch)}
+                                                            onChange={() =>
+                                                                handleTestBatchSelection(batch)
+                                                            }
+                                                        />
+                                                        {batch}
+                                                    </div>
+                                                ))}
+                                            </Paper>
                                         </Grid>
-                                        <Grid item xs={12}>
-                                            <Button
-                                                onClick={handleUpload}
-                                                fullWidth
-                                                variant='contained'
-                                                sx={{ mt: 2 }}
-                                                disabled={
-                                                    train_batches.size === 0 ||
-                                                    test_batches.size === 0 ||
-                                                    description === ""
-                                                }>
-                                                <PublishIcon fontSize='large' />
-                                                Start Trainning
-                                            </Button>
+                                        <Grid
+                                            item
+                                            xs={12}
+                                            container
+                                            justifyContent='center'
+                                            alignItems='center'>
+                                            <CustomWidthTooltip
+                                                title={
+                                                    "After clicking on the Upload Information button, the information will be uploaded and the run will be created."
+                                                }
+                                                followCursor
+                                                arrow>
+                                                <Button
+                                                    onClick={handleUpload}
+                                                    variant='contained'
+                                                    sx={{
+                                                        mt: 2,
+                                                        display: "flex",
+                                                        width: "75%",
+                                                    }}
+                                                    disabled={isStartTrainingDisabled()}>
+                                                    <PublishIcon fontSize='large' />
+                                                    Start Training
+                                                </Button>
+                                            </CustomWidthTooltip>
                                         </Grid>
                                     </>
                                 )}
 
                                 {mode === "2" && progress >= 5 && (
-                                    <Grid item xs={12}>
+                                    <Grid
+                                        item
+                                        xs={12}
+                                        container
+                                        justifyContent='center'
+                                        alignItems='center'>
                                         <CustomWidthTooltip
-                                            title={
-                                                tooltipDisplay === "block"
-                                                    ? "After clicking on the Upload Information button the information will be uploaded and the run will be created."
-                                                    : ""
-                                            }
+                                            title='After clicking on the Upload Information button, the information will be uploaded and the run will be created.'
                                             followCursor
                                             arrow>
                                             <Button
                                                 onClick={handleUpload}
-                                                fullWidth
                                                 variant='contained'
-                                                sx={{ mt: 2 }}
+                                                sx={{
+                                                    mt: 2,
+                                                    display: "flex",
+                                                    width: "75%",
+                                                }}
                                                 disabled={description === ""}>
                                                 <PublishIcon fontSize='large' />
-                                                Start Trainning
+                                                Start Training
                                             </Button>
                                         </CustomWidthTooltip>
                                     </Grid>
@@ -1595,7 +1652,7 @@ function Simulations() {
 
                         <img
                             src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='200px'
+                            width='100px'
                             alt='FCT Logo'
                             style={{ marginLeft: "auto" }}
                         />

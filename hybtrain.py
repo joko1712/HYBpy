@@ -66,6 +66,9 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
     cnt_jcval = 0    
     cnt_jctest = 0 
 
+    if trainedWeights is not None:
+        projhyb['nstep'] = 1
+
     for key, batch_data in file.items():
         if not isinstance(batch_data, dict):
             continue
@@ -470,6 +473,9 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
             trainedWeights = np.array(trainedWeights)
 
             ann.set_weights(trainedWeights)
+            
+            optimized_weights, _ = ann.get_weights()
+
 
         fobj_value = evaluator.fobj_func(optimized_weights)
         fobj_norm = np.linalg.norm(fobj_value)
@@ -1096,7 +1102,7 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, method=1):
 
         plt.xlabel('Time (s)')
         plt.ylabel('Concentration')
-        plt.title(f"Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+        plt.title(f"Species {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         #plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)
@@ -1114,9 +1120,10 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, method=1):
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.scatter(predicted_train, actual_train, color='blue', label='Train', alpha=0.5)
         ax.scatter(predicted_test, actual_test, color='red', label='Test', alpha=0.5)
-        plt.xlabel('Predicted')
-        plt.ylabel('Observed')
-        plt.title(f"Observed vs Predicted for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+        ax.plot([0, max(actual_test)], [0, max(actual_test)], 'r--', color='gray', label='Ideal', alpha=0.25)
+        plt.xlabel('Observed')
+        plt.ylabel('Predicted')
+        plt.title(f"Predicted vs Observed for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
         plt.legend()
         
         predicted_vs_actual_plot_filename = os.path.join(date_dir, f'predicted_vs_observed_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')

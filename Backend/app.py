@@ -265,28 +265,21 @@ def upload_file():
 
         # Upload plots to storage
         plot_urls = upload_plots_to_gcs(temp_dir, user_id, folder_id)
-        if trainData == {}:
-            run_ref.update({
-            "status": "error",
-            })
-            return jsonify({"error": "No data to train"}), 400
-        
-        else:
-            run_ref.update({
+        run_ref.update({
             "response_data": response_data,
             "status": "completed",
             "plots": plot_urls
-            })
+        })
 
         # Clean up temporary directory
         shutil.rmtree(temp_dir)
 
-        return jsonify(response_data), 200
+        return jsonify(response_data) , 200
 
     except Exception as e:
         logging.error("Error during file upload: %s", str(e), exc_info=True)
         
-       
+        run_ref.update({"status": "error"})
         return jsonify({"error": str(e)}), 500
 
 @app.route("/get-available-batches", methods=['POST'])

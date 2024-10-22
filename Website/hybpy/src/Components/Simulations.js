@@ -189,7 +189,7 @@ function Simulations() {
         console.log("run.response_data.new_hmod_url: ", run.response_data.new_hmod_url);
 
         try {
-            const response = await fetch(`http://localhost:5000/get-new-hmod`, {
+            const response = await fetch(`https://api.hybpy.com/get-new-hmod`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -651,7 +651,7 @@ function Simulations() {
 
     // Fetch the template HMOD and CSV files from the server
     const getTemplate = (templateType) => {
-        fetch("http://localhost:5000/get-template-csv", {
+        fetch("https://api.hybpy.com/get-template-csv", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ template_type: templateType }),
@@ -707,7 +707,7 @@ function Simulations() {
                 console.error("Error fetching template:", error);
             });
 
-        fetch("http://localhost:5000/get-template-hmod", {
+        fetch("https://api.hybpy.com/get-template-hmod", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ template_type: templateType }),
@@ -906,7 +906,7 @@ function Simulations() {
         setTrainingModalOpen(true);
 
         try {
-            const response = await fetch("http://localhost:5000/upload", {
+            const response = await fetch("https://api.hybpy.com/upload", {
                 method: "POST",
                 body: formData,
             });
@@ -925,7 +925,7 @@ function Simulations() {
         const userId = auth.currentUser.uid;
         const intervalId = setInterval(async () => {
             try {
-                const response = await fetch(`http://localhost:5000/run-status?user_id=${userId}`);
+                const response = await fetch(`https://api.hybpy.com/run-status?user_id=${userId}`);
                 const data = await response.json();
                 if (data.status === "no_runs") {
                     setRunInProgress(false);
@@ -953,7 +953,7 @@ function Simulations() {
                     const formData = new FormData();
                     formData.append("file2", selectedFile2);
 
-                    const response = await fetch("http://localhost:5000/get-available-batches", {
+                    const response = await fetch("https://api.hybpy.com/get-available-batches", {
                         method: "POST",
                         body: formData,
                     });

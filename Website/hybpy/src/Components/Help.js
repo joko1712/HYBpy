@@ -621,6 +621,28 @@ export default function LandingPage() {
                             </>
                         ) : null}
                     </Container>
+                    <footer
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "1em",
+                            background: "#f1f1f1",
+                            width: "100%",
+                            marginTop: "auto",
+                        }}>
+                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
+                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
+                            Universidade NOVA de Lisboa 2024. All rights reserved.
+                        </p>
+
+                        <img
+                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                            width='100px'
+                            alt='FCT Logo'
+                            style={{ marginLeft: "auto" }}
+                        />
+                    </footer>
                 </Box>
             </Box>
         </ThemeProvider>

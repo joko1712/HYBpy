@@ -460,7 +460,7 @@ export default function Dashboard() {
 
                         <img
                             src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='200px'
+                            width='100px'
                             alt='FCT Logo'
                             style={{ marginLeft: "auto" }}
                         />

@@ -208,6 +208,8 @@ def hybdata(filename):
             if match and match.group(2) == "w1":
                 stop_reading_parameters = True
                 continue
+
+
             i = line[line.find("(")+1:line.find(")")]
 
             # Get the parameters id
@@ -228,6 +230,8 @@ def hybdata(filename):
                 "val": float(val),
                 "reaction": reaction,
             }
+
+            nparameters = int(i)
 
         if "nruleAss" in line:
             # Get the number of Assignment rules
@@ -252,6 +256,9 @@ def hybdata(filename):
                 "id": id,
                 "val": val,
             }
+
+            nruleAss = int(i)
+
 
         if "nevent" in line:
             # Get the number of events

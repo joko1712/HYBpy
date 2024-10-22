@@ -202,7 +202,7 @@ export default function OldRuns() {
 
     const fetchFileUrls = async (userId, runId) => {
         const response = await fetch(
-            `http://localhost:5000/get-file-urls?user_id=${userId}&run_id=${runId}`
+            `https://api.hybpy.com/get-file-urls?user_id=${userId}&run_id=${runId}`
         );
         const data = response.json();
         if (response.ok) {
@@ -218,7 +218,7 @@ export default function OldRuns() {
             const file1Url = runToDelete.file1;
             const folderPath = file1Url.split("/").slice(4, -1).join("/");
 
-            const response = await fetch("http://localhost:5000/delete-run", {
+            const response = await fetch("https://api.hybpy.com/delete-run", {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",

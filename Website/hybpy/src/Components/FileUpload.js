@@ -551,9 +551,9 @@ function FileUpload() {
         let url = "";
 
         if (fileType === "csv") {
-            url = "http://localhost:5000/get-template-csv";
+            url = "https://api.hybpy.com/get-template-csv";
         } else if (fileType === "hmod") {
-            url = "http://localhost:5000/get-template-hmod";
+            url = "https://api.hybpy.com/get-template-hmod";
         }
 
         if (templateType === 3) {
@@ -586,7 +586,7 @@ function FileUpload() {
 
     // Fetch the template HMOD and CSV files from the server
     const getTemplate = (templateType) => {
-        fetch("http://localhost:5000/get-template-csv", {
+        fetch("https://api.hybpy.com/get-template-csv", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ template_type: templateType }),
@@ -646,7 +646,7 @@ function FileUpload() {
                 console.error("Error fetching template:", error);
             });
 
-        fetch("http://localhost:5000/get-template-hmod", {
+        fetch("https://api.hybpy.com/get-template-hmod", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ template_type: templateType }),
@@ -847,7 +847,7 @@ function FileUpload() {
         setTrainingModalOpen(true);
 
         try {
-            const response = await fetch("http://localhost:5000/upload", {
+            const response = await fetch("https://api.hybpy.com/upload", {
                 method: "POST",
                 body: formData,
             });
@@ -866,7 +866,9 @@ function FileUpload() {
         const userId = auth.currentUser.uid;
         const intervalId = setInterval(async () => {
             try {
-                const response = await fetch(`http://localhost:5000/run-status?user_id=${userId}`);
+                const response = await fetch(
+                    `https://api.hybpy.com/run-status?user_id=${userId}`
+                );
                 const data = await response.json();
                 if (data.status === "no_runs") {
                     setRunInProgress(false);
@@ -894,10 +896,13 @@ function FileUpload() {
                     const formData = new FormData();
                     formData.append("file2", selectedFile2);
 
-                    const response = await fetch("http://localhost:5000/get-available-batches", {
-                        method: "POST",
-                        body: formData,
-                    });
+                    const response = await fetch(
+                        "https://api.hybpy.com/get-available-batches",
+                        {
+                            method: "POST",
+                            body: formData,
+                        }
+                    );
 
                     const data = await response.json();
                     setAvailableBatches(data);

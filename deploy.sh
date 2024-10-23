@@ -19,4 +19,4 @@ docker kill hybpy_nginx_prod hybpy_certbot_prod hybpy_frontend_prod hybpy_api_pr
 # Remove all images related to the HybPy application
 docker image rm -f hybpy_nginx hybpy_certbot hybpy_hybpy_api hybpy_hybpy_frontend
 # Rebuild and start the containers defined in the docker-compose.yml file
-docker-compose up --build -d --remove-orphans
+echo "Y" | docker-compose up --build -d --remove-orphans --force-recreate

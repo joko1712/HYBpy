@@ -14,13 +14,14 @@ import Container from "@mui/material/Container";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase-config";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { useEffect } from "react";
 import logo from "../Image/HYBpyINVIS_logo_BETA.png";
 import hybrid from "../Image/hybridmodel.jpg";
+import { Link } from "@mui/material";
 
 const drawerWidth = 200;
 
@@ -73,7 +74,7 @@ const defaultTheme = createTheme();
 export default function LandingPage() {
     useEffect(() => {
         const email1 = process.env.EMAIL1;
-        const email2 = "rs" + ".costa" + "@" + ".fct" + ".unl" + ".pt"; //
+        const email2 = process.env.EMAIL2;
 
         const email1Element = document.getElementById("email1");
         const email2Element = document.getElementById("email2");
@@ -87,8 +88,6 @@ export default function LandingPage() {
         }
     }, []);
 
-    const navigate = useNavigate();
-
     const navigateToUpload = () => {
         navigate("/");
     };
@@ -97,13 +96,10 @@ export default function LandingPage() {
         navigate("/upload");
     };
 
-    const [open, setOpen] = React.useState(true);
-    const toggleDrawer = () => {
-        setOpen(!open);
-    };
 
     const [runs, setRuns] = React.useState([]);
     const userId = auth.currentUser.uid;
+
 
     useEffect(() => {
         const fetchLatestRun = async () => {
@@ -124,6 +120,18 @@ export default function LandingPage() {
 
         fetchLatestRun();
     }, [userId]);
+
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const toggleDrawer = () => {
+        setOpen(!open);
+        localStorage.setItem("drawerOpen", !open);
+    };
+    const navigateToPage = (path) => {
+        navigate(path);
+    };
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -155,7 +163,7 @@ export default function LandingPage() {
                                 edge='start'
                                 color='inherit'
                                 size='small'
-                                onClick={() => navigateToUpload()}>
+                                onClick={() => navigateToPage("/")}>
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
@@ -174,7 +182,7 @@ export default function LandingPage() {
                     </Toolbar>
                     <Divider />
                     <List component='nav'>
-                        {mainListItems(navigate)}
+                        {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
                     </List>
@@ -296,7 +304,7 @@ export default function LandingPage() {
 
                         <img
                             src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='100px'
+                            width='75px'
                             alt='FCT Logo'
                             style={{ marginLeft: "auto" }}
                         />

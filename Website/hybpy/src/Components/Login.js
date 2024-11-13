@@ -1,23 +1,31 @@
 import React, { useState } from "react";
 import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
-import Link from "@mui/material/Link";
 import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
 import { auth, signInWithGoogle } from "../firebase-config";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import GoogleIcon from "@mui/icons-material/Google";
-import { Route } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { Alert } from "@mui/material";
+import {
+    AppBar as MuiAppBar,
+    Box,
+    Toolbar,
+    Typography,
+    IconButton,
+    Container,
+    Link,
+    Button,
+} from "@mui/material";
+import logo from "../Image/HYBpyINVIS_logo_BETA.png";
 
 const defaultTheme = createTheme();
+
+const AppBar = styled(MuiAppBar)(({ theme }) => ({
+    zIndex: theme.zIndex.drawer + 1,
+}));
 
 function Login({ manualSetCurrentUser }) {
     const [email, setEmail] = useState("");
@@ -61,104 +69,95 @@ function Login({ manualSetCurrentUser }) {
 
     return (
         <ThemeProvider theme={defaultTheme}>
-            <Box
-                sx={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    flexDirection: "column",
-                }}>
-                <Container component='main' maxWidth='xs' sx={{ flex: 1 }}>
-                    <CssBaseline />
-                    <Box
-                        sx={{
-                            marginTop: 8,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                        }}>
+            <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+                <AppBar position="fixed" color="primary">
+                    <Toolbar sx={{ pr: "2px" }}>
+                        <IconButton edge="start" color="inherit" size="small">
+                            <img src={logo} alt="logo" width="200" height="75" />
+                        </IconButton>
+
+                    </Toolbar>
+                </AppBar>
+
+                <Container component="main" maxWidth="xs" sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 10, flexGrow: 1, width: "100%" }}>
+                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 2 }}>
                         <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
                             <LockOutlinedIcon />
                         </Avatar>
-                        <Typography component='h1' variant='h5'>
-                            Sign in
+                        <Typography component="h1" variant="h5">
+                            Sign In
                         </Typography>
-                        <Box component='form' onSubmit={loginUser} noValidate sx={{ mt: 1 }}>
+                        <Box component="form" onSubmit={loginUser} noValidate sx={{ mt: 1 }}>
                             <TextField
-                                margin='normal'
+                                margin="normal"
                                 required
                                 fullWidth
-                                id='email'
-                                label='Email Address'
-                                name='email'
-                                autoComplete='email'
+                                id="email"
+                                label="Email Address"
+                                name="email"
+                                autoComplete="email"
+                                autoFocus
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                autoFocus
                             />
                             <TextField
-                                margin='normal'
+                                margin="normal"
                                 required
                                 fullWidth
-                                name='password'
-                                label='Password'
-                                type='password'
-                                id='password'
+                                name="password"
+                                label="Password"
+                                type="password"
+                                id="password"
+                                autoComplete="current-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                autoComplete='current-password'
                             />
-                            <Button
-                                type='submit'
-                                fullWidth
-                                variant='contained'
-                                sx={{ mt: 3, mb: 2 }}>
+                            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
                                 Sign In
                             </Button>
-                            <Grid item>
-                                <Button
-                                    startIcon={<GoogleIcon />}
-                                    onClick={() => {
-                                        loginWithGoogle();
-                                    }}
-                                    fullWidth
-                                    variant='contained'
-                                    sx={{ mb: 2 }}>
-                                    Login with Google
-                                </Button>
-                            </Grid>
-                            {error && <p>{error}</p>}
-                            <Grid container>
+                            <Button
+                                startIcon={<GoogleIcon />}
+                                onClick={loginWithGoogle}
+                                fullWidth
+                                variant="contained"
+                                sx={{ mb: 2 }}
+                            >
+                                Sign in with Google
+                            </Button>
+                            {error && <Typography color="error" sx={{ mt: 1 }}>{error}</Typography>}
+                            <Grid container justifyContent="flex-end">
                                 <Grid item>
-                                    <Link href='/register' variant='body2'>
-                                        {"Don't have an account? Sign Up"}
+                                    <Link href="/register" variant="body2">
+                                        {"Don't have an account? Sign up"}
                                     </Link>
                                 </Grid>
                             </Grid>
                         </Box>
                     </Box>
-                </Container>
-                <footer
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "1em",
-                        background: "#f1f1f1",
-                        width: "100%",
-                        marginTop: "auto",
-                    }}>
-                    <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                        &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
-                        Universidade NOVA de Lisboa 2024. All rights reserved.
-                    </p>
 
-                    <img
-                        src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                        width='100px'
-                        alt='FCT Logo'
-                        style={{ marginLeft: "auto" }}
-                    />
-                </footer>
+                    <Box
+                        component="footer"
+                        sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "1em",
+                            backgroundColor: "#f1f1f1",
+                            width: "100%",
+                            mt: "auto",
+                        }}
+                    >
+                        <Typography variant="body2" align="center" sx={{ flexGrow: 1 }}>
+                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia Universidade NOVA de Lisboa. All rights reserved.
+                        </Typography>
+                        <img
+                            src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
+                            width="75"
+                            alt="FCT Logo"
+                            style={{ marginLeft: "auto" }}
+                        />
+                    </Box>
+                </Container>
             </Box>
         </ThemeProvider>
     );

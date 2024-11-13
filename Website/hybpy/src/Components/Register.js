@@ -2,19 +2,29 @@ import React, { useState } from "react";
 import { auth } from "../firebase-config";
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
-import Link from "@mui/material/Link";
 import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
-import { BrowserRouter as Router } from "react-router-dom";
+import {
+    AppBar as MuiAppBar,
+    Box,
+    Toolbar,
+    Typography,
+    IconButton,
+    Container,
+    Link,
+    Button,
+} from "@mui/material";
+import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+
 const defaultTheme = createTheme();
+
+const AppBar = styled(MuiAppBar)(({ theme }) => ({
+    zIndex: theme.zIndex.drawer + 1,
+}));
 
 function Register() {
     const [email, setEmail] = useState("");
@@ -23,6 +33,7 @@ function Register() {
     const [error, setError] = useState("");
     const [emailError, setEmailError] = useState("");
     const navigate = useNavigate();
+
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
@@ -30,7 +41,7 @@ function Register() {
 
     const handleEmailChange = (e) => {
         const emailValue = e.target.value;
-        setEmail(e.target.value);
+        setEmail(emailValue);
         if (!validateEmail(emailValue) && emailValue) {
             setEmailError("Invalid email format.");
         } else {
@@ -59,15 +70,11 @@ function Register() {
             return;
         }
 
-        /** REGISTER WITH CONFIRMATION LINK IN THE EMAIL */
-
         createUserWithEmailAndPassword(auth, email, password)
             .then((res) => {
                 sendEmailVerification(auth.currentUser)
                     .then(() => {
-                        window.alert(
-                            "A confirmation link has been sent to your email. Please verify your email address."
-                        );
+                        window.alert("A confirmation link has been sent to your email. Please verify your email address.");
                         navigate("/");
                     })
                     .catch((verificationError) => {
@@ -87,38 +94,35 @@ function Register() {
 
     return (
         <ThemeProvider theme={defaultTheme}>
-            <Box
-                sx={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    flexDirection: "column",
-                }}>
-                <Container component='main' maxWidth='xs' sx={{ flex: 1 }}>
-                    <CssBaseline />
-                    <Box
-                        sx={{
-                            marginTop: 8,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                        }}>
+            <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+                <AppBar position="fixed" color="primary">
+                    <Toolbar sx={{ pr: "2px" }}>
+                        <IconButton edge="start" color="inherit" size="small">
+                            <img src={logo} alt="logo" width="200" height="75" />
+                        </IconButton>
+
+                    </Toolbar>
+                </AppBar>
+
+                <Container component="main" maxWidth="xs" sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 10, flexGrow: 1 }}>
+                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 2 }}>
                         <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
                             <LockOutlinedIcon />
                         </Avatar>
-                        <Typography component='h1' variant='h5'>
+                        <Typography component="h1" variant="h5">
                             Sign up
                         </Typography>
-                        <Box component='form' noValidate onSubmit={registerUser} sx={{ mt: 3 }}>
+                        <Box component="form" noValidate onSubmit={registerUser} sx={{ mt: 3 }}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12}>
                                     <TextField
                                         error={!!emailError}
                                         required
                                         fullWidth
-                                        id='email'
-                                        label='Email Address'
-                                        name='email'
-                                        autoComplete='email'
+                                        id="email"
+                                        label="Email Address"
+                                        name="email"
+                                        autoComplete="email"
                                         value={email}
                                         onChange={handleEmailChange}
                                     />
@@ -127,11 +131,11 @@ function Register() {
                                     <TextField
                                         required
                                         fullWidth
-                                        name='password'
-                                        label='Password'
-                                        type='password'
-                                        id='password'
-                                        autoComplete='new-password'
+                                        name="password"
+                                        label="Password"
+                                        type="password"
+                                        id="password"
+                                        autoComplete="new-password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                     />
@@ -140,27 +144,23 @@ function Register() {
                                     <TextField
                                         required
                                         fullWidth
-                                        name='confirmPassword'
-                                        label='Confirm Password'
-                                        type='password'
-                                        id='confirmPassword'
-                                        autoComplete='new-password'
+                                        name="confirmPassword"
+                                        label="Confirm Password"
+                                        type="password"
+                                        id="confirmPassword"
+                                        autoComplete="new-password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                     />
                                 </Grid>
                             </Grid>
-                            {error && <p>{error}</p>}
-                            <Button
-                                type='submit'
-                                fullWidth
-                                variant='contained'
-                                sx={{ mt: 3, mb: 2 }}>
+                            {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
+                            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
                                 Sign Up
                             </Button>
-                            <Grid container justifyContent='flex-end'>
+                            <Grid container justifyContent="flex-end">
                                 <Grid item>
-                                    <Link href='/' variant='body2'>
+                                    <Link href="/" variant="body2">
                                         Already have an account? Sign in
                                     </Link>
                                 </Grid>
@@ -168,28 +168,29 @@ function Register() {
                         </Box>
                     </Box>
                 </Container>
-                <footer
-                    style={{
+
+                <Box
+                    component="footer"
+                    sx={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
                         padding: "1em",
-                        background: "#f1f1f1",
+                        backgroundColor: "#f1f1f1",
                         width: "100%",
-                        marginTop: "auto",
-                    }}>
-                    <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                        &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
-                        Universidade NOVA de Lisboa 2024. All rights reserved.
-                    </p>
-
+                        mt: "auto",
+                    }}
+                >
+                    <Typography variant="body2" align="center" sx={{ flexGrow: 1 }}>
+                        &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia Universidade NOVA de Lisboa. All rights reserved.
+                    </Typography>
                     <img
-                        src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                        width='100px'
-                        alt='FCT Logo'
+                        src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
+                        width="75"
+                        alt="FCT Logo"
                         style={{ marginLeft: "auto" }}
                     />
-                </footer>
+                </Box>
             </Box>
         </ThemeProvider>
     );

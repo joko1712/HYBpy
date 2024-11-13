@@ -13,7 +13,7 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
@@ -110,14 +110,7 @@ const extractValue = (content, key, defaultValue) => {
 };
 
 function FileUpload() {
-    const navigate = useNavigate();
-    const navigateToUpload = () => {
-        navigate("/");
-    };
-    const [open, setOpen] = useState(true);
-    const toggleDrawer = () => {
-        setOpen(!open);
-    };
+
     const [selectedFile1, setSelectedFile1] = useState(null);
     const [file1Content, setFile1Content] = useState("");
     const [selectedFile2, setSelectedFile2] = useState(null);
@@ -139,8 +132,8 @@ function FileUpload() {
     const [selectedHeaders, setSelectedHeaders] = useState([]);
     const [headerModalConfig, setHeaderModalConfig] = useState({
         headers: [],
-        onSave: () => {},
-        handleClose: () => {},
+        onSave: () => { },
+        handleClose: () => { },
     });
     const [mlmModalOpen, setMlmModalOpen] = useState(false);
     const [speciesOptions, setSpeciesOptions] = useState([]);
@@ -292,32 +285,25 @@ function FileUpload() {
 
         if (selectedHeaders.length > 0 && !controlExists) {
             let controlSection = `% control---------------------------\n`;
-            controlSection += `${uniquePrefixes.values().next().value}.ncontrol=${
-                selectedHeaders.length
-            };\n`;
+            controlSection += `${uniquePrefixes.values().next().value}.ncontrol=${selectedHeaders.length
+                };\n`;
 
             selectedHeaders.forEach((header, index) => {
                 let maxHeaderValue = Math.max(...batchData.map((row) => row[header]));
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).id= '${header}';\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).val= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).min= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).max= ${maxHeaderValue};\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).constant= 1;\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).id= '${header}';\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).val= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).min= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).max= ${maxHeaderValue};\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).constant= 1;\n`;
             });
 
-            controlSection += `${
-                uniquePrefixes.values().next().value
-            }.fun_control=@control_function_${uniquePrefixes.values().next().value};\n`;
+            controlSection += `${uniquePrefixes.values().next().value
+                }.fun_control=@control_function_${uniquePrefixes.values().next().value};\n`;
             controlSection += `${uniquePrefixes.values().next().value}.fun_event=[];\n`;
 
             updatedContent += `\n${controlSection}`;
@@ -346,60 +332,46 @@ function FileUpload() {
             if (Object.keys(mlmOptions).length > 0) {
                 let mlmSection = `% % MLM - Machine Learning Model --------------------------------------------\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.mlm.id = 'mlpnet';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.nx = ${
-                    mlmOptions.nx
-                };\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.mlm.nx = ${mlmOptions.nx
+                    };\n`;
 
                 mlmOptions.xOptions.forEach((x, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
-                        index + 1
-                    }).id = 'anninp${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
-                        index + 1
-                    }).val= '${x.val}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
-                        index + 1
-                    }).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
-                        index + 1
-                    }).max= ${Math.max(...batchData.map((row) => row[x.val]))};\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
+                        }).id = 'anninp${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
+                        }).val= '${x.val}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
+                        }).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
+                        }).max= ${Math.max(...batchData.map((row) => row[x.val]))};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.ny = ${
-                    mlmOptions.ny
-                };\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.mlm.ny = ${mlmOptions.ny
+                    };\n`;
 
                 mlmOptions.yOptions.forEach((y, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
-                        index + 1
-                    }).id = '${y.id}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
-                        index + 1
-                    }).val= 'rann${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
-                        index + 1
-                    }).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
-                        index + 1
-                    }).max= ${Math.max(...batchData.map((row) => row[y.id]))};\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
+                        }).id = '${y.id}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
+                        }).val= 'rann${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
+                        }).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
+                        }).max= ${Math.max(...batchData.map((row) => row[y.id]))};\n`;
                 });
 
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.options={'hidden nodes', [1]};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.options={'hidden nodes', [1]};\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.mlm.layer=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.symbolic='full-symbolic';\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.symbolic='semi-symbolic';\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.datasource=3;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.datafun=@${
-                    uniquePrefixes.values().next().value
-                };\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.datafun=@${uniquePrefixes.values().next().value
+                    };\n`;
 
                 mlmSection += `%training configuration\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.mode=1;\n`;
@@ -553,7 +525,9 @@ function FileUpload() {
         if (fileType === "csv") {
             url = "https://api.hybpy.com/get-template-csv";
         } else if (fileType === "hmod") {
-            url = "https://api.hybpy.com/get-template-hmod";
+            url = "https://api.hybpy.com/get-template-hmod-download";
+        } else if (fileType === "xlsx") {
+            url = "https://api.hybpy.com/get-template-xlsx";
         }
 
         if (templateType === 3) {
@@ -562,6 +536,7 @@ function FileUpload() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ template_type: templateType }),
             })
+                .then((response) => response.blob())
                 .then((blob) => {
                     const fileUrl = window.URL.createObjectURL(blob);
                     const a = document.createElement("a");
@@ -571,6 +546,8 @@ function FileUpload() {
                         a.download = "template.csv";
                     } else if (fileType === "hmod") {
                         a.download = "template.hmod";
+                    } else if (fileType === "xlsx") {
+                        a.download = "template_datafile_hybpy.xlsx";
                     }
 
                     document.body.appendChild(a);
@@ -591,8 +568,14 @@ function FileUpload() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ template_type: templateType }),
         })
-            .then((response) => response.blob())
-            .then((blob) => {
+            .then((response) => {
+                const disposition = response.headers.get("Content-Disposition");
+                const fileNameMatch = disposition && disposition.match(/filename="(.+)"/);
+                const csvFileName = fileNameMatch ? fileNameMatch[1] : `Example${templateType}.csv`;
+
+                return response.blob().then((blob) => ({ blob, csvFileName }));
+            })
+            .then(({ blob, csvFileName }) => {
                 const reader = new FileReader();
                 reader.onload = () => {
                     const fileContent = reader.result;
@@ -600,7 +583,7 @@ function FileUpload() {
                 };
                 reader.readAsText(blob);
 
-                const updatedFileObject = new File([blob], "template.csv", {
+                const updatedFileObject = new File([blob], csvFileName, {
                     type: "text/plain",
                 });
                 setSelectedFile2(updatedFileObject);
@@ -670,9 +653,12 @@ function FileUpload() {
                 };
                 reader.readAsText(blob);
 
-                const updatedFileObject = new File([blob], "template.hmod", {
+                var result = `Example   ${templateType}.hmod`;
+
+                const updatedFileObject = new File([blob], result, {
                     type: "text/plain",
                 });
+
 
                 setSelectedFile1(updatedFileObject);
 
@@ -748,7 +734,7 @@ function FileUpload() {
 
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
         <Tooltip {...props} classes={{ popper: className }} />
-    ))(({}) => ({
+    ))(({ }) => ({
         [`& .${tooltipClasses.tooltip}`]: {
             maxWidth: 200,
         },
@@ -1000,6 +986,18 @@ function FileUpload() {
         setSelectedFile1(updatedFileObject);
     };
 
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const toggleDrawer = () => {
+        setOpen(!open);
+        localStorage.setItem("drawerOpen", !open);
+    };
+    const navigateToPage = (path) => {
+        navigate(path);
+    };
+
     return (
         <ThemeProvider theme={defaultTheme}>
             <Box sx={{ display: "flex" }}>
@@ -1030,7 +1028,7 @@ function FileUpload() {
                                 edge='start'
                                 color='inherit'
                                 size='small'
-                                onClick={() => navigateToUpload()}>
+                                onClick={() => navigateToPage("/")}>
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
@@ -1049,7 +1047,7 @@ function FileUpload() {
                     </Toolbar>
                     <Divider />
                     <List component='nav'>
-                        {mainListItems(navigate)}
+                        {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
                     </List>
@@ -1217,7 +1215,7 @@ function FileUpload() {
                                         justifyContent: "flex-end",
                                     }}>
                                     <Button
-                                        onClick={() => getTemplateDownloadLink(3, "csv")}
+                                        onClick={() => getTemplateDownloadLink(3, "xlsx")}
                                         variant='contained'
                                         sx={{
                                             height: "100%",
@@ -1225,7 +1223,7 @@ function FileUpload() {
                                             marginRight: 2,
                                         }}
                                         disabled={progress < 1}>
-                                        Get CSV Template
+                                        Get Csv Template
                                     </Button>
                                     <label htmlFor='csv-upload'>
                                         <Button
@@ -1344,7 +1342,6 @@ function FileUpload() {
                                         marginTop: "8px",
                                         justifyContent: "flex-end",
                                     }}>
-                                    {/*}
                                     <Button
                                         onClick={() => getTemplateDownloadLink(3, "hmod")}
                                         variant='contained'
@@ -1353,10 +1350,9 @@ function FileUpload() {
                                             marginBottom: 2,
                                             marginRight: 2,
                                         }}
-                                        disabled={progress < 2}>
-                                        Get HMOD Template
+                                        disabled={progress < 1}>
+                                        Get Csv Template
                                     </Button>
-                                    */}
                                     <label htmlFor='hmod-upload'>
                                         <Button
                                             component='span'
@@ -1583,7 +1579,7 @@ function FileUpload() {
 
                         <img
                             src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='100px'
+                            width='75px'
                             alt='FCT Logo'
                             style={{ marginLeft: "auto" }}
                         />

@@ -15,6 +15,7 @@ import {
     RadioGroup,
     FormControlLabel,
     Radio,
+    Link,
     Button,
 } from "@mui/material";
 import { useEffect } from "react";
@@ -22,7 +23,7 @@ import { useEffect } from "react";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase-config";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase-config";
@@ -92,15 +93,10 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
 const defaultTheme = createTheme();
 
 export default function LandingPage() {
-    const navigate = useNavigate();
-    const [open, setOpen] = React.useState(true);
     const [hasFiles, setHasFiles] = useState("");
     const [hasHmod, setHasHmod] = useState("");
     const [hasMlm, setHasMlm] = useState("");
 
-    const navigateToUpload = () => {
-        navigate("/");
-    };
 
     const handleFileSelection = (event) => {
         setHasFiles(event.target.value);
@@ -112,14 +108,6 @@ export default function LandingPage() {
 
     const handleMlmSelection = (event) => {
         setHasMlm(event.target.value);
-    };
-
-    const navigateToCreateRun = () => {
-        navigate("/upload");
-    };
-
-    const toggleDrawer = () => {
-        setOpen(!open);
     };
 
     const [runs, setRuns] = React.useState([]);
@@ -144,6 +132,18 @@ export default function LandingPage() {
 
         fetchLatestRun();
     }, [userId]);
+
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const toggleDrawer = () => {
+        setOpen(!open);
+        localStorage.setItem("drawerOpen", !open);
+    };
+    const navigateToPage = (path) => {
+        navigate(path);
+    };
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -175,7 +175,7 @@ export default function LandingPage() {
                                 edge='start'
                                 color='inherit'
                                 size='small'
-                                onClick={() => navigateToUpload()}>
+                                onClick={() => navigateToPage("/")}>
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
@@ -194,7 +194,7 @@ export default function LandingPage() {
                     </Toolbar>
                     <Divider />
                     <List component='nav'>
-                        {mainListItems(navigate)}
+                        {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
                     </List>
@@ -282,7 +282,7 @@ export default function LandingPage() {
                                     <FormControlLabel
                                         value='ownHmod'
                                         control={<Radio />}
-                                        label='I have my own hmod file'
+                                        label='I have my own HMOD file'
                                     />
                                     <FormControlLabel
                                         value='ownSBML'
@@ -293,18 +293,18 @@ export default function LandingPage() {
 
                                 {hasHmod === "ownHmod" ? (
                                     <>
-                                        <h2>Step 4: Upload your hmod file. </h2>
+                                        <h2>Step 4: Upload your HMOD file. </h2>
 
                                         <p>
                                             {" "}
-                                            You can upload you hmod file by clicking on the "Upload
+                                            You can upload you HMOD file by clicking on the "Upload
                                             HMOD" button.{" "}
                                         </p>
 
                                         <img src={step4} alt='Step 4' width='100%' />
 
                                         <p>
-                                            After uploading your hmod file, if it does not have a
+                                            After uploading your HMOD file, if it does not have a
                                             mlm component a pop up will appear so that you can add
                                             it.
                                         </p>
@@ -318,12 +318,12 @@ export default function LandingPage() {
                                             <FormControlLabel
                                                 value='ownMlm'
                                                 control={<Radio />}
-                                                label='My hmod file has a mlm component'
+                                                label='My HMOD file has a mlm component'
                                             />
                                             <FormControlLabel
                                                 value='noMlm'
                                                 control={<Radio />}
-                                                label='My hmod file does not have a mlm component'
+                                                label='My HMOD file does not have a mlm component'
                                             />
                                         </RadioGroup>
 
@@ -332,7 +332,7 @@ export default function LandingPage() {
                                                 <h2>Step 5: Verify and Modify Mlm settings</h2>
 
                                                 <p>
-                                                    After uploading the hmod file, you can verify
+                                                    After uploading the HMOD file, you can verify
                                                     the mlm settings and modify them if necessary by
                                                     clicking on the "Edit HMOD Settings" button.
                                                 </p>
@@ -402,7 +402,7 @@ export default function LandingPage() {
                                                 <h2>Step 5: Verify and Modify Mlm Settings</h2>
 
                                                 <p>
-                                                    After adding the mlm component to the hmod file,
+                                                    After adding the mlm component to the HMOD file,
                                                     you can verify the mlm settings and modify them
                                                     if necessary by clicking on the "Edit HMOD
                                                     Settings" button.
@@ -454,38 +454,40 @@ export default function LandingPage() {
 
                                         <p>
                                             If you have a SBML file you can download the SBML2HYB
-                                            tool that will convert the SBML file to a hmod file.
+                                            tool ( <Link href='https://figshare.com/ndownloader/files/38688132'>Windows </Link>  or
+                                            <Link href='https://figshare.com/ndownloader/files/38688432'> macOS </Link> ) that will convert the SBML file to a HMOD file.
+
                                         </p>
 
-                                        <img src={step4b} alt='Step 4b' width='100%' />
+                                        <img src={step4b} alt='Step 4b' width='80%' />
                                         <p>
                                             After downloading the SBML2HYB tool you can convert the
-                                            SBML file to a hmod file by running the tool and
+                                            SBML file to a HMOD file by running the tool and
                                             clicking the button "Translate SBML File" and select the
                                             SBML file.
                                         </p>
 
-                                        <img src={step41b} alt='Step 4.1b' width='100%' />
+                                        <img src={step41b} alt='Step 4.1b' width='80%' />
 
                                         <p>
-                                            After converting the SBML file to a hmod file you can
+                                            After converting the SBML file to a HMOD file you can
                                             save the file and upload it to the website.
                                         </p>
 
-                                        <img src={step42b} alt='Step 4.2b' width='100%' />
+                                        <img src={step42b} alt='Step 4.2b' width='80%' />
 
-                                        <h2>Step 5: Upload your hmod file. </h2>
+                                        <h2>Step 5: Upload your HMOD file. </h2>
 
                                         <p>
                                             {" "}
-                                            You can upload you hmod file by clicking on the "Upload
+                                            You can upload you HMOD file by clicking on the "Upload
                                             HMOD" button.{" "}
                                         </p>
 
                                         <img src={step4} alt='Step 4' width='100%' />
 
                                         <p>
-                                            After uploading your hmod file, if it does not have a
+                                            After uploading your HMOD file, if it does not have a
                                             mlm component a pop up will appear so that you can add
                                             it.
                                         </p>
@@ -512,7 +514,7 @@ export default function LandingPage() {
                                         <h2>Step 6: Verify and Modify Mlm Settings</h2>
 
                                         <p>
-                                            After adding the mlm component to the hmod file, you can
+                                            After adding the mlm component to the HMOD file, you can
                                             verify the mlm settings and modify them if necessary by
                                             clicking on the "Edit HMOD Settings" button.
                                         </p>
@@ -638,7 +640,7 @@ export default function LandingPage() {
 
                         <img
                             src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='100px'
+                            width='75px'
                             alt='FCT Logo'
                             style={{ marginLeft: "auto" }}
                         />

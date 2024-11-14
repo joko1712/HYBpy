@@ -272,12 +272,15 @@ def upload_file():
             "finishedAt": firestore.SERVER_TIMESTAMP,
         })
 
-        createdAt = run_ref.data().createdAt.toMillis()
-        updatedAt = run_ref.data().finishedAt.toMillis()
+        createdAt = run_ref.get().to_dict().get("createdAt")
+        finishedAt = run_ref.get().to_dict().get("finishedAt")
 
-        timeDifference = updatedAt - createdAt
+        if createdAt and finishedAt:
+            createdAt_ms = createdAt.timestamp() * 1000 
+            finishedAt_ms = finishedAt.timestamp() * 1000
+            time_difference = finishedAt_ms - createdAt_ms
 
-        duration = milliseconds_to_time(timeDifference)
+        duration = milliseconds_to_time(time_difference)
 
         run_ref.update({
             "duration": duration

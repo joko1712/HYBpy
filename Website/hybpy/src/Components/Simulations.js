@@ -15,7 +15,7 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
@@ -112,14 +112,6 @@ const extractValue = (content, key, defaultValue) => {
 };
 
 function Simulations() {
-    const navigate = useNavigate();
-    const navigateToUpload = () => {
-        navigate("/");
-    };
-    const [open, setOpen] = useState(true);
-    const toggleDrawer = () => {
-        setOpen(!open);
-    };
     const [selectedFile1, setSelectedFile1] = useState(null);
     const [file1Content, setFile1Content] = useState("");
     const [selectedFile2, setSelectedFile2] = useState(null);
@@ -141,8 +133,8 @@ function Simulations() {
     const [selectedHeaders, setSelectedHeaders] = useState([]);
     const [headerModalConfig, setHeaderModalConfig] = useState({
         headers: [],
-        onSave: () => {},
-        handleClose: () => {},
+        onSave: () => { },
+        handleClose: () => { },
     });
     const [trainedWeights, setTrainedWeights] = useState("");
 
@@ -391,32 +383,25 @@ function Simulations() {
 
         if (selectedHeaders.length > 0 && !controlExists) {
             let controlSection = `% control---------------------------\n`;
-            controlSection += `${uniquePrefixes.values().next().value}.ncontrol=${
-                selectedHeaders.length
-            };\n`;
+            controlSection += `${uniquePrefixes.values().next().value}.ncontrol=${selectedHeaders.length
+                };\n`;
 
             selectedHeaders.forEach((header, index) => {
                 let maxHeaderValue = Math.max(...batchData.map((row) => row[header]));
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).id= '${header}';\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).val= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).min= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).max= ${maxHeaderValue};\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${
-                    index + 1
-                }).constant= 1;\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).id= '${header}';\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).val= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).min= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).max= ${maxHeaderValue};\n`;
+                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
+                    }).constant= 1;\n`;
             });
 
-            controlSection += `${
-                uniquePrefixes.values().next().value
-            }.fun_control=@control_function_${uniquePrefixes.values().next().value};\n`;
+            controlSection += `${uniquePrefixes.values().next().value
+                }.fun_control=@control_function_${uniquePrefixes.values().next().value};\n`;
             controlSection += `${uniquePrefixes.values().next().value}.fun_event=[];\n`;
 
             updatedContent += `\n${controlSection}`;
@@ -445,60 +430,46 @@ function Simulations() {
             if (Object.keys(mlmOptions).length > 0) {
                 let mlmSection = `% % MLM - Machine Learning Model --------------------------------------------\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.mlm.id = 'mlpnet';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.nx = ${
-                    mlmOptions.nx
-                };\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.mlm.nx = ${mlmOptions.nx
+                    };\n`;
 
                 mlmOptions.xOptions.forEach((x, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
-                        index + 1
-                    }).id = 'anninp${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
-                        index + 1
-                    }).val= '${x.val}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
-                        index + 1
-                    }).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${
-                        index + 1
-                    }).max= ${Math.max(...batchData.map((row) => row[x.val]))};\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
+                        }).id = 'anninp${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
+                        }).val= '${x.val}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
+                        }).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
+                        }).max= ${Math.max(...batchData.map((row) => row[x.val]))};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.ny = ${
-                    mlmOptions.ny
-                };\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.mlm.ny = ${mlmOptions.ny
+                    };\n`;
 
                 mlmOptions.yOptions.forEach((y, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
-                        index + 1
-                    }).id = '${y.id}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
-                        index + 1
-                    }).val= 'rann${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
-                        index + 1
-                    }).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${
-                        index + 1
-                    }).max= ${Math.max(...batchData.map((row) => row[y.id]))};\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
+                        }).id = '${y.id}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
+                        }).val= 'rann${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
+                        }).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
+                        }).max= ${Math.max(...batchData.map((row) => row[y.id]))};\n`;
                 });
 
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.options={'hidden nodes', [1]};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.options={'hidden nodes', [1]};\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.mlm.layer=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.symbolic='full-symbolic';\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.symbolic='semi-symbolic';\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.datasource=3;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.datafun=@${
-                    uniquePrefixes.values().next().value
-                };\n`;
+                mlmSection += `${uniquePrefixes.values().next().value}.datafun=@${uniquePrefixes.values().next().value
+                    };\n`;
 
                 mlmSection += `%training configuration\n`;
                 mlmSection += `${uniquePrefixes.values().next().value}.mode=1;\n`;
@@ -808,7 +779,7 @@ function Simulations() {
 
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
         <Tooltip {...props} classes={{ popper: className }} />
-    ))(({}) => ({
+    ))(({ }) => ({
         [`& .${tooltipClasses.tooltip}`]: {
             maxWidth: 200,
         },
@@ -1054,6 +1025,18 @@ function Simulations() {
         setSelectedFile1(updatedFileObject);
     };
 
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const toggleDrawer = () => {
+        setOpen(!open);
+        localStorage.setItem("drawerOpen", !open);
+    };
+    const navigateToPage = (path) => {
+        navigate(path);
+    };
+
     return (
         <ThemeProvider theme={defaultTheme}>
             <Box sx={{ display: "flex" }}>
@@ -1084,7 +1067,7 @@ function Simulations() {
                                 edge='start'
                                 color='inherit'
                                 size='small'
-                                onClick={() => navigateToUpload()}>
+                                onClick={() => navigateToPage("/")}>
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
@@ -1103,7 +1086,7 @@ function Simulations() {
                     </Toolbar>
                     <Divider />
                     <List component='nav'>
-                        {mainListItems(navigate)}
+                        {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
                     </List>
@@ -1652,7 +1635,7 @@ function Simulations() {
 
                         <img
                             src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='100px'
+                            width='75px'
                             alt='FCT Logo'
                             style={{ marginLeft: "auto" }}
                         />

@@ -268,7 +268,22 @@ def upload_file():
         run_ref.update({
             "response_data": response_data,
             "status": "completed",
-            "plots": plot_urls
+            "plots": plot_urls,
+            "finishedAt": firestore.SERVER_TIMESTAMP,
+        })
+
+        createdAt = run_ref.get().to_dict().get("createdAt")
+        finishedAt = run_ref.get().to_dict().get("finishedAt")
+
+        if createdAt and finishedAt:
+            createdAt_ms = createdAt.timestamp() * 1000 
+            finishedAt_ms = finishedAt.timestamp() * 1000
+            time_difference = finishedAt_ms - createdAt_ms
+
+        duration = milliseconds_to_time(time_difference)
+
+        run_ref.update({
+            "duration": duration
         })
 
         # Clean up temporary directory
@@ -281,6 +296,14 @@ def upload_file():
         
         run_ref.update({"status": "error"})
         return jsonify({"error": str(e)}), 500
+
+def milliseconds_to_time(milliseconds):
+    seconds = (milliseconds // 1000) % 60
+    minutes = (milliseconds // (1000 * 60)) % 60
+    hours = (milliseconds // (1000 * 60 * 60)) % 24
+    days = milliseconds // (1000 * 60 * 60 * 24)
+
+    return f"{days}d {hours}h {minutes}m {seconds}s"
 
 @app.route("/get-available-batches", methods=['POST'])
 def get_available_batches():
@@ -355,9 +378,6 @@ def get_template_hmod():
         elif template_type == 2:
             blob_hmod = bucket.blob("Template/Hmod1/basic1.hmod")
             hmod_file_path = "basic1.hmod"
-        elif template_type == 3:
-            blob_hmod = bucket.blob("Template/Hmod/template.hmod")
-            hmod_file_path = "template.hmod"
         else:
             return jsonify({"error": "Invalid template type"}), 400
 
@@ -382,9 +402,6 @@ def get_template_csv():
         elif template_type == 2:
             blob_csv = bucket.blob("Template/Csv/basicmodel1data.csv")
             csv_file_path = "basicmodel1data.csv"
-        elif template_type == 3:
-            blob_csv = bucket.blob("Template/Csv/template.csv")
-            csv_file_path = "template.csv"
         else:
             return jsonify({"error": "Invalid template type"}), 400
 
@@ -395,6 +412,48 @@ def get_template_csv():
 
     except Exception as e:
         logging.error("Error in get_template_csv: %s", str(e), exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/get-template-xlsx', methods=['POST'])
+def get_template_xlsx():
+    bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
+
+    try:
+        template_type = request.json.get('template_type')
+        if template_type == 3:
+            blob_xlsx = bucket.blob("Template/Csv/template_datafile_hybpy.xlsx")
+            xlsx_file_path = "template_datafile_hybpy.xlsx"
+        else:
+            return jsonify({"error": "Invalid template type"}), 400
+
+        temp_file = NamedTemporaryFile(delete=False)
+        blob_xlsx.download_to_filename(temp_file.name)
+
+        return send_file(temp_file.name, as_attachment=True, download_name=xlsx_file_path)
+
+    except Exception as e:
+        logging.error("Error in get_template_xlsx: %s", str(e), exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/get-template-hmod-download', methods=['POST'])
+def get_template_hmod_download():
+    bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
+
+    try:
+        template_type = request.json.get('template_type')
+        if template_type == 3:
+            blob_hmod = bucket.blob("Template/Hmod/template.hmod")
+            hmod_file_path = "template.hmod"
+        else:
+            return jsonify({"error": "Invalid template type"}), 400
+
+        temp_file = NamedTemporaryFile(delete=False)
+        blob_hmod.download_to_filename(temp_file.name)
+
+        return send_file(temp_file.name, as_attachment=True, download_name=hmod_file_path)
+
+    except Exception as e:
+        logging.error("Error in get_template_xlsx: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/delete-run', methods=['DELETE'])

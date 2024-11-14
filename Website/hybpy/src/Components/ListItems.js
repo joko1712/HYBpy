@@ -23,44 +23,62 @@ const logout = (navigate) => {
         });
 };
 
-export const mainListItems = (navigate) => (
+export const mainListItems = (navigate, locationPath) => (
     <React.Fragment>
-        <ListItemButton onClick={() => navigate("/")}>
+        <ListItemButton
+            onClick={() => navigate("/")}
+            selected={locationPath === "/"}
+        >
             <ListItemIcon>
                 <HomeIcon />
             </ListItemIcon>
             <ListItemText primary='Home' />
         </ListItemButton>
 
-        <ListItemButton onClick={() => navigate("/upload")}>
+        <ListItemButton
+            onClick={() => navigate("/upload")}
+            selected={locationPath === "/upload"}
+        >
             <ListItemIcon>
                 <BackupIcon />
             </ListItemIcon>
             <ListItemText primary='New Project' />
         </ListItemButton>
 
-        <ListItemButton onClick={() => navigate("/simulations")}>
+        <ListItemButton
+            onClick={() => navigate("/simulations")}
+            selected={locationPath === "/simulations"}
+        >
             <ListItemIcon>
                 <BatchPredictionIcon />
             </ListItemIcon>
-            <ListItemText primary='Simulation ' />
+            <ListItemText primary='Simulation' />
         </ListItemButton>
 
-        <ListItemButton onClick={() => navigate("/results")}>
+        <ListItemButton
+            onClick={() => navigate("/results")}
+            selected={locationPath === "/results"}
+        >
             <ListItemIcon>
                 <QueryStatsIcon />
             </ListItemIcon>
             <ListItemText primary='Results' />
         </ListItemButton>
 
-        <ListItemButton onClick={() => navigate("/historical")}>
+        <ListItemButton
+            onClick={() => navigate("/historical")}
+            selected={locationPath === "/historical"}
+        >
             <ListItemIcon>
                 <InventoryIcon />
             </ListItemIcon>
             <ListItemText primary='Historical' />
         </ListItemButton>
 
-        <ListItemButton onClick={() => navigate("/help")}>
+        <ListItemButton
+            onClick={() => navigate("/help")}
+            selected={locationPath === "/help"}
+        >
             <ListItemIcon>
                 <SupportIcon />
             </ListItemIcon>

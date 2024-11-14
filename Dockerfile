@@ -16,4 +16,5 @@ RUN set -ex && \
 
 EXPOSE 5000
 
-CMD ["gunicorn","--bind", "0.0.0.0:5000", "-w", "17", "--timeout", "7200", "app:app"]
+#CMD ["gunicorn","--bind", "0.0.0.0:5000", "-w", "17", "--timeout", "7200", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "-w", "17", "--timeout", "21600", "app:app"]

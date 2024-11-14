@@ -17,7 +17,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase-config";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase-config";
@@ -96,17 +96,8 @@ const style = {
 };
 
 export default function Dashboard() {
-    const navigate = useNavigate();
-
-    const navigateToUpload = () => {
-        navigate("/");
-    };
-
-    const [open, setOpen] = useState(true);
     const [runInProgress, setRunInProgress] = useState("");
-    const toggleDrawer = () => {
-        setOpen(!open);
-    };
+
 
     const [runs, setRuns] = useState([]);
     const [selectedPlot, setSelectedPlot] = useState(null);
@@ -129,7 +120,7 @@ export default function Dashboard() {
         const fileName = parts[parts.length - 1];
         if (url.includes("predicted_vs_observed")) {
             const species = fileName.split("_")[3].toUpperCase();
-            return `PREDICTED VS ACTUAL - ${species}`;
+            return `PREDICTED VS OBSERVED - ${species}`;
         } else {
             const species = fileName.split("_")[1].toUpperCase();
             return `${species}`;
@@ -220,6 +211,18 @@ export default function Dashboard() {
         fetchLatestRun();
     }, [userId]);
 
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const toggleDrawer = () => {
+        setOpen(!open);
+        localStorage.setItem("drawerOpen", !open);
+    };
+    const navigateToPage = (path) => {
+        navigate(path);
+    };
+
     return (
         <ThemeProvider theme={defaultTheme}>
             <Box sx={{ display: "flex" }}>
@@ -250,7 +253,7 @@ export default function Dashboard() {
                                 edge='start'
                                 color='inherit'
                                 size='small'
-                                onClick={() => navigateToUpload()}>
+                                onClick={() => navigateToPage("/")}>
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
@@ -269,7 +272,7 @@ export default function Dashboard() {
                     </Toolbar>
                     <Divider />
                     <List component='nav'>
-                        {mainListItems(navigate)}
+                        {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
                     </List>
@@ -460,7 +463,7 @@ export default function Dashboard() {
 
                         <img
                             src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='100px'
+                            width='75px'
                             alt='FCT Logo'
                             style={{ marginLeft: "auto" }}
                         />

@@ -15,7 +15,7 @@ import Paper from "@mui/material/Paper";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase-config";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "../firebase-config";
@@ -141,15 +141,6 @@ const DisplayJson = ({ data }) => {
 const defaultTheme = createTheme();
 
 export default function OldRuns() {
-    const navigate = useNavigate();
-
-    const navigateToUpload = () => {
-        navigate("/");
-    };
-    const [open, setOpen] = React.useState(true);
-    const toggleDrawer = () => {
-        setOpen(!open);
-    };
 
     const [runs, setRuns] = React.useState([]);
     const [searchQuery, setSearchQuery] = React.useState("");
@@ -271,6 +262,13 @@ export default function OldRuns() {
                 ...doc.data(),
             }));
             setRuns(latestRun);
+            if (latestRun.length > 0) {
+                if (latestRun[0].mode === "1") {
+                    setMode("Manual");
+                } else {
+                    setMode("Automatic");
+                }
+            }
         };
 
         fetchLatestRun();
@@ -286,13 +284,24 @@ export default function OldRuns() {
     });
 
     const Modesetter = (mode) => {
-        if (mode === "1") {
+        if (mode === 1) {
             return "Manual";
-        } else if (mode === "2") {
+        } else if (mode === 2) {
             return "Automatic";
         } else {
             return "Error";
         }
+    };
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const toggleDrawer = () => {
+        setOpen(!open);
+        localStorage.setItem("drawerOpen", !open);
+    };
+    const navigateToPage = (path) => {
+        navigate(path);
     };
 
     return (
@@ -325,7 +334,7 @@ export default function OldRuns() {
                                 edge='start'
                                 color='inherit'
                                 size='small'
-                                onClick={() => navigateToUpload()}>
+                                onClick={() => navigateToPage("/")}>
                                 <img src={logo} alt='logo' width='200' height='75' />
                             </IconButton>
                         </Typography>
@@ -344,7 +353,7 @@ export default function OldRuns() {
                     </Toolbar>
                     <Divider />
                     <List component='nav'>
-                        {mainListItems(navigate)}
+                        {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
                     </List>
@@ -391,13 +400,10 @@ export default function OldRuns() {
                                                 onClick={() => handleOpen(run)}>
                                                 <ListItemText
                                                     primary={`Title: ${run.description}`}
-                                                    secondary={`HMOD:${run.file1_name} - CSV:${
-                                                        run.file2_name
-                                                    } - Mode:${Modesetter(
-                                                        run.mode
-                                                    )} - CreatedAt:${run.createdAt
-                                                        .toDate()
-                                                        .toLocaleString()}`}
+                                                    secondary={`HMOD:${run.file1_name} - CSV:${run.file2_name
+                                                        } - Mode:${mode} - CreatedAt:${run.createdAt
+                                                            .toDate()
+                                                            .toLocaleString()}`}
                                                 />
 
                                                 <IconButton
@@ -519,7 +525,7 @@ export default function OldRuns() {
                                                                             key,
                                                                             selectedRun
                                                                                 .MachineLearning[
-                                                                                key
+                                                                            key
                                                                             ]
                                                                         )}
                                                                     </div>
@@ -553,7 +559,7 @@ export default function OldRuns() {
                                                             target='_blank'
                                                             download
                                                             style={{ margin: "10px" }}>
-                                                            Download New HMOD
+                                                            Download Trained HMOD
                                                         </Button>
                                                     </Typography>
                                                 </div>
@@ -654,7 +660,7 @@ export default function OldRuns() {
 
                         <img
                             src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='100px'
+                            width='75px'
                             alt='FCT Logo'
                             style={{ marginLeft: "auto" }}
                         />

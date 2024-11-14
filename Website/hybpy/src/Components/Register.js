@@ -94,17 +94,17 @@ function Register() {
 
     return (
         <ThemeProvider theme={defaultTheme}>
-            <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+            <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+                <CssBaseline />
                 <AppBar position="fixed" color="primary">
                     <Toolbar sx={{ pr: "2px" }}>
                         <IconButton edge="start" color="inherit" size="small">
                             <img src={logo} alt="logo" width="200" height="75" />
                         </IconButton>
-
                     </Toolbar>
                 </AppBar>
 
-                <Container component="main" maxWidth="xs" sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 10, flexGrow: 1 }}>
+                <Container component="main" maxWidth="xs" sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 10, flexGrow: 1, width: "100%" }}>
                     <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 2 }}>
                         <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
                             <LockOutlinedIcon />
@@ -178,7 +178,9 @@ function Register() {
                         padding: "1em",
                         backgroundColor: "#f1f1f1",
                         width: "100%",
-                        mt: "auto",
+                        position: "fixed",
+                        bottom: 0,
+                        left: 0,
                     }}
                 >
                     <Typography variant="body2" align="center" sx={{ flexGrow: 1 }}>

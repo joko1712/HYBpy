@@ -371,7 +371,7 @@ export default function OldRuns() {
                         hideScrollbar: { scrollbarWidth: "none" },
                     }}>
                     <Toolbar />
-                    <Container maxWidth='lg' sx={{ mt: 1, mb: 4 }}>
+                    <Container maxWidth='lg' sx={{ mt: 1, mb: 4, minHeight: "79%" }}>
                         <h1>
                             <strong>List of Historical Projects</strong>
                         </h1>

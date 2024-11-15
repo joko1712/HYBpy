@@ -285,7 +285,7 @@ export default function Dashboard() {
                                 ? theme.palette.grey[100]
                                 : theme.palette.grey[900],
                         flexGrow: 1,
-                        height: "98vh",
+                        height: "100%",
                         overflow: "auto",
                     }}>
                     <Toolbar />
@@ -446,28 +446,38 @@ export default function Dashboard() {
                             </Box>
                         </Modal>
                     </Container>
-                    <footer
-                        style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "1em",
-                            background: "#f1f1f1",
-                            width: "100%",
-                            marginTop: "auto",
-                        }}>
-                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
-                            Universidade NOVA de Lisboa 2024. All rights reserved.
-                        </p>
+                    <Box component="main" sx={{ display: "flex", flexDirection: "column", flexGrow: 1, backgroundColor: (theme) => theme.palette.grey[100] }}>
+                        <Toolbar />
+                        <Container maxWidth="lg" >
 
-                        <img
-                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='75px'
-                            alt='FCT Logo'
-                            style={{ marginLeft: "auto" }}
-                        />
-                    </footer>
+                        </Container>
+
+                        <Box
+                            component="footer"
+                            sx={{
+                                p: 2,
+                                backgroundColor: "#f1f1f1",
+                                position: "fixed",
+                                bottom: 0,
+                                left: open ? `${drawerWidth}px` : '56px',  // Adjust based on drawer state
+                                width: open ? `calc(100% - ${drawerWidth}px)` : 'calc(100% - 56px)',
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                transition: "width 0.3s ease, left 0.3s ease",  // Smooth transition when toggling drawer
+                            }}
+                        >
+                            <Typography variant="body2" align="center" sx={{ flexGrow: 1 }}>
+                                &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia Universidade NOVA de Lisboa. All rights reserved.
+                            </Typography>
+                            <img
+                                src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
+                                width="75"
+                                alt="FCT Logo"
+                                style={{ marginLeft: "auto" }}
+                            />
+                        </Box>
+                    </Box>
                 </Box>
             </Box>
         </ThemeProvider>

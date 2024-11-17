@@ -177,9 +177,9 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
     if projhyb['method'] == 1:
         print("   Optimiser:              Trust Region Reflective")
         options = {
-            'xtol': 1e-10, #1e-10
-            'gtol': 1e-10,
-            'ftol': 1e-10,
+            'xtol': 1e-12, #1e-10
+            'gtol': 1e-12,
+            'ftol': 1e-12,
             'verbose': projhyb['display'],
             'max_nfev': projhyb['niter'],
             'method': 'trf',
@@ -191,8 +191,8 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
         options = {
             'method': algorithm,
             'options': {
-                'gtol': 1e-10,
-                'xtol': 1e-10,
+                'gtol': 1e-12,
+                'xtol': 1e-12,
                 'barrier_tol': 1e-10,
                 'verbose': projhyb['display'],
                 'maxiter': projhyb['niter']

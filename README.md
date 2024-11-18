@@ -3,7 +3,7 @@
 
 ## Overview
 
-HYBpy is a python-based tool for hybrid modeling of bioprocesses and biological systems.
+HYBpy is a python-based tool for building and evaluating hybrid models of bioprocesses and biological systems.
 This repository contains the source code for the web-based application available at the www.hybpy.com website.
 
 

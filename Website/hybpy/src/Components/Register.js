@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { auth } from "../firebase-config";
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import {
+    createUserWithEmailAndPassword,
+    sendEmailVerification,
+} from "firebase/auth";
 import Avatar from "@mui/material/Avatar";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
@@ -66,7 +69,9 @@ function Register() {
         }
 
         if (!validateEmail(email)) {
-            window.alert("Invalid email format. Please enter a valid email address.");
+            window.alert(
+                "Invalid email format. Please enter a valid email address."
+            );
             return;
         }
 
@@ -74,7 +79,9 @@ function Register() {
             .then((res) => {
                 sendEmailVerification(auth.currentUser)
                     .then(() => {
-                        window.alert("A confirmation link has been sent to your email. Please verify your email address.");
+                        window.alert(
+                            "A confirmation link has been sent to your email. Please verify your email address."
+                        );
                         navigate("/");
                     })
                     .catch((verificationError) => {
@@ -94,35 +101,83 @@ function Register() {
 
     return (
         <ThemeProvider theme={defaultTheme}>
-            <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: "100%",
+                }}>
                 <CssBaseline />
-                <AppBar position="fixed" color="primary">
+                <AppBar position='fixed' color='primary'>
                     <Toolbar sx={{ pr: "2px" }}>
-                        <IconButton edge="start" color="inherit" size="small">
-                            <img src={logo} alt="logo" width="200" height="75" />
+                        <IconButton edge='start' color='inherit' size='small'>
+                            <img
+                                src={logo}
+                                alt='logo'
+                                width='200'
+                                height='75'
+                            />
                         </IconButton>
                     </Toolbar>
                 </AppBar>
 
-                <Container component="main" maxWidth="xs" sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 10, flexGrow: 1, width: "100%" }}>
-                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 2 }}>
+                <Container
+                    component='main'
+                    maxWidth='md'
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        mt: 10,
+                        flexGrow: 1,
+                        width: "100%",
+                    }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            mt: 2,
+                        }}>
+                        <h1>What is HYBpy?</h1>
+                        <p>
+                            HYBpy is designed to simplify the construction and
+                            analyses hybrid models of{" "}
+                            <Link href='https://www.sciencedirect.com/science/article/pii/S0098135422002897?via%3Dihub#abs0001'>
+                                bioprocesses
+                            </Link>{" "}
+                            and{" "}
+                            <Link href='https://www.mdpi.com/2673-2688/4/1/14#B25-ai-04-00014'>
+                                biological systems
+                            </Link>
+                            . You can also install HYBpy on Windows to run
+                            locally. Please visit the{" "}
+                            <Link href='https://github.com/joko1712/HYBpy'>
+                                HYBpy GitHub
+                            </Link>{" "}
+                            page.
+                        </p>
                         <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
                             <LockOutlinedIcon />
                         </Avatar>
-                        <Typography component="h1" variant="h5">
+                        <Typography component='h1' variant='h5'>
                             Sign up
                         </Typography>
-                        <Box component="form" noValidate onSubmit={registerUser} sx={{ mt: 3 }}>
+                        <Box
+                            component='form'
+                            noValidate
+                            onSubmit={registerUser}
+                            sx={{ mt: 3 }}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12}>
                                     <TextField
                                         error={!!emailError}
                                         required
                                         fullWidth
-                                        id="email"
-                                        label="Email Address"
-                                        name="email"
-                                        autoComplete="email"
+                                        id='email'
+                                        label='Email Address'
+                                        name='email'
+                                        autoComplete='email'
                                         value={email}
                                         onChange={handleEmailChange}
                                     />
@@ -131,36 +186,48 @@ function Register() {
                                     <TextField
                                         required
                                         fullWidth
-                                        name="password"
-                                        label="Password"
-                                        type="password"
-                                        id="password"
-                                        autoComplete="new-password"
+                                        name='password'
+                                        label='Password'
+                                        type='password'
+                                        id='password'
+                                        autoComplete='new-password'
                                         value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
                                     <TextField
                                         required
                                         fullWidth
-                                        name="confirmPassword"
-                                        label="Confirm Password"
-                                        type="password"
-                                        id="confirmPassword"
-                                        autoComplete="new-password"
+                                        name='confirmPassword'
+                                        label='Confirm Password'
+                                        type='password'
+                                        id='confirmPassword'
+                                        autoComplete='new-password'
                                         value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        onChange={(e) =>
+                                            setConfirmPassword(e.target.value)
+                                        }
                                     />
                                 </Grid>
                             </Grid>
-                            {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
-                            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
+                            {error && (
+                                <Typography color='error' sx={{ mt: 2 }}>
+                                    {error}
+                                </Typography>
+                            )}
+                            <Button
+                                type='submit'
+                                fullWidth
+                                variant='contained'
+                                sx={{ mt: 3, mb: 2 }}>
                                 Sign Up
                             </Button>
-                            <Grid container justifyContent="flex-end">
+                            <Grid container justifyContent='flex-end'>
                                 <Grid item>
-                                    <Link href="/" variant="body2">
+                                    <Link href='/' variant='body2'>
                                         Already have an account? Sign in
                                     </Link>
                                 </Grid>
@@ -170,7 +237,7 @@ function Register() {
                 </Container>
 
                 <Box
-                    component="footer"
+                    component='footer'
                     sx={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -181,15 +248,19 @@ function Register() {
                         position: "fixed",
                         bottom: 0,
                         left: 0,
-                    }}
-                >
-                    <Typography variant="body2" align="center" sx={{ flexGrow: 1 }}>
-                        &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia Universidade NOVA de Lisboa. All rights reserved.
+                    }}>
+                    <Typography
+                        variant='body2'
+                        align='center'
+                        sx={{ flexGrow: 1 }}>
+                        &copy; {new Date().getFullYear()} Faculdade de Ciências
+                        e Tecnologia Universidade NOVA de Lisboa. All rights
+                        reserved.
                     </Typography>
                     <img
-                        src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
-                        width="75"
-                        alt="FCT Logo"
+                        src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                        width='75'
+                        alt='FCT Logo'
                         style={{ marginLeft: "auto" }}
                     />
                 </Box>

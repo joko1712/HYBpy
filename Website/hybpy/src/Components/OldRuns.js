@@ -23,7 +23,8 @@ import { useEffect } from "react";
 import ListItemText from "@mui/material/ListItemText";
 import CloseIcon from "@mui/icons-material/Close";
 import ListItemIcon from "@mui/material/ListItemIcon";
-
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { red } from "@mui/material/colors";
 import Modal from "@mui/material/Modal";
 import logo from "../Image/HYBpyINVIS_logo_BETA.png";
@@ -37,6 +38,12 @@ import {
     DialogContentText,
     DialogTitle,
     Button,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
 } from "@mui/material";
 
 const drawerWidth = 200;
@@ -59,31 +66,31 @@ const AppBar = styled(MuiAppBar, {
     }),
 }));
 
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" })(
-    ({ theme, open }) => ({
-        "& .MuiDrawer-paper": {
-            position: "relative",
-            whiteSpace: "nowrap",
-            width: drawerWidth,
+const Drawer = styled(MuiDrawer, {
+    shouldForwardProp: (prop) => prop !== "open",
+})(({ theme, open }) => ({
+    "& .MuiDrawer-paper": {
+        position: "relative",
+        whiteSpace: "nowrap",
+        width: drawerWidth,
+        transition: theme.transitions.create("width", {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
+        boxSizing: "border-box",
+        ...(!open && {
+            overflowX: "hidden",
             transition: theme.transitions.create("width", {
                 easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
+                duration: theme.transitions.duration.leavingScreen,
             }),
-            boxSizing: "border-box",
-            ...(!open && {
-                overflowX: "hidden",
-                transition: theme.transitions.create("width", {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.leavingScreen,
-                }),
-                width: theme.spacing(7),
-                [theme.breakpoints.up("sm")]: {
-                    width: theme.spacing(9),
-                },
-            }),
-        },
-    })
-);
+            width: theme.spacing(7),
+            [theme.breakpoints.up("sm")]: {
+                width: theme.spacing(9),
+            },
+        }),
+    },
+}));
 
 const style = {
     position: "absolute",
@@ -117,7 +124,12 @@ const DisplayJson = ({ data }) => {
             <thead>
                 <tr>
                     {Object.keys(data[0]).map((key) => (
-                        <th key={key} style={{ border: "1px solid black", padding: "5px" }}>
+                        <th
+                            key={key}
+                            style={{
+                                border: "1px solid black",
+                                padding: "5px",
+                            }}>
                             {key}
                         </th>
                     ))}
@@ -127,7 +139,12 @@ const DisplayJson = ({ data }) => {
                 {data.map((item, index) => (
                     <tr key={index}>
                         {Object.values(item).map((value, i) => (
-                            <td key={i} style={{ border: "1px solid black", padding: "5px" }}>
+                            <td
+                                key={i}
+                                style={{
+                                    border: "1px solid black",
+                                    padding: "5px",
+                                }}>
                                 {value}
                             </td>
                         ))}
@@ -141,13 +158,13 @@ const DisplayJson = ({ data }) => {
 const defaultTheme = createTheme();
 
 export default function OldRuns() {
-
     const [runs, setRuns] = React.useState([]);
     const [searchQuery, setSearchQuery] = React.useState("");
     const userId = auth.currentUser.uid;
     const [mode, setMode] = React.useState("Error");
     const [date, setDate] = React.useState("Error");
 
+    const [selectedPlotIndex, setSelectedPlotIndex] = React.useState(null);
     const [openModal, setOpenModal] = React.useState(false);
     const [selectedRun, setSelectedRun] = React.useState(null);
     const [selectedPlot, setSelectedPlot] = React.useState(null);
@@ -163,6 +180,7 @@ export default function OldRuns() {
 
     const handleOpen = async (run) => {
         setSelectedRun(run);
+        console.log("Selected Run:", run);
         try {
             const urls = await fetchFileUrls(userId, run.id);
             setFileUrls(urls);
@@ -177,10 +195,6 @@ export default function OldRuns() {
         setSelectedPlot(null);
     };
 
-    const handlePlotClick = (url) => {
-        setSelectedPlot(url);
-    };
-
     const handleDeleteDialogOpen = (run) => {
         setRunToDelete(run);
         setDeleteDialogOpen(true);
@@ -189,6 +203,25 @@ export default function OldRuns() {
     const handleDeleteDialogClose = () => {
         setRunToDelete(null);
         setDeleteDialogOpen(false);
+    };
+
+    const handlePlotClick = (index) => {
+        setSelectedPlotIndex(index);
+    };
+
+    const handlePrevPlot = () => {
+        setSelectedPlotIndex((prevIndex) => {
+            const newIndex =
+                prevIndex > 0 ? prevIndex - 1 : selectedRun.plots.length - 1;
+            return newIndex;
+        });
+    };
+
+    const handleNextPlot = () => {
+        setSelectedPlotIndex((prevIndex) => {
+            const newIndex = (prevIndex + 1) % selectedRun.plots.length;
+            return newIndex;
+        });
     };
 
     const fetchFileUrls = async (userId, runId) => {
@@ -223,7 +256,9 @@ export default function OldRuns() {
             const result = await response.json();
             console.log("Delete response:", result);
             if (response.ok) {
-                setRuns((prevRuns) => prevRuns.filter((run) => run.id !== runToDelete.id));
+                setRuns((prevRuns) =>
+                    prevRuns.filter((run) => run.id !== runToDelete.id)
+                );
                 handleDeleteDialogClose();
             } else {
                 console.error("Error deleting run:", result.error);
@@ -239,12 +274,19 @@ export default function OldRuns() {
             Jacobian: { 1: "On", 0: "Off" },
             Hessian: { 1: "On", 0: "Off" },
             Bootstrap: { 1: "On", 0: "Off" },
-            Method: { 1: "TRF", 2: "Trust-Constr", 3: "Simulated Annealing", 4: "ADAM" },
+            Method: {
+                1: "TRF",
+                2: "Trust-Constr",
+                3: "Simulated Annealing",
+                4: "ADAM",
+            },
             Mode: { 1: "Indirect", 2: "Direct", 3: "Indirect" },
             Layer: { 1: "Tanh", 2: "ReLU", 3: "LSTM" },
         };
 
-        return mappings[key] && mappings[key][value] ? mappings[key][value] : value;
+        return mappings[key] && mappings[key][value]
+            ? mappings[key][value]
+            : value;
     };
 
     useEffect(() => {
@@ -295,13 +337,59 @@ export default function OldRuns() {
 
     const navigate = useNavigate();
     const location = useLocation();
-    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const [open, setOpen] = React.useState(
+        localStorage.getItem("drawerOpen") === "true"
+    );
     const toggleDrawer = () => {
         setOpen(!open);
         localStorage.setItem("drawerOpen", !open);
     };
     const navigateToPage = (path) => {
         navigate(path);
+    };
+
+    const machineLearningOptions = [
+        { key: "HiddenNodes", label: "Hidden Nodes" },
+        { key: "Layer", label: "Layer" },
+        { key: "Tau", label: "TAU" },
+        { key: "Mode", label: "Mode" },
+        { key: "Method", label: "Method" },
+        { key: "Niter", label: "Niter" },
+        { key: "Nstep", label: "Nstep" },
+        { key: "Jacobian", label: "Jacobian" },
+        { key: "Hessian", label: "Hessian" },
+        { key: "Bootstrap", label: "Bootstrap" },
+    ];
+
+    const calculateDuration = (startTime, endTime) => {
+        const start = startTime.toDate();
+        const end = endTime.toDate();
+        const durationMillis = end - start;
+
+        if (durationMillis < 0) {
+            return "Invalid duration";
+        }
+
+        const durationSeconds = Math.floor(durationMillis / 1000);
+
+        const days = Math.floor(durationSeconds / 86400);
+        const hours = Math.floor((durationSeconds % 86400) / 3600);
+        const minutes = Math.floor((durationSeconds % 3600) / 60);
+        const seconds = durationSeconds % 60;
+
+        let durationString = "";
+        if (days > 0) {
+            durationString += `${days}d `;
+        }
+        if (hours > 0 || days > 0) {
+            durationString += `${hours}h `;
+        }
+        if (minutes > 0 || hours > 0 || days > 0) {
+            durationString += `${minutes}m `;
+        }
+        durationString += `${seconds}s`;
+
+        return durationString;
     };
 
     return (
@@ -335,7 +423,12 @@ export default function OldRuns() {
                                 color='inherit'
                                 size='small'
                                 onClick={() => navigateToPage("/")}>
-                                <img src={logo} alt='logo' width='200' height='75' />
+                                <img
+                                    src={logo}
+                                    alt='logo'
+                                    width='200'
+                                    height='75'
+                                />
                             </IconButton>
                         </Typography>
                     </Toolbar>
@@ -346,13 +439,14 @@ export default function OldRuns() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "flex-end",
+                            marginBottom: "4px",
                         }}>
                         <IconButton onClick={toggleDrawer}>
                             <ChevronLeftIcon />
                         </IconButton>
                     </Toolbar>
                     <Divider />
-                    <List component='nav'>
+                    <List component='nav' disablePadding>
                         {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
@@ -371,7 +465,9 @@ export default function OldRuns() {
                         hideScrollbar: { scrollbarWidth: "none" },
                     }}>
                     <Toolbar />
-                    <Container maxWidth='lg' sx={{ mt: 1, mb: 4, minHeight: "79%" }}>
+                    <Container
+                        maxWidth='lg'
+                        sx={{ mt: 1, mb: 4, minHeight: "79%" }}>
                         <h1>
                             <strong>List of Historical Projects</strong>
                         </h1>
@@ -400,17 +496,28 @@ export default function OldRuns() {
                                                 onClick={() => handleOpen(run)}>
                                                 <ListItemText
                                                     primary={`Title: ${run.description}`}
-                                                    secondary={`HMOD:${run.file1_name} - CSV:${run.file2_name
-                                                        } - Mode:${mode} - CreatedAt:${run.createdAt
-                                                            .toDate()
-                                                            .toLocaleString()}`}
+                                                    secondary={`HMOD:${
+                                                        run.file1_name
+                                                    } - CSV:${
+                                                        run.file2_name
+                                                    } - Mode:${mode} - CreatedAt:${run.createdAt
+                                                        .toDate()
+                                                        .toLocaleString()} -  FinishedAt: ${
+                                                        run.finishedAt
+                                                            ? run.finishedAt
+                                                                  .toDate()
+                                                                  .toLocaleString()
+                                                            : "Not finished"
+                                                    }`}
                                                 />
 
                                                 <IconButton
                                                     sx={{ color: red[500] }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleDeleteDialogOpen(run);
+                                                        handleDeleteDialogOpen(
+                                                            run
+                                                        );
                                                     }}>
                                                     <DeleteIcon fontSize='large' />
                                                 </IconButton>
@@ -422,7 +529,16 @@ export default function OldRuns() {
                                         onClose={handleClose}
                                         aria-labelledby='modal-modal-title'
                                         aria-describedby='modal-modal-description'>
-                                        <Box sx={{ ...style, width: "80%", height: "90%" }}>
+                                        <Box
+                                            sx={{
+                                                ...style,
+                                                width: { xs: "95%", md: "80%" },
+                                                height: {
+                                                    xs: "auto",
+                                                    md: "90%",
+                                                },
+                                                overflowY: "auto",
+                                            }}>
                                             {selectedRun && (
                                                 <div
                                                     style={{
@@ -434,9 +550,13 @@ export default function OldRuns() {
                                                         variant='h4'
                                                         component='h2'>
                                                         <strong>
-                                                            Title: {selectedRun.description}
+                                                            Title:{" "}
+                                                            {
+                                                                selectedRun.description
+                                                            }
                                                         </strong>
                                                     </Typography>
+
                                                     <Typography
                                                         id='modal-modal-title'
                                                         variant='h4'
@@ -445,130 +565,369 @@ export default function OldRuns() {
                                                             display: "flex",
                                                             alignSelf: "center",
                                                         }}>
-                                                        Model Evaluation: Time Series Prediction
+                                                        Model Evaluation
                                                     </Typography>
-                                                    <Typography
-                                                        id='modal-modal-description'
-                                                        sx={{ mt: 3 }}>
-                                                        <br />
-                                                        <div>
-                                                            {selectedRun.plots &&
-                                                                selectedRun.plots.map(
-                                                                    (plotUrl, index) => (
-                                                                        <img
-                                                                            key={index}
-                                                                            src={plotUrl}
-                                                                            alt={`Plot ${index}`}
-                                                                            style={{
-                                                                                width: "30%",
-                                                                                marginBottom: 10,
-                                                                                cursor: "pointer",
-                                                                            }}
-                                                                            onClick={() =>
-                                                                                handlePlotClick(
-                                                                                    plotUrl
+
+                                                    {/* Display Plots */}
+                                                    <div>
+                                                        {selectedRun.plots &&
+                                                            selectedRun.plots.map(
+                                                                (
+                                                                    plotUrl,
+                                                                    index
+                                                                ) => (
+                                                                    <img
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        src={
+                                                                            plotUrl
+                                                                        }
+                                                                        alt={`Plot ${index}`}
+                                                                        style={{
+                                                                            width: "30%",
+                                                                            marginBottom: 10,
+                                                                            cursor: "pointer",
+                                                                        }}
+                                                                        onClick={() =>
+                                                                            handlePlotClick(
+                                                                                index
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                )
+                                                            )}
+                                                    </div>
+
+                                                    {selectedRun.response_data ? (
+                                                        <>
+                                                            <TableContainer
+                                                                component={
+                                                                    Paper
+                                                                }
+                                                                sx={{
+                                                                    marginTop: 3,
+                                                                }}>
+                                                                <Table aria-label='data table'>
+                                                                    <TableBody>
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                colSpan={
+                                                                                    2
+                                                                                }
+                                                                                sx={{
+                                                                                    backgroundColor:
+                                                                                        "#f5f5f5",
+                                                                                }}>
+                                                                                <Typography variant='h6'>
+                                                                                    Metrics
+                                                                                </Typography>
+                                                                            </TableCell>
+                                                                        </TableRow>
+
+                                                                        {/* Display Metrics */}
+                                                                        {selectedRun
+                                                                            .response_data
+                                                                            .metrics &&
+                                                                            Object.entries(
+                                                                                selectedRun
+                                                                                    .response_data
+                                                                                    .metrics
+                                                                            ).map(
+                                                                                ([
+                                                                                    key,
+                                                                                    value,
+                                                                                ]) => (
+                                                                                    <TableRow
+                                                                                        key={
+                                                                                            key
+                                                                                        }>
+                                                                                        <TableCell
+                                                                                            component='th'
+                                                                                            scope='row'>
+                                                                                            {
+                                                                                                key
+                                                                                            }
+                                                                                        </TableCell>
+                                                                                        <TableCell>
+                                                                                            {
+                                                                                                value
+                                                                                            }
+                                                                                        </TableCell>
+                                                                                    </TableRow>
                                                                                 )
-                                                                            }
-                                                                        />
-                                                                    )
-                                                                )}
-                                                        </div>
-                                                        {selectedRun.response_data ? (
-                                                            <>
-                                                                Metrics:{" "}
-                                                                <pre>
-                                                                    {JSON.stringify(
-                                                                        selectedRun.response_data
-                                                                            .metrics,
-                                                                        null,
-                                                                        2
-                                                                    )}
-                                                                </pre>
-                                                                <br />
-                                                                Trained weights:
-                                                                <DisplayJson
-                                                                    data={
-                                                                        selectedRun.response_data
-                                                                            .trainData
+                                                                            )}
+
+                                                                        {/* Trained Weights */}
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Trained
+                                                                                Weights
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                <DisplayJson
+                                                                                    data={
+                                                                                        selectedRun
+                                                                                            .response_data
+                                                                                            .trainData
+                                                                                    }
+                                                                                />
+                                                                            </TableCell>
+                                                                        </TableRow>
+
+                                                                        {/* File Names */}
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Hmod
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {
+                                                                                    selectedRun.file1_name
+                                                                                }
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                CSV
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {
+                                                                                    selectedRun.file2_name
+                                                                                }
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                NewHmod
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {
+                                                                                    selectedRun
+                                                                                        .response_data
+                                                                                        .new_hmod
+                                                                                }
+                                                                            </TableCell>
+                                                                        </TableRow>
+
+                                                                        {/* Mode */}
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Mode
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {
+                                                                                    mode
+                                                                                }
+                                                                            </TableCell>
+                                                                        </TableRow>
+
+                                                                        {/* Created At */}
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Created
+                                                                                At
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {selectedRun.createdAt
+                                                                                    ? selectedRun.createdAt
+                                                                                          .toDate()
+                                                                                          .toLocaleString()
+                                                                                    : "N/A"}
+                                                                            </TableCell>
+                                                                        </TableRow>
+
+                                                                        {/* Finished At */}
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Finished
+                                                                                At
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {selectedRun.finishedAt
+                                                                                    ? selectedRun.finishedAt
+                                                                                          .toDate()
+                                                                                          .toLocaleString()
+                                                                                    : "Not Finished"}
+                                                                            </TableCell>
+                                                                        </TableRow>
+
+                                                                        {/* Duration */}
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Duration
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {selectedRun.createdAt &&
+                                                                                selectedRun.finishedAt
+                                                                                    ? calculateDuration(
+                                                                                          selectedRun.createdAt,
+                                                                                          selectedRun.finishedAt
+                                                                                      )
+                                                                                    : "N/A"}
+                                                                            </TableCell>
+                                                                        </TableRow>
+
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                colSpan={
+                                                                                    2
+                                                                                }
+                                                                                sx={{
+                                                                                    backgroundColor:
+                                                                                        "#f5f5f5",
+                                                                                }}>
+                                                                                <Typography variant='h6'>
+                                                                                    Machine
+                                                                                    Learning
+                                                                                    Options
+                                                                                </Typography>
+                                                                            </TableCell>
+                                                                        </TableRow>
+
+                                                                        {/* Inputs and Outputs */}
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Inputs
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {selectedRun.Inputs ||
+                                                                                    "N/A"}
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                        <TableRow>
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Outputs
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {selectedRun.Outputs ||
+                                                                                    "N/A"}
+                                                                            </TableCell>
+                                                                        </TableRow>
+
+                                                                        {/* Machine Learning Options */}
+                                                                        {selectedRun.MachineLearning &&
+                                                                            machineLearningOptions.map(
+                                                                                ({
+                                                                                    key,
+                                                                                    label,
+                                                                                }) => {
+                                                                                    const value =
+                                                                                        selectedRun
+                                                                                            .MachineLearning[
+                                                                                            key
+                                                                                        ];
+                                                                                    if (
+                                                                                        value ===
+                                                                                        undefined
+                                                                                    ) {
+                                                                                        return null;
+                                                                                    }
+                                                                                    return (
+                                                                                        <TableRow
+                                                                                            key={
+                                                                                                key
+                                                                                            }>
+                                                                                            <TableCell
+                                                                                                component='th'
+                                                                                                scope='row'>
+                                                                                                {
+                                                                                                    label
+                                                                                                }
+                                                                                            </TableCell>
+                                                                                            <TableCell>
+                                                                                                {getDisplayValue(
+                                                                                                    key,
+                                                                                                    value
+                                                                                                )}
+                                                                                            </TableCell>
+                                                                                        </TableRow>
+                                                                                    );
+                                                                                }
+                                                                            )}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </TableContainer>
+
+                                                            {/* Download Buttons */}
+                                                            <div
+                                                                style={{
+                                                                    marginTop: 20,
+                                                                }}>
+                                                                <Button
+                                                                    variant='contained'
+                                                                    href={
+                                                                        fileUrls.file1_url
                                                                     }
-                                                                />
-                                                            </>
-                                                        ) : (
-                                                            <Typography color='error'>
-                                                                Error: No response data available
-                                                            </Typography>
-                                                        )}
-                                                        <br />
-                                                        Hmod: {selectedRun.file1_name}
-                                                        <br />
-                                                        CSV: {selectedRun.file2_name}
-                                                        <br />
-                                                        NewHmod:{" "}
-                                                        {selectedRun.response_data.new_hmod}
-                                                        <br />
-                                                        Mode: {mode}
-                                                        <br />
-                                                        <Typography variant='h6' marginTop={3}>
-                                                            Machine Learning Options:
-                                                        </Typography>
-                                                        Inputs: {selectedRun.Inputs}
-                                                        <br />
-                                                        Outputs: {selectedRun.Outputs}
-                                                        {selectedRun.MachineLearning ? (
-                                                            <div style={{ marginLeft: 20 }}>
-                                                                {Object.keys(
-                                                                    selectedRun.MachineLearning
-                                                                ).map((key) => (
-                                                                    <div key={key}>
-                                                                        <strong>{key}: </strong>
-                                                                        {getDisplayValue(
-                                                                            key,
-                                                                            selectedRun
-                                                                                .MachineLearning[
-                                                                            key
-                                                                            ]
-                                                                        )}
-                                                                    </div>
-                                                                ))}
+                                                                    target='_blank'
+                                                                    download
+                                                                    style={{
+                                                                        margin: "10px",
+                                                                    }}>
+                                                                    Download
+                                                                    HMOD
+                                                                </Button>
+                                                                <Button
+                                                                    variant='contained'
+                                                                    href={
+                                                                        fileUrls.file2_url
+                                                                    }
+                                                                    target='_blank'
+                                                                    download
+                                                                    style={{
+                                                                        margin: "10px",
+                                                                    }}>
+                                                                    Download CSV
+                                                                </Button>
+                                                                <Button
+                                                                    variant='contained'
+                                                                    href={
+                                                                        fileUrls.new_hmod_url
+                                                                    }
+                                                                    target='_blank'
+                                                                    download
+                                                                    style={{
+                                                                        margin: "10px",
+                                                                    }}>
+                                                                    Download
+                                                                    Trained HMOD
+                                                                </Button>
                                                             </div>
-                                                        ) : (
-                                                            <Typography color='error'>
-                                                                Error: No Machine Learning Options
-                                                                available
-                                                            </Typography>
-                                                        )}
-                                                        <Button
-                                                            variant='contained'
-                                                            href={fileUrls.file1_url}
-                                                            target='_blank'
-                                                            download
-                                                            style={{ margin: "10px" }}>
-                                                            Download HMOD
-                                                        </Button>
-                                                        <Button
-                                                            variant='contained'
-                                                            href={fileUrls.file2_url}
-                                                            target='_blank'
-                                                            download
-                                                            style={{ margin: "10px" }}>
-                                                            Download CSV
-                                                        </Button>
-                                                        <Button
-                                                            variant='contained'
-                                                            href={fileUrls.new_hmod_url}
-                                                            target='_blank'
-                                                            download
-                                                            style={{ margin: "10px" }}>
-                                                            Download Trained HMOD
-                                                        </Button>
-                                                    </Typography>
+                                                        </>
+                                                    ) : (
+                                                        <Typography color='error'>
+                                                            Error: No response
+                                                            data available
+                                                        </Typography>
+                                                    )}
                                                 </div>
                                             )}
                                         </Box>
                                     </Modal>
                                     <Modal
-                                        open={!!selectedPlot}
-                                        onClose={() => setSelectedPlot(null)}
+                                        open={selectedPlotIndex !== null}
+                                        onClose={() =>
+                                            setSelectedPlotIndex(null)
+                                        }
                                         aria-labelledby='modal-plot-title'
                                         aria-describedby='modal-plot-description'>
                                         <Box
@@ -576,7 +935,8 @@ export default function OldRuns() {
                                                 position: "absolute",
                                                 top: "50%",
                                                 left: "50%",
-                                                transform: "translate(-50%, -50%)",
+                                                transform:
+                                                    "translate(-50%, -50%)",
                                                 width: "80%",
                                                 height: "90%",
                                                 bgcolor: "background.paper",
@@ -587,26 +947,69 @@ export default function OldRuns() {
                                                 alignContent: "center",
                                                 justifyContent: "center",
                                                 display: "flex",
-                                                flexDirection: "column",
+                                                alignItems: "center",
                                                 position: "relative",
                                             }}>
                                             <IconButton
-                                                onClick={() => setSelectedPlot(null)}
+                                                onClick={() =>
+                                                    setSelectedPlotIndex(null)
+                                                }
                                                 sx={{
                                                     position: "absolute",
                                                     top: "5%",
                                                     right: "5%",
                                                 }}>
-                                                <CloseIcon sx={{ height: 50, width: 50 }} />
+                                                <CloseIcon
+                                                    sx={{
+                                                        height: 50,
+                                                        width: 50,
+                                                    }}
+                                                />
                                             </IconButton>
-                                            <img
-                                                src={selectedPlot}
-                                                alt='Selected Plot'
-                                                style={{
-                                                    height: "100%",
-                                                    width: "97%",
-                                                }}
-                                            />
+                                            {selectedPlotIndex !== null && (
+                                                <>
+                                                    <IconButton
+                                                        onClick={handlePrevPlot}
+                                                        sx={{
+                                                            position:
+                                                                "absolute",
+                                                            top: "50%",
+                                                            left: "16px",
+                                                            transform:
+                                                                "translateY(-50%)",
+                                                            zIndex: 1,
+                                                        }}>
+                                                        <ArrowBackIcon />
+                                                    </IconButton>
+                                                    <img
+                                                        src={
+                                                            selectedRun.plots[
+                                                                selectedPlotIndex
+                                                            ]
+                                                        }
+                                                        alt={`Plot ${selectedPlotIndex}`}
+                                                        style={{
+                                                            maxWidth: "100%",
+                                                            maxHeight: "90%",
+                                                            display: "block",
+                                                            margin: "0 auto",
+                                                        }}
+                                                    />
+                                                    <IconButton
+                                                        onClick={handleNextPlot}
+                                                        sx={{
+                                                            position:
+                                                                "absolute",
+                                                            top: "50%",
+                                                            right: "16px",
+                                                            transform:
+                                                                "translateY(-50%)",
+                                                            zIndex: 1,
+                                                        }}>
+                                                        <ArrowForwardIcon />
+                                                    </IconButton>
+                                                </>
+                                            )}
                                         </Box>
                                     </Modal>
                                     <Dialog
@@ -620,13 +1023,17 @@ export default function OldRuns() {
                                         <DialogContent>
                                             <DialogContentText id='alert-dialog-description'>
                                                 Are you sure you want to delete:{" "}
-                                                {runToDelete ? runToDelete.description : ""}? This
-                                                action cannot be undone.
+                                                {runToDelete
+                                                    ? runToDelete.description
+                                                    : ""}
+                                                ? This action cannot be undone.
                                             </DialogContentText>
                                         </DialogContent>
                                         <DialogActions>
                                             <Button
-                                                onClick={handleDeleteDialogClose}
+                                                onClick={
+                                                    handleDeleteDialogClose
+                                                }
                                                 color='primary'>
                                                 Cancel
                                             </Button>
@@ -635,7 +1042,9 @@ export default function OldRuns() {
                                                 color='primary'
                                                 autoFocus
                                                 disabled={isloading}>
-                                                {isloading ? "Deleting..." : "Delete"}
+                                                {isloading
+                                                    ? "Deleting..."
+                                                    : "Delete"}
                                             </Button>
                                         </DialogActions>
                                     </Dialog>
@@ -654,8 +1063,9 @@ export default function OldRuns() {
                             marginTop: "auto",
                         }}>
                         <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
-                            Universidade NOVA de Lisboa 2024. All rights reserved.
+                            &copy; {new Date().getFullYear()} Faculdade de
+                            Ciências e Tecnologia Universidade NOVA de Lisboa
+                            2024. All rights reserved.
                         </p>
 
                         <img

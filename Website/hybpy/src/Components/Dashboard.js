@@ -19,7 +19,14 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { mainListItems, secondaryListItems } from "./ListItems";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase-config";
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import {
+    collection,
+    query,
+    where,
+    getDocs,
+    orderBy,
+    limit,
+} from "firebase/firestore";
 import { db } from "../firebase-config";
 import logo from "../Image/HYBpyINVIS_logo_BETA.png";
 import ImageList from "@mui/material/ImageList";
@@ -51,31 +58,31 @@ const AppBar = styled(MuiAppBar, {
     }),
 }));
 
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" })(
-    ({ theme, open }) => ({
-        "& .MuiDrawer-paper": {
-            position: "relative",
-            whiteSpace: "nowrap",
-            width: drawerWidth,
+const Drawer = styled(MuiDrawer, {
+    shouldForwardProp: (prop) => prop !== "open",
+})(({ theme, open }) => ({
+    "& .MuiDrawer-paper": {
+        position: "relative",
+        whiteSpace: "nowrap",
+        width: drawerWidth,
+        transition: theme.transitions.create("width", {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
+        boxSizing: "border-box",
+        ...(!open && {
+            overflowX: "hidden",
             transition: theme.transitions.create("width", {
                 easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
+                duration: theme.transitions.duration.leavingScreen,
             }),
-            boxSizing: "border-box",
-            ...(!open && {
-                overflowX: "hidden",
-                transition: theme.transitions.create("width", {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.leavingScreen,
-                }),
-                width: theme.spacing(7),
-                [theme.breakpoints.up("sm")]: {
-                    width: theme.spacing(9),
-                },
-            }),
-        },
-    })
-);
+            width: theme.spacing(7),
+            [theme.breakpoints.up("sm")]: {
+                width: theme.spacing(9),
+            },
+        }),
+    },
+}));
 
 const defaultTheme = createTheme();
 
@@ -97,7 +104,6 @@ const style = {
 
 export default function Dashboard() {
     const [runInProgress, setRunInProgress] = useState("");
-
 
     const [runs, setRuns] = useState([]);
     const [selectedPlot, setSelectedPlot] = useState(null);
@@ -143,7 +149,9 @@ export default function Dashboard() {
 
     const handlePrevPlot = () => {
         const filteredPlots = getFilteredPlots();
-        const prevIndex = (currentPlotIndex - 1 + filteredPlots.length) % filteredPlots.length;
+        const prevIndex =
+            (currentPlotIndex - 1 + filteredPlots.length) %
+            filteredPlots.length;
         setCurrentPlotIndex(prevIndex);
         setSelectedPlot(filteredPlots[prevIndex]);
     };
@@ -211,10 +219,11 @@ export default function Dashboard() {
         fetchLatestRun();
     }, [userId]);
 
-
     const navigate = useNavigate();
     const location = useLocation();
-    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const [open, setOpen] = React.useState(
+        localStorage.getItem("drawerOpen") === "true"
+    );
     const toggleDrawer = () => {
         setOpen(!open);
         localStorage.setItem("drawerOpen", !open);
@@ -254,7 +263,12 @@ export default function Dashboard() {
                                 color='inherit'
                                 size='small'
                                 onClick={() => navigateToPage("/")}>
-                                <img src={logo} alt='logo' width='200' height='75' />
+                                <img
+                                    src={logo}
+                                    alt='logo'
+                                    width='200'
+                                    height='75'
+                                />
                             </IconButton>
                         </Typography>
                     </Toolbar>
@@ -265,13 +279,14 @@ export default function Dashboard() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "flex-end",
+                            marginBottom: "4px",
                         }}>
                         <IconButton onClick={toggleDrawer}>
                             <ChevronLeftIcon />
                         </IconButton>
                     </Toolbar>
                     <Divider />
-                    <List component='nav'>
+                    <List component='nav' disablePadding>
                         {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
@@ -293,10 +308,17 @@ export default function Dashboard() {
                         <Grid container spacing={3}>
                             {/* Recent Run Details */}
                             <Grid item xs={12}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                    }}>
                                     {runs.length > 0 ? (
                                         <>
-                                            <Typography variant='h4' gutterBottom>
+                                            <Typography
+                                                variant='h4'
+                                                gutterBottom>
                                                 Hybrid Model Details
                                             </Typography>
                                             <Typography variant='h6'>{`Title: ${runs[0].description}`}</Typography>
@@ -306,7 +328,9 @@ export default function Dashboard() {
                                             <Typography>{`Status: ${runInProgress}`}</Typography>
                                         </>
                                     ) : (
-                                        <Typography>No recent run details</Typography>
+                                        <Typography>
+                                            No recent run details
+                                        </Typography>
                                     )}
                                 </Paper>
                             </Grid>
@@ -327,26 +351,40 @@ export default function Dashboard() {
                                             : "Show Metabolite Plots"}
                                     </Button>
                                     {getFilteredPlots().length > 0 ? (
-                                        <ImageList cols={3} gap={8} sx={{ width: "100%" }}>
+                                        <ImageList
+                                            cols={3}
+                                            gap={8}
+                                            sx={{ width: "100%" }}>
                                             {getFilteredPlots()
                                                 .filter(
                                                     (url) =>
-                                                        selectedPlots.length === 0 ||
-                                                        selectedPlots.includes(url)
+                                                        selectedPlots.length ===
+                                                            0 ||
+                                                        selectedPlots.includes(
+                                                            url
+                                                        )
                                                 )
                                                 .map((url, index) => {
-                                                    const filteredPlots = getFilteredPlots().filter(
-                                                        (url) =>
-                                                            selectedPlots.length === 0 ||
-                                                            selectedPlots.includes(url)
-                                                    );
+                                                    const filteredPlots =
+                                                        getFilteredPlots().filter(
+                                                            (url) =>
+                                                                selectedPlots.length ===
+                                                                    0 ||
+                                                                selectedPlots.includes(
+                                                                    url
+                                                                )
+                                                        );
                                                     const filteredIndex =
-                                                        filteredPlots.indexOf(url);
+                                                        filteredPlots.indexOf(
+                                                            url
+                                                        );
                                                     return (
                                                         <ImageListItem
                                                             key={index}
                                                             onClick={() =>
-                                                                handleOpenModal(filteredIndex)
+                                                                handleOpenModal(
+                                                                    filteredIndex
+                                                                )
                                                             }>
                                                             <img
                                                                 src={url}
@@ -363,13 +401,22 @@ export default function Dashboard() {
                                                 })}
                                         </ImageList>
                                     ) : (
-                                        <Typography>No plots available</Typography>
+                                        <Typography>
+                                            No plots available
+                                        </Typography>
                                     )}
                                 </Paper>
                             </Grid>
                             <Grid item xs={12}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                                    <Typography variant='h6'>Select Plots to Display</Typography>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                    }}>
+                                    <Typography variant='h6'>
+                                        Select Plots to Display
+                                    </Typography>
                                     <Select
                                         multiple
                                         value={selectedPlots}
@@ -377,19 +424,32 @@ export default function Dashboard() {
                                         renderValue={(selected) =>
                                             selected.length === 0
                                                 ? "All Plots"
-                                                : selected.map(getPlotTitle).join(", ")
+                                                : selected
+                                                      .map(getPlotTitle)
+                                                      .join(", ")
                                         }>
-                                        {getFilteredPlots().map((url, index) => {
-                                            const plotTitle = getPlotTitle(url);
-                                            return (
-                                                <MenuItem key={index} value={url}>
-                                                    <Checkbox
-                                                        checked={selectedPlots.indexOf(url) > -1}
-                                                    />
-                                                    <ListItemText primary={plotTitle} />
-                                                </MenuItem>
-                                            );
-                                        })}
+                                        {getFilteredPlots().map(
+                                            (url, index) => {
+                                                const plotTitle =
+                                                    getPlotTitle(url);
+                                                return (
+                                                    <MenuItem
+                                                        key={index}
+                                                        value={url}>
+                                                        <Checkbox
+                                                            checked={
+                                                                selectedPlots.indexOf(
+                                                                    url
+                                                                ) > -1
+                                                            }
+                                                        />
+                                                        <ListItemText
+                                                            primary={plotTitle}
+                                                        />
+                                                    </MenuItem>
+                                                );
+                                            }
+                                        )}
                                     </Select>
                                 </Paper>
                             </Grid>
@@ -446,34 +506,45 @@ export default function Dashboard() {
                             </Box>
                         </Modal>
                     </Container>
-                    <Box component="main" sx={{ display: "flex", flexDirection: "column", flexGrow: 1, backgroundColor: (theme) => theme.palette.grey[100] }}>
+                    <Box
+                        component='main'
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            flexGrow: 1,
+                            backgroundColor: (theme) => theme.palette.grey[100],
+                        }}>
                         <Toolbar />
-                        <Container maxWidth="lg" >
-
-                        </Container>
+                        <Container maxWidth='lg'></Container>
 
                         <Box
-                            component="footer"
+                            component='footer'
                             sx={{
                                 p: 2,
                                 backgroundColor: "#f1f1f1",
                                 position: "fixed",
                                 bottom: 0,
-                                left: open ? `${drawerWidth}px` : '56px',  // Adjust based on drawer state
-                                width: open ? `calc(100% - ${drawerWidth}px)` : 'calc(100% - 56px)',
+                                left: open ? `${drawerWidth}px` : "56px", // Adjust based on drawer state
+                                width: open
+                                    ? `calc(100% - ${drawerWidth}px)`
+                                    : "calc(100% - 56px)",
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center",
-                                transition: "width 0.3s ease, left 0.3s ease",  // Smooth transition when toggling drawer
-                            }}
-                        >
-                            <Typography variant="body2" align="center" sx={{ flexGrow: 1 }}>
-                                &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia Universidade NOVA de Lisboa. All rights reserved.
+                                transition: "width 0.3s ease, left 0.3s ease", // Smooth transition when toggling drawer
+                            }}>
+                            <Typography
+                                variant='body2'
+                                align='center'
+                                sx={{ flexGrow: 1 }}>
+                                &copy; {new Date().getFullYear()} Faculdade de
+                                Ciências e Tecnologia Universidade NOVA de
+                                Lisboa. All rights reserved.
                             </Typography>
                             <img
-                                src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
-                                width="75"
-                                alt="FCT Logo"
+                                src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                                width='75'
+                                alt='FCT Logo'
                                 style={{ marginLeft: "auto" }}
                             />
                         </Box>

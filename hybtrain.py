@@ -1102,7 +1102,7 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, method=1):
 
         plt.xlabel('Time (s)')
         plt.ylabel('Concentration')
-        plt.title(f"Species {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+        plt.title(f"Specie {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         #plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)

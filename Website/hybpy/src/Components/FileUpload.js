@@ -31,11 +31,17 @@ import {
     MenuItem,
     Tooltip,
     tooltipClasses,
-    Link,
     Checkbox,
 } from "@mui/material";
 import * as XLSX from "xlsx";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+} from "@mui/material";
 import logo from "../Image/HYBpyINVIS_logo_BETA.png";
 import { LineChart } from "./LineChart";
 import InfoIcon from "@mui/icons-material/Info";
@@ -110,7 +116,6 @@ const extractValue = (content, key, defaultValue) => {
 };
 
 function FileUpload() {
-
     const [selectedFile1, setSelectedFile1] = useState(null);
     const [file1Content, setFile1Content] = useState("");
     const [selectedFile2, setSelectedFile2] = useState(null);
@@ -132,8 +137,8 @@ function FileUpload() {
     const [selectedHeaders, setSelectedHeaders] = useState([]);
     const [headerModalConfig, setHeaderModalConfig] = useState({
         headers: [],
-        onSave: () => { },
-        handleClose: () => { },
+        onSave: () => {},
+        handleClose: () => {},
     });
     const [mlmModalOpen, setMlmModalOpen] = useState(false);
     const [speciesOptions, setSpeciesOptions] = useState([]);
@@ -262,11 +267,14 @@ function FileUpload() {
 
         if (!updatedContent.includes("time.tspan=")) {
             uniquePrefixes.forEach((prefix) => {
-                updatedContent = `${prefix}.time.tspan=${tspan}\n` + updatedContent;
+                updatedContent =
+                    `${prefix}.time.tspan=${tspan}\n` + updatedContent;
             });
         }
 
-        let controlExists = updatedContent.includes("% control---------------------------");
+        let controlExists = updatedContent.includes(
+            "% control---------------------------"
+        );
         let configExists = updatedContent.includes("% %model configuration");
         let mlmExists = updatedContent.includes(
             "% % MLM - Machine Learning Model --------------------------------------------"
@@ -274,7 +282,9 @@ function FileUpload() {
 
         if (headers.length > 0) {
             if (!controlExists) {
-                console.log("Control section does not exist, opening header modal...");
+                console.log(
+                    "Control section does not exist, opening header modal..."
+                );
                 if (selectedHeaders.length === 0) {
                     const newSelectedHeaders = await openHeaderModal(headers);
                     setSelectedHeaders(newSelectedHeaders);
@@ -285,26 +295,39 @@ function FileUpload() {
 
         if (selectedHeaders.length > 0 && !controlExists) {
             let controlSection = `% control---------------------------\n`;
-            controlSection += `${uniquePrefixes.values().next().value}.ncontrol=${selectedHeaders.length
-                };\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.ncontrol=${selectedHeaders.length};\n`;
 
             selectedHeaders.forEach((header, index) => {
-                let maxHeaderValue = Math.max(...batchData.map((row) => row[header]));
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).id= '${header}';\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).val= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).min= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).max= ${maxHeaderValue};\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).constant= 1;\n`;
+                let maxHeaderValue = Math.max(
+                    ...batchData.map((row) => row[header])
+                );
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).id= '${header}';\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).val= 0;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).min= 0;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).max= ${maxHeaderValue};\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).constant= 1;\n`;
             });
 
-            controlSection += `${uniquePrefixes.values().next().value
-                }.fun_control=@control_function_${uniquePrefixes.values().next().value};\n`;
-            controlSection += `${uniquePrefixes.values().next().value}.fun_event=[];\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.fun_control=@control_function_${
+                uniquePrefixes.values().next().value
+            };\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.fun_event=[];\n`;
 
             updatedContent += `\n${controlSection}`;
             controlExists = true;
@@ -318,10 +341,22 @@ function FileUpload() {
         });
 
         if (!mlmExists) {
-            const speciesOptions = extractOptionsFromHmod(updatedContent, "species");
-            const controlOptions = extractOptionsFromHmod(updatedContent, "control");
-            const parameterOptions = extractOptionsFromHmod(updatedContent, "parameters");
-            const compartmentOptions = extractOptionsFromHmod(updatedContent, "compartments");
+            const speciesOptions = extractOptionsFromHmod(
+                updatedContent,
+                "species"
+            );
+            const controlOptions = extractOptionsFromHmod(
+                updatedContent,
+                "control"
+            );
+            const parameterOptions = extractOptionsFromHmod(
+                updatedContent,
+                "parameters"
+            );
+            const compartmentOptions = extractOptionsFromHmod(
+                updatedContent,
+                "compartments"
+            );
 
             setSpeciesOptions(speciesOptions);
             setControlOptions(controlOptions);
@@ -331,61 +366,113 @@ function FileUpload() {
             const mlmOptions = await openMlmModal();
             if (Object.keys(mlmOptions).length > 0) {
                 let mlmSection = `% % MLM - Machine Learning Model --------------------------------------------\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.id = 'mlpnet';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.nx = ${mlmOptions.nx
-                    };\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.id = 'mlpnet';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.nx = ${mlmOptions.nx};\n`;
 
                 mlmOptions.xOptions.forEach((x, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
-                        }).id = 'anninp${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
-                        }).val= '${x.val}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
-                        }).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
-                        }).max= ${Math.max(...batchData.map((row) => row[x.val]))};\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).val= '${x.val}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).min= 0;\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).max= ${Math.max(
+                        ...batchData.map((row) => row[x.val])
+                    )};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.ny = ${mlmOptions.ny
-                    };\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.ny = ${mlmOptions.ny};\n`;
 
                 mlmOptions.yOptions.forEach((y, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
-                        }).id = '${y.id}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
-                        }).val= 'rann${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
-                        }).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
-                        }).max= ${Math.max(...batchData.map((row) => row[y.id]))};\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).id = '${y.id}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).min= 0;\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).max= ${Math.max(
+                        ...batchData.map((row) => row[y.id])
+                    )};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.options={'hidden nodes', [1]};\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.layer=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.symbolic='full-symbolic';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.symbolic='semi-symbolic';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.datasource=3;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.datafun=@${uniquePrefixes.values().next().value
-                    };\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.options={'hidden nodes', [1]};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.layer=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.symbolic='full-symbolic';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.symbolic='semi-symbolic';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.datasource=3;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.datafun=@${uniquePrefixes.values().next().value};\n`;
 
                 mlmSection += `%training configuration\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mode=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.method=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.jacobian=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.hessian=0;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.derivativecheck='off';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.niter=400;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.niteroptim=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.nstep=2;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.display='off';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.bootstrap=0;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.nensemble=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.crossval=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mode=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.method=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.jacobian=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.hessian=0;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.derivativecheck='off';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.niter=400;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.niteroptim=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.nstep=2;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.display='off';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.bootstrap=0;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.nensemble=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.crossval=1;\n`;
 
                 updatedContent += `\n${mlmSection}`;
                 mlmExists = true;
@@ -394,8 +481,16 @@ function FileUpload() {
 
         updatedContent += `\nend`;
 
-        console.log("Updated Content inside ensureHmodSections: ", updatedContent);
-        console.log("Config exists: ", configExists, " Control exists: ", controlExists);
+        console.log(
+            "Updated Content inside ensureHmodSections: ",
+            updatedContent
+        );
+        console.log(
+            "Config exists: ",
+            configExists,
+            " Control exists: ",
+            controlExists
+        );
         if (controlExists && configExists && mlmExists) return updatedContent;
     };
 
@@ -413,7 +508,9 @@ function FileUpload() {
                 const updatedContent = await ensureHmodSections(
                     content,
                     file2Content,
-                    Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+                    Object.keys(file2Content[0] || {}).filter(
+                        (key) => key !== "time"
+                    ),
                     handleOpenHeaderModal,
                     selectedHeaders,
                     mlmOptions
@@ -423,7 +520,9 @@ function FileUpload() {
                     console.log("Updated Content: ", updatedContent);
                     setFile1Content(updatedContent);
                 } else {
-                    console.log("Updated content not set because ensureHmodSections returned null");
+                    console.log(
+                        "Updated content not set because ensureHmodSections returned null"
+                    );
                 }
 
                 const regexPrefix = /(\w+)\.nspecies=/g;
@@ -436,13 +535,21 @@ function FileUpload() {
                 let initialValues = {};
                 uniquePrefixes.forEach((prefix) => {
                     const hiddenNodesMatch = updatedContent.match(
-                        new RegExp(`${prefix}\\.mlm\\.options=\\{'hidden nodes', \\[(.*?)\\]\\};`)
+                        new RegExp(
+                            `${prefix}\\.mlm\\.options=\\{'hidden nodes', \\[(.*?)\\]\\};`
+                        )
                     );
 
                     if (hiddenNodesMatch) {
-                        console.log("Hidden Nodes Found: ", hiddenNodesMatch[1]);
+                        console.log(
+                            "Hidden Nodes Found: ",
+                            hiddenNodesMatch[1]
+                        );
                     } else {
-                        console.log("Hidden Nodes Not Found for prefix: ", prefix);
+                        console.log(
+                            "Hidden Nodes Not Found for prefix: ",
+                            prefix
+                        );
                     }
 
                     const hiddenNodes = hiddenNodesMatch
@@ -453,14 +560,46 @@ function FileUpload() {
                         ...initialValues,
                         hiddenNodes,
                         layer: extractLayerValue(updatedContent, prefix, ""),
-                        tau: extractValue(updatedContent, `${prefix}.time.TAU`, ""),
-                        mode: extractValue(updatedContent, `${prefix}.mode`, ""),
-                        method: extractValue(updatedContent, `${prefix}.method`, ""),
-                        jacobian: extractValue(updatedContent, `${prefix}.jacobian`, ""),
-                        hessian: extractValue(updatedContent, `${prefix}.hessian`, ""),
-                        niter: extractValue(updatedContent, `${prefix}.niter`, ""),
-                        nstep: extractValue(updatedContent, `${prefix}.nstep`, ""),
-                        bootstrap: extractValue(updatedContent, `${prefix}.bootstrap`, ""),
+                        tau: extractValue(
+                            updatedContent,
+                            `${prefix}.time.TAU`,
+                            ""
+                        ),
+                        mode: extractValue(
+                            updatedContent,
+                            `${prefix}.mode`,
+                            ""
+                        ),
+                        method: extractValue(
+                            updatedContent,
+                            `${prefix}.method`,
+                            ""
+                        ),
+                        jacobian: extractValue(
+                            updatedContent,
+                            `${prefix}.jacobian`,
+                            ""
+                        ),
+                        hessian: extractValue(
+                            updatedContent,
+                            `${prefix}.hessian`,
+                            ""
+                        ),
+                        niter: extractValue(
+                            updatedContent,
+                            `${prefix}.niter`,
+                            ""
+                        ),
+                        nstep: extractValue(
+                            updatedContent,
+                            `${prefix}.nstep`,
+                            ""
+                        ),
+                        bootstrap: extractValue(
+                            updatedContent,
+                            `${prefix}.bootstrap`,
+                            ""
+                        ),
                     };
                 });
 
@@ -488,7 +627,8 @@ function FileUpload() {
 
             data.forEach((row, index) => {
                 const timeValue = row["time"];
-                const nextTimeValue = index + 1 < data.length ? data[index + 1]["time"] : null;
+                const nextTimeValue =
+                    index + 1 < data.length ? data[index + 1]["time"] : null;
 
                 if (nextTimeValue !== null && nextTimeValue < timeValue) {
                     currentBatch.push(row);
@@ -570,8 +710,11 @@ function FileUpload() {
         })
             .then((response) => {
                 const disposition = response.headers.get("Content-Disposition");
-                const fileNameMatch = disposition && disposition.match(/filename="(.+)"/);
-                const csvFileName = fileNameMatch ? fileNameMatch[1] : `Example${templateType}.csv`;
+                const fileNameMatch =
+                    disposition && disposition.match(/filename="(.+)"/);
+                const csvFileName = fileNameMatch
+                    ? fileNameMatch[1]
+                    : `Example${templateType}.csv`;
 
                 return response.blob().then((blob) => ({ blob, csvFileName }));
             })
@@ -604,9 +747,14 @@ function FileUpload() {
                     data.forEach((row, index) => {
                         const timeValue = row["time"];
                         const nextTimeValue =
-                            index + 1 < data.length ? data[index + 1]["time"] : null;
+                            index + 1 < data.length
+                                ? data[index + 1]["time"]
+                                : null;
 
-                        if (nextTimeValue !== null && nextTimeValue < timeValue) {
+                        if (
+                            nextTimeValue !== null &&
+                            nextTimeValue < timeValue
+                        ) {
                             currentBatch.push(row);
                             separatedBatches.push(currentBatch);
                             currentBatch = [];
@@ -643,7 +791,9 @@ function FileUpload() {
                     const updatedContent = ensureHmodSections(
                         fileContent,
                         file2Content,
-                        Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+                        Object.keys(file2Content[0] || {}).filter(
+                            (key) => key !== "time"
+                        ),
                         handleOpenHeaderModal,
                         selectedHeaders,
                         mlmOptions
@@ -659,7 +809,6 @@ function FileUpload() {
                     type: "text/plain",
                 });
 
-
                 setSelectedFile1(updatedFileObject);
 
                 const file = updatedFileObject;
@@ -671,7 +820,9 @@ function FileUpload() {
                         const updatedContent = await ensureHmodSections(
                             content,
                             file2Content,
-                            Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+                            Object.keys(file2Content[0] || {}).filter(
+                                (key) => key !== "time"
+                            ),
                             handleOpenHeaderModal,
                             selectedHeaders,
                             mlmOptions
@@ -682,7 +833,9 @@ function FileUpload() {
                         const regexPrefix = /(\w+)\.nspecies=/g;
                         const uniquePrefixes = new Set();
                         let match;
-                        while ((match = regexPrefix.exec(updatedContent)) !== null) {
+                        while (
+                            (match = regexPrefix.exec(updatedContent)) !== null
+                        ) {
                             uniquePrefixes.add(match[1]);
                         }
 
@@ -695,9 +848,15 @@ function FileUpload() {
                             );
 
                             if (hiddenNodesMatch) {
-                                console.log("Hidden Nodes Found: ", hiddenNodesMatch[1]);
+                                console.log(
+                                    "Hidden Nodes Found: ",
+                                    hiddenNodesMatch[1]
+                                );
                             } else {
-                                console.log("Hidden Nodes Not Found for prefix: ", prefix);
+                                console.log(
+                                    "Hidden Nodes Not Found for prefix: ",
+                                    prefix
+                                );
                             }
 
                             const hiddenNodes = hiddenNodesMatch
@@ -707,15 +866,51 @@ function FileUpload() {
                             initialValues = {
                                 ...initialValues,
                                 hiddenNodes,
-                                layer: extractLayerValue(updatedContent, prefix, ""),
-                                tau: extractValue(updatedContent, `${prefix}.time.TAU`, ""),
-                                mode: extractValue(updatedContent, `${prefix}.mode`, ""),
-                                method: extractValue(updatedContent, `${prefix}.method`, ""),
-                                jacobian: extractValue(updatedContent, `${prefix}.jacobian`, ""),
-                                hessian: extractValue(updatedContent, `${prefix}.hessian`, ""),
-                                niter: extractValue(updatedContent, `${prefix}.niter`, ""),
-                                nstep: extractValue(updatedContent, `${prefix}.nstep`, ""),
-                                bootstrap: extractValue(updatedContent, `${prefix}.bootstrap`, ""),
+                                layer: extractLayerValue(
+                                    updatedContent,
+                                    prefix,
+                                    ""
+                                ),
+                                tau: extractValue(
+                                    updatedContent,
+                                    `${prefix}.time.TAU`,
+                                    ""
+                                ),
+                                mode: extractValue(
+                                    updatedContent,
+                                    `${prefix}.mode`,
+                                    ""
+                                ),
+                                method: extractValue(
+                                    updatedContent,
+                                    `${prefix}.method`,
+                                    ""
+                                ),
+                                jacobian: extractValue(
+                                    updatedContent,
+                                    `${prefix}.jacobian`,
+                                    ""
+                                ),
+                                hessian: extractValue(
+                                    updatedContent,
+                                    `${prefix}.hessian`,
+                                    ""
+                                ),
+                                niter: extractValue(
+                                    updatedContent,
+                                    `${prefix}.niter`,
+                                    ""
+                                ),
+                                nstep: extractValue(
+                                    updatedContent,
+                                    `${prefix}.nstep`,
+                                    ""
+                                ),
+                                bootstrap: extractValue(
+                                    updatedContent,
+                                    `${prefix}.bootstrap`,
+                                    ""
+                                ),
                             };
                         });
 
@@ -734,7 +929,7 @@ function FileUpload() {
 
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
         <Tooltip {...props} classes={{ popper: className }} />
-    ))(({ }) => ({
+    ))(({}) => ({
         [`& .${tooltipClasses.tooltip}`]: {
             maxWidth: 200,
         },
@@ -763,7 +958,9 @@ function FileUpload() {
             "nstep",
             "bootstrap",
         ];
-        const missingFields = requiredFields.filter((field) => !hmodOptions[field]);
+        const missingFields = requiredFields.filter(
+            (field) => !hmodOptions[field]
+        );
 
         if (missingFields.length > 0) {
             alert(
@@ -792,9 +989,13 @@ function FileUpload() {
             const updatedFile = new Blob([updatedContent], {
                 type: "text/plain",
             });
-            const updatedFileObject = new File([updatedFile], selectedFile1.name, {
-                type: selectedFile1.type,
-            });
+            const updatedFileObject = new File(
+                [updatedFile],
+                selectedFile1.name,
+                {
+                    type: selectedFile1.type,
+                }
+            );
             setFile1Content(updatedContent);
             setSelectedFile1(updatedFileObject);
             uploadFiles(updatedFileObject);
@@ -927,7 +1128,11 @@ function FileUpload() {
 
     const isStartTrainingDisabled = () => {
         if (mode === "1") {
-            return train_batches.size === 0 || test_batches.size === 0 || description === "";
+            return (
+                train_batches.size === 0 ||
+                test_batches.size === 0 ||
+                description === ""
+            );
         } else if (mode === "2") {
             return description === "";
         }
@@ -959,14 +1164,30 @@ function FileUpload() {
             ] = `${prefix}.mlm.options={'hidden nodes', [${updatedOptions.hiddenNodes.join(
                 " "
             )}]};`;
-            optionsMap[`${prefix}\\.mlm\\.layer`] = `${prefix}.mlm.layer=${updatedOptions.layer};`;
-            optionsMap[`${prefix}\\.time\\.TAU`] = `${prefix}.time.TAU=${updatedOptions.tau};`;
-            optionsMap[`${prefix}\\.mode`] = `${prefix}.mode=${updatedOptions.mode};`;
-            optionsMap[`${prefix}\\.method`] = `${prefix}.method=${updatedOptions.method};`;
-            optionsMap[`${prefix}\\.jacobian`] = `${prefix}.jacobian=${updatedOptions.jacobian};`;
-            optionsMap[`${prefix}\\.hessian`] = `${prefix}.hessian=${updatedOptions.hessian};`;
-            optionsMap[`${prefix}\\.niter`] = `${prefix}.niter=${updatedOptions.niter};`;
-            optionsMap[`${prefix}\\.nstep`] = `${prefix}.nstep=${updatedOptions.nstep};`;
+            optionsMap[
+                `${prefix}\\.mlm\\.layer`
+            ] = `${prefix}.mlm.layer=${updatedOptions.layer};`;
+            optionsMap[
+                `${prefix}\\.time\\.TAU`
+            ] = `${prefix}.time.TAU=${updatedOptions.tau};`;
+            optionsMap[
+                `${prefix}\\.mode`
+            ] = `${prefix}.mode=${updatedOptions.mode};`;
+            optionsMap[
+                `${prefix}\\.method`
+            ] = `${prefix}.method=${updatedOptions.method};`;
+            optionsMap[
+                `${prefix}\\.jacobian`
+            ] = `${prefix}.jacobian=${updatedOptions.jacobian};`;
+            optionsMap[
+                `${prefix}\\.hessian`
+            ] = `${prefix}.hessian=${updatedOptions.hessian};`;
+            optionsMap[
+                `${prefix}\\.niter`
+            ] = `${prefix}.niter=${updatedOptions.niter};`;
+            optionsMap[
+                `${prefix}\\.nstep`
+            ] = `${prefix}.nstep=${updatedOptions.nstep};`;
             optionsMap[
                 `${prefix}\\.bootstrap`
             ] = `${prefix}.bootstrap=${updatedOptions.bootstrap};`;
@@ -986,10 +1207,11 @@ function FileUpload() {
         setSelectedFile1(updatedFileObject);
     };
 
-
     const navigate = useNavigate();
     const location = useLocation();
-    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const [open, setOpen] = React.useState(
+        localStorage.getItem("drawerOpen") === "true"
+    );
     const toggleDrawer = () => {
         setOpen(!open);
         localStorage.setItem("drawerOpen", !open);
@@ -1029,7 +1251,12 @@ function FileUpload() {
                                 color='inherit'
                                 size='small'
                                 onClick={() => navigateToPage("/")}>
-                                <img src={logo} alt='logo' width='200' height='75' />
+                                <img
+                                    src={logo}
+                                    alt='logo'
+                                    width='200'
+                                    height='75'
+                                />
                             </IconButton>
                         </Typography>
                     </Toolbar>
@@ -1040,13 +1267,14 @@ function FileUpload() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "flex-end",
+                            marginBottom: "4px",
                         }}>
                         <IconButton onClick={toggleDrawer}>
                             <ChevronLeftIcon />
                         </IconButton>
                     </Toolbar>
                     <Divider />
-                    <List component='nav'>
+                    <List component='nav' disablePadding>
                         {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
@@ -1066,7 +1294,9 @@ function FileUpload() {
                     <Toolbar />
                     <Container maxWidth='lg' sx={{}}>
                         <div style={{ overflow: "auto", marginTop: 20 }}>
-                            <h2 style={{ float: "left", marginTop: 0 }}>New Hybrid Model</h2>
+                            <h2 style={{ float: "left", marginTop: 0 }}>
+                                New Hybrid Model
+                            </h2>
                             <Button
                                 onClick={() => getTemplate(2)}
                                 variant='contained'
@@ -1103,12 +1333,17 @@ function FileUpload() {
                                             display: "flex",
                                             alignItems: "center",
                                         }}>
-                                        <Typography variant='h5'> Step 1: Project Title</Typography>
+                                        <Typography variant='h5'>
+                                            {" "}
+                                            Step 1: Project Title
+                                        </Typography>
 
                                         <Tooltip
                                             title='In this section you can write the Title of the Project.'
                                             arrow>
-                                            <IconButton size='xsmall' sx={{ ml: 0.5, mb: 1 }}>
+                                            <IconButton
+                                                size='xsmall'
+                                                sx={{ ml: 0.5, mb: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
@@ -1154,12 +1389,15 @@ function FileUpload() {
                                         }}>
                                         <Typography variant='h5'>
                                             {" "}
-                                            Step 2: Load CSV containing the experimental data
+                                            Step 2: Load CSV containing the
+                                            experimental data
                                         </Typography>
                                         <Tooltip
                                             title='Upload the CSV file which is a file containing the experimental data. See template structure.'
                                             arrow>
-                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                            <IconButton
+                                                size='small'
+                                                sx={{ ml: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
@@ -1185,25 +1423,40 @@ function FileUpload() {
                                             overflow: "auto",
                                             fontSize: 1,
                                         }}>
-                                        <Table size='small' aria-label='a dense table'>
+                                        <Table
+                                            size='small'
+                                            aria-label='a dense table'>
                                             <TableHead>
                                                 <TableRow>
                                                     {file2Content.length > 0 &&
-                                                        Object.keys(file2Content[0]).map((key) => (
-                                                            <TableCell key={key}>{key}</TableCell>
+                                                        Object.keys(
+                                                            file2Content[0]
+                                                        ).map((key) => (
+                                                            <TableCell
+                                                                key={key}>
+                                                                {key}
+                                                            </TableCell>
                                                         ))}
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {file2Content.map((row, idx) => (
-                                                    <TableRow key={idx}>
-                                                        {Object.keys(file2Content[0]).map((key) => (
-                                                            <TableCell key={idx + key}>
-                                                                {row[key]}
-                                                            </TableCell>
-                                                        ))}
-                                                    </TableRow>
-                                                ))}
+                                                {file2Content.map(
+                                                    (row, idx) => (
+                                                        <TableRow key={idx}>
+                                                            {Object.keys(
+                                                                file2Content[0]
+                                                            ).map((key) => (
+                                                                <TableCell
+                                                                    key={
+                                                                        idx +
+                                                                        key
+                                                                    }>
+                                                                    {row[key]}
+                                                                </TableCell>
+                                                            ))}
+                                                        </TableRow>
+                                                    )
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
@@ -1215,7 +1468,9 @@ function FileUpload() {
                                         justifyContent: "flex-end",
                                     }}>
                                     <Button
-                                        onClick={() => getTemplateDownloadLink(3, "xlsx")}
+                                        onClick={() =>
+                                            getTemplateDownloadLink(3, "xlsx")
+                                        }
                                         variant='contained'
                                         sx={{
                                             height: "100%",
@@ -1261,7 +1516,9 @@ function FileUpload() {
                                     onClose={() => setModalOpen(false)}
                                     maxWidth='lg'
                                     fullWidth>
-                                    <DialogTitle>Experimental Data Visualization</DialogTitle>
+                                    <DialogTitle>
+                                        Experimental Data Visualization
+                                    </DialogTitle>
                                     <DialogContent>
                                         <Tabs
                                             value={tabIndex}
@@ -1271,7 +1528,10 @@ function FileUpload() {
                                             variant='scrollable'
                                             scrollButtons='auto'>
                                             {batchData.map((batch, index) => (
-                                                <Tab key={index} label={`Batch ${index + 1}`} />
+                                                <Tab
+                                                    key={index}
+                                                    label={`Batch ${index + 1}`}
+                                                />
                                             ))}
                                         </Tabs>
                                         <DialogContent>
@@ -1280,7 +1540,9 @@ function FileUpload() {
                                                     key={index}
                                                     style={{
                                                         display:
-                                                            tabIndex === index ? "block" : "none",
+                                                            tabIndex === index
+                                                                ? "block"
+                                                                : "none",
                                                     }}>
                                                     <LineChart data={batch} />
                                                 </div>
@@ -1288,7 +1550,9 @@ function FileUpload() {
                                         </DialogContent>
                                     </DialogContent>
                                     <DialogActions>
-                                        <Button onClick={() => setModalOpen(false)} color='primary'>
+                                        <Button
+                                            onClick={() => setModalOpen(false)}
+                                            color='primary'>
                                             Close
                                         </Button>
                                     </DialogActions>
@@ -1309,11 +1573,16 @@ function FileUpload() {
                                             display: "flex",
                                             alignItems: "center",
                                         }}>
-                                        <Typography variant='h5'> Step 3: Load HMOD</Typography>
+                                        <Typography variant='h5'>
+                                            {" "}
+                                            Step 3: Load HMOD
+                                        </Typography>
                                         <Tooltip
                                             title='Upload the HMOD file (see template structure) or use SBML2HYB tool to generate the HMOD file.'
                                             arrow>
-                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                            <IconButton
+                                                size='small'
+                                                sx={{ ml: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
@@ -1343,7 +1612,9 @@ function FileUpload() {
                                         justifyContent: "flex-end",
                                     }}>
                                     <Button
-                                        onClick={() => getTemplateDownloadLink(3, "hmod")}
+                                        onClick={() =>
+                                            getTemplateDownloadLink(3, "hmod")
+                                        }
                                         variant='contained'
                                         sx={{
                                             height: "100%",
@@ -1351,7 +1622,7 @@ function FileUpload() {
                                             marginRight: 2,
                                         }}
                                         disabled={progress < 1}>
-                                        Get Csv Template
+                                        Get Hmod Template
                                     </Button>
                                     <label htmlFor='hmod-upload'>
                                         <Button
@@ -1399,7 +1670,8 @@ function FileUpload() {
                                         }}>
                                         <Typography variant='h5'>
                                             {" "}
-                                            Step 4: Select data split (train/test sets)
+                                            Step 4: Select data split
+                                            (train/test sets)
                                         </Typography>
                                     </Paper>
                                 </Grid>
@@ -1416,11 +1688,15 @@ function FileUpload() {
                                                 display: "flex",
                                                 alignItems: "center",
                                             }}>
-                                            <Typography variant='h5'>Batch Selection</Typography>
+                                            <Typography variant='h5'>
+                                                Batch Selection
+                                            </Typography>
                                             <Tooltip
                                                 title='The experimental dataset selections can be manually adjust or automatically split into training/test sets (2/3 of the data split for the trainning).'
                                                 arrow>
-                                                <IconButton size='small' sx={{ ml: 1 }}>
+                                                <IconButton
+                                                    size='small'
+                                                    sx={{ ml: 1 }}>
                                                     <InfoIcon />
                                                 </IconButton>
                                             </Tooltip>
@@ -1432,8 +1708,12 @@ function FileUpload() {
                                             sx={{ mt: 2 }}
                                             onChange={handleModeChange}
                                             disabled={progress < 3}>
-                                            <MenuItem value={"1"}>Manual</MenuItem>
-                                            <MenuItem value={"2"}>Automatic</MenuItem>
+                                            <MenuItem value={"1"}>
+                                                Manual
+                                            </MenuItem>
+                                            <MenuItem value={"2"}>
+                                                Automatic
+                                            </MenuItem>
                                         </Select>
                                     </Paper>
                                 </Grid>
@@ -1450,7 +1730,10 @@ function FileUpload() {
                                                     overflow: "auto",
                                                 }}>
                                                 <Typography variant='h6'>
-                                                    Available Batches: {availableBatches.join(", ")}
+                                                    Available Batches:{" "}
+                                                    {availableBatches.join(
+                                                        ", "
+                                                    )}
                                                 </Typography>
                                             </Paper>
                                         </Grid>
@@ -1466,17 +1749,23 @@ function FileUpload() {
                                                 <Typography variant='h6'>
                                                     Select Train Batches:{" "}
                                                 </Typography>
-                                                {availableBatches.map((batch) => (
-                                                    <div key={batch}>
-                                                        <Checkbox
-                                                            checked={train_batches.has(batch)}
-                                                            onChange={() =>
-                                                                handleTrainBatchSelection(batch)
-                                                            }
-                                                        />
-                                                        {batch}
-                                                    </div>
-                                                ))}
+                                                {availableBatches.map(
+                                                    (batch) => (
+                                                        <div key={batch}>
+                                                            <Checkbox
+                                                                checked={train_batches.has(
+                                                                    batch
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleTrainBatchSelection(
+                                                                        batch
+                                                                    )
+                                                                }
+                                                            />
+                                                            {batch}
+                                                        </div>
+                                                    )
+                                                )}
                                             </Paper>
                                         </Grid>
                                         <Grid item xs={20}>
@@ -1491,17 +1780,23 @@ function FileUpload() {
                                                 <Typography variant='h6'>
                                                     Select Test Batches:{" "}
                                                 </Typography>
-                                                {availableBatches.map((batch) => (
-                                                    <div key={batch}>
-                                                        <Checkbox
-                                                            checked={test_batches.has(batch)}
-                                                            onChange={() =>
-                                                                handleTestBatchSelection(batch)
-                                                            }
-                                                        />
-                                                        {batch}
-                                                    </div>
-                                                ))}
+                                                {availableBatches.map(
+                                                    (batch) => (
+                                                        <div key={batch}>
+                                                            <Checkbox
+                                                                checked={test_batches.has(
+                                                                    batch
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleTestBatchSelection(
+                                                                        batch
+                                                                    )
+                                                                }
+                                                            />
+                                                            {batch}
+                                                        </div>
+                                                    )
+                                                )}
                                             </Paper>
                                         </Grid>
                                         <Grid
@@ -1573,8 +1868,9 @@ function FileUpload() {
                             marginTop: "auto",
                         }}>
                         <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
-                            Universidade NOVA de Lisboa 2024. All rights reserved.
+                            &copy; {new Date().getFullYear()} Faculdade de
+                            Ciências e Tecnologia Universidade NOVA de Lisboa
+                            2024. All rights reserved.
                         </p>
 
                         <img
@@ -1593,7 +1889,10 @@ function FileUpload() {
                 initialValues={initialValues}
                 setHmodOptions={setHmodOptions}
             />
-            <TrainingModal open={trainingModalOpen} handleClose={handleCloseTrainingModal} />
+            <TrainingModal
+                open={trainingModalOpen}
+                handleClose={handleCloseTrainingModal}
+            />
 
             <ControlModalSelection
                 open={headerModalOpen}

@@ -37,7 +37,14 @@ import {
     Checkbox,
 } from "@mui/material";
 import * as XLSX from "xlsx";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+} from "@mui/material";
 import logo from "../Image/HYBpyINVIS_logo_BETA.png";
 import { LineChart } from "./LineChart";
 import InfoIcon from "@mui/icons-material/Info";
@@ -78,31 +85,31 @@ const AppBar = styled(MuiAppBar, {
     }),
 }));
 
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" })(
-    ({ theme, open }) => ({
-        "& .MuiDrawer-paper": {
-            position: "relative",
-            whiteSpace: "nowrap",
-            width: drawerWidth,
+const Drawer = styled(MuiDrawer, {
+    shouldForwardProp: (prop) => prop !== "open",
+})(({ theme, open }) => ({
+    "& .MuiDrawer-paper": {
+        position: "relative",
+        whiteSpace: "nowrap",
+        width: drawerWidth,
+        transition: theme.transitions.create("width", {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
+        boxSizing: "border-box",
+        ...(!open && {
+            overflowX: "hidden",
             transition: theme.transitions.create("width", {
                 easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
+                duration: theme.transitions.duration.leavingScreen,
             }),
-            boxSizing: "border-box",
-            ...(!open && {
-                overflowX: "hidden",
-                transition: theme.transitions.create("width", {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.leavingScreen,
-                }),
-                width: theme.spacing(7),
-                [theme.breakpoints.up("sm")]: {
-                    width: theme.spacing(9),
-                },
-            }),
-        },
-    })
-);
+            width: theme.spacing(7),
+            [theme.breakpoints.up("sm")]: {
+                width: theme.spacing(9),
+            },
+        }),
+    },
+}));
 
 const defaultTheme = createTheme();
 const extractValue = (content, key, defaultValue) => {
@@ -133,8 +140,8 @@ function Simulations() {
     const [selectedHeaders, setSelectedHeaders] = useState([]);
     const [headerModalConfig, setHeaderModalConfig] = useState({
         headers: [],
-        onSave: () => { },
-        handleClose: () => { },
+        onSave: () => {},
+        handleClose: () => {},
     });
     const [trainedWeights, setTrainedWeights] = useState("");
 
@@ -178,7 +185,10 @@ function Simulations() {
     const handleRunSelection = async (run) => {
         setSelectedRun(run);
         console.log("Selected Run: ", run);
-        console.log("run.response_data.new_hmod_url: ", run.response_data.new_hmod_url);
+        console.log(
+            "run.response_data.new_hmod_url: ",
+            run.response_data.new_hmod_url
+        );
 
         try {
             const response = await fetch(`https://api.hybpy.com/get-new-hmod`, {
@@ -192,7 +202,9 @@ function Simulations() {
             });
 
             if (!response.ok) {
-                throw new Error("Failed to fetch the HMOD file from the server.");
+                throw new Error(
+                    "Failed to fetch the HMOD file from the server."
+                );
             }
 
             const blob = await response.blob();
@@ -294,7 +306,9 @@ function Simulations() {
     };
 
     const parseWeightsFromHmod = (content) => {
-        const prefixMatch = content.match(/(\w+)\.parameters\(\d+\)\.id="w\d+"/);
+        const prefixMatch = content.match(
+            /(\w+)\.parameters\(\d+\)\.id="w\d+"/
+        );
         if (!prefixMatch) {
             console.error("No prefix found in the HMOD file.");
             return [];
@@ -360,11 +374,14 @@ function Simulations() {
 
         if (!updatedContent.includes("time.tspan=")) {
             uniquePrefixes.forEach((prefix) => {
-                updatedContent = `${prefix}.time.tspan=${tspan}\n` + updatedContent;
+                updatedContent =
+                    `${prefix}.time.tspan=${tspan}\n` + updatedContent;
             });
         }
 
-        let controlExists = updatedContent.includes("% control---------------------------");
+        let controlExists = updatedContent.includes(
+            "% control---------------------------"
+        );
         let configExists = updatedContent.includes("% %model configuration");
         let mlmExists = updatedContent.includes(
             "% % MLM - Machine Learning Model --------------------------------------------"
@@ -372,7 +389,9 @@ function Simulations() {
 
         if (headers.length > 0) {
             if (!controlExists) {
-                console.log("Control section does not exist, opening header modal...");
+                console.log(
+                    "Control section does not exist, opening header modal..."
+                );
                 if (selectedHeaders.length === 0) {
                     const newSelectedHeaders = await openHeaderModal(headers);
                     setSelectedHeaders(newSelectedHeaders);
@@ -383,26 +402,39 @@ function Simulations() {
 
         if (selectedHeaders.length > 0 && !controlExists) {
             let controlSection = `% control---------------------------\n`;
-            controlSection += `${uniquePrefixes.values().next().value}.ncontrol=${selectedHeaders.length
-                };\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.ncontrol=${selectedHeaders.length};\n`;
 
             selectedHeaders.forEach((header, index) => {
-                let maxHeaderValue = Math.max(...batchData.map((row) => row[header]));
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).id= '${header}';\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).val= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).min= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).max= ${maxHeaderValue};\n`;
-                controlSection += `${uniquePrefixes.values().next().value}.control(${index + 1
-                    }).constant= 1;\n`;
+                let maxHeaderValue = Math.max(
+                    ...batchData.map((row) => row[header])
+                );
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).id= '${header}';\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).val= 0;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).min= 0;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).max= ${maxHeaderValue};\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).constant= 1;\n`;
             });
 
-            controlSection += `${uniquePrefixes.values().next().value
-                }.fun_control=@control_function_${uniquePrefixes.values().next().value};\n`;
-            controlSection += `${uniquePrefixes.values().next().value}.fun_event=[];\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.fun_control=@control_function_${
+                uniquePrefixes.values().next().value
+            };\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.fun_event=[];\n`;
 
             updatedContent += `\n${controlSection}`;
             controlExists = true;
@@ -416,10 +448,22 @@ function Simulations() {
         });
 
         if (!mlmExists) {
-            const speciesOptions = extractOptionsFromHmod(updatedContent, "species");
-            const controlOptions = extractOptionsFromHmod(updatedContent, "control");
-            const parameterOptions = extractOptionsFromHmod(updatedContent, "parameters");
-            const compartmentOptions = extractOptionsFromHmod(updatedContent, "compartment");
+            const speciesOptions = extractOptionsFromHmod(
+                updatedContent,
+                "species"
+            );
+            const controlOptions = extractOptionsFromHmod(
+                updatedContent,
+                "control"
+            );
+            const parameterOptions = extractOptionsFromHmod(
+                updatedContent,
+                "parameters"
+            );
+            const compartmentOptions = extractOptionsFromHmod(
+                updatedContent,
+                "compartment"
+            );
 
             setSpeciesOptions(speciesOptions);
             setControlOptions(controlOptions);
@@ -429,61 +473,113 @@ function Simulations() {
             const mlmOptions = await openMlmModal();
             if (Object.keys(mlmOptions).length > 0) {
                 let mlmSection = `% % MLM - Machine Learning Model --------------------------------------------\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.id = 'mlpnet';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.nx = ${mlmOptions.nx
-                    };\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.id = 'mlpnet';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.nx = ${mlmOptions.nx};\n`;
 
                 mlmOptions.xOptions.forEach((x, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
-                        }).id = 'anninp${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
-                        }).val= '${x.val}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
-                        }).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.x(${index + 1
-                        }).max= ${Math.max(...batchData.map((row) => row[x.val]))};\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).val= '${x.val}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).min= 0;\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).max= ${Math.max(
+                        ...batchData.map((row) => row[x.val])
+                    )};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.ny = ${mlmOptions.ny
-                    };\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.ny = ${mlmOptions.ny};\n`;
 
                 mlmOptions.yOptions.forEach((y, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
-                        }).id = '${y.id}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
-                        }).val= 'rann${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
-                        }).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value}.mlm.y(${index + 1
-                        }).max= ${Math.max(...batchData.map((row) => row[y.id]))};\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).id = '${y.id}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).min= 0;\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).max= ${Math.max(
+                        ...batchData.map((row) => row[y.id])
+                    )};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.options={'hidden nodes', [1]};\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mlm.layer=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.symbolic='full-symbolic';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.symbolic='semi-symbolic';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.datasource=3;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.datafun=@${uniquePrefixes.values().next().value
-                    };\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.options={'hidden nodes', [1]};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.layer=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.symbolic='full-symbolic';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.symbolic='semi-symbolic';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.datasource=3;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.datafun=@${uniquePrefixes.values().next().value};\n`;
 
                 mlmSection += `%training configuration\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.mode=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.method=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.jacobian=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.hessian=0;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.derivativecheck='off';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.niter=400;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.niteroptim=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.nstep=2;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.display='off';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.bootstrap=0;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.nensemble=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value}.crossval=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mode=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.method=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.jacobian=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.hessian=0;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.derivativecheck='off';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.niter=400;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.niteroptim=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.nstep=2;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.display='off';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.bootstrap=0;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.nensemble=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.crossval=1;\n`;
 
                 updatedContent += `\n${mlmSection}`;
                 mlmExists = true;
@@ -492,8 +588,16 @@ function Simulations() {
 
         updatedContent += `\nend`;
 
-        console.log("Updated Content inside ensureHmodSections: ", updatedContent);
-        console.log("Config exists: ", configExists, " Control exists: ", controlExists);
+        console.log(
+            "Updated Content inside ensureHmodSections: ",
+            updatedContent
+        );
+        console.log(
+            "Config exists: ",
+            configExists,
+            " Control exists: ",
+            controlExists
+        );
         if (controlExists && configExists && mlmExists) return updatedContent;
     };
 
@@ -511,7 +615,9 @@ function Simulations() {
                 const updatedContent = await ensureHmodSections(
                     content,
                     file2Content,
-                    Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+                    Object.keys(file2Content[0] || {}).filter(
+                        (key) => key !== "time"
+                    ),
                     handleOpenHeaderModal,
                     selectedHeaders,
                     mlmOptions
@@ -524,7 +630,9 @@ function Simulations() {
                     const weights = parseWeightsFromHmod(updatedContent);
                     setTrainedWeights(weights);
                 } else {
-                    console.log("Updated content not set because ensureHmodSections returned null");
+                    console.log(
+                        "Updated content not set because ensureHmodSections returned null"
+                    );
                 }
 
                 const regexPrefix = /(\w+)\.nspecies=/g;
@@ -537,13 +645,21 @@ function Simulations() {
                 let initialValues = {};
                 uniquePrefixes.forEach((prefix) => {
                     const hiddenNodesMatch = updatedContent.match(
-                        new RegExp(`${prefix}\\.mlm\\.options=\\{'hidden nodes', \\[(.*?)\\]\\};`)
+                        new RegExp(
+                            `${prefix}\\.mlm\\.options=\\{'hidden nodes', \\[(.*?)\\]\\};`
+                        )
                     );
 
                     if (hiddenNodesMatch) {
-                        console.log("Hidden Nodes Found: ", hiddenNodesMatch[1]);
+                        console.log(
+                            "Hidden Nodes Found: ",
+                            hiddenNodesMatch[1]
+                        );
                     } else {
-                        console.log("Hidden Nodes Not Found for prefix: ", prefix);
+                        console.log(
+                            "Hidden Nodes Not Found for prefix: ",
+                            prefix
+                        );
                     }
 
                     const hiddenNodes = hiddenNodesMatch
@@ -554,14 +670,46 @@ function Simulations() {
                         ...initialValues,
                         hiddenNodes,
                         layer: extractLayerValue(updatedContent, prefix, ""),
-                        tau: extractValue(updatedContent, `${prefix}.time.TAU`, ""),
-                        mode: extractValue(updatedContent, `${prefix}.mode`, ""),
-                        method: extractValue(updatedContent, `${prefix}.method`, ""),
-                        jacobian: extractValue(updatedContent, `${prefix}.jacobian`, ""),
-                        hessian: extractValue(updatedContent, `${prefix}.hessian`, ""),
-                        niter: extractValue(updatedContent, `${prefix}.niter`, ""),
-                        nstep: extractValue(updatedContent, `${prefix}.nstep`, ""),
-                        bootstrap: extractValue(updatedContent, `${prefix}.bootstrap`, ""),
+                        tau: extractValue(
+                            updatedContent,
+                            `${prefix}.time.TAU`,
+                            ""
+                        ),
+                        mode: extractValue(
+                            updatedContent,
+                            `${prefix}.mode`,
+                            ""
+                        ),
+                        method: extractValue(
+                            updatedContent,
+                            `${prefix}.method`,
+                            ""
+                        ),
+                        jacobian: extractValue(
+                            updatedContent,
+                            `${prefix}.jacobian`,
+                            ""
+                        ),
+                        hessian: extractValue(
+                            updatedContent,
+                            `${prefix}.hessian`,
+                            ""
+                        ),
+                        niter: extractValue(
+                            updatedContent,
+                            `${prefix}.niter`,
+                            ""
+                        ),
+                        nstep: extractValue(
+                            updatedContent,
+                            `${prefix}.nstep`,
+                            ""
+                        ),
+                        bootstrap: extractValue(
+                            updatedContent,
+                            `${prefix}.bootstrap`,
+                            ""
+                        ),
                     };
                 });
 
@@ -589,7 +737,8 @@ function Simulations() {
 
             data.forEach((row, index) => {
                 const timeValue = row["time"];
-                const nextTimeValue = index + 1 < data.length ? data[index + 1]["time"] : null;
+                const nextTimeValue =
+                    index + 1 < data.length ? data[index + 1]["time"] : null;
 
                 if (nextTimeValue !== null && nextTimeValue < timeValue) {
                     currentBatch.push(row);
@@ -642,10 +791,14 @@ function Simulations() {
                 setSelectedFile2(updatedFileObject);
                 const file = selectedFile2;
                 reader.onload = (e) => {
-                    const workbook = XLSX.read(e.target.result, { type: "binary" });
+                    const workbook = XLSX.read(e.target.result, {
+                        type: "binary",
+                    });
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
-                    const data = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    const data = XLSX.utils.sheet_to_json(worksheet, {
+                        defval: "",
+                    });
 
                     const separatedBatches = [];
                     let currentBatch = [];
@@ -653,9 +806,14 @@ function Simulations() {
                     data.forEach((row, index) => {
                         const timeValue = row["time"];
                         const nextTimeValue =
-                            index + 1 < data.length ? data[index + 1]["time"] : null;
+                            index + 1 < data.length
+                                ? data[index + 1]["time"]
+                                : null;
 
-                        if (nextTimeValue !== null && nextTimeValue < timeValue) {
+                        if (
+                            nextTimeValue !== null &&
+                            nextTimeValue < timeValue
+                        ) {
                             currentBatch.push(row);
                             separatedBatches.push(currentBatch);
                             currentBatch = [];
@@ -692,7 +850,9 @@ function Simulations() {
                     const updatedContent = ensureHmodSections(
                         fileContent,
                         file2Content,
-                        Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+                        Object.keys(file2Content[0] || {}).filter(
+                            (key) => key !== "time"
+                        ),
                         handleOpenHeaderModal,
                         selectedHeaders
                     );
@@ -717,7 +877,9 @@ function Simulations() {
                         const updatedContent = await ensureHmodSections(
                             content,
                             file2Content,
-                            Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
+                            Object.keys(file2Content[0] || {}).filter(
+                                (key) => key !== "time"
+                            ),
                             handleOpenHeaderModal,
                             selectedHeaders
                         );
@@ -740,9 +902,15 @@ function Simulations() {
                             );
 
                             if (hiddenNodesMatch) {
-                                console.log("Hidden Nodes Found: ", hiddenNodesMatch[1]);
+                                console.log(
+                                    "Hidden Nodes Found: ",
+                                    hiddenNodesMatch[1]
+                                );
                             } else {
-                                console.log("Hidden Nodes Not Found for prefix: ", prefix);
+                                console.log(
+                                    "Hidden Nodes Not Found for prefix: ",
+                                    prefix
+                                );
                             }
 
                             const hiddenNodes = hiddenNodesMatch
@@ -753,14 +921,46 @@ function Simulations() {
                                 ...initialValues,
                                 hiddenNodes,
                                 layer: extractLayerValue(content, prefix, ""),
-                                tau: extractValue(content, `${prefix}.time.TAU`, ""),
-                                mode: extractValue(content, `${prefix}.mode`, ""),
-                                method: extractValue(content, `${prefix}.method`, ""),
-                                jacobian: extractValue(content, `${prefix}.jacobian}`, ""),
-                                hessian: extractValue(content, `${prefix}.hessian}`, ""),
-                                niter: extractValue(content, `${prefix}.niter}`, ""),
-                                nstep: extractValue(content, `${prefix}.nstep}`, ""),
-                                bootstrap: extractValue(content, `${prefix}.bootstrap}`, ""),
+                                tau: extractValue(
+                                    content,
+                                    `${prefix}.time.TAU`,
+                                    ""
+                                ),
+                                mode: extractValue(
+                                    content,
+                                    `${prefix}.mode`,
+                                    ""
+                                ),
+                                method: extractValue(
+                                    content,
+                                    `${prefix}.method`,
+                                    ""
+                                ),
+                                jacobian: extractValue(
+                                    content,
+                                    `${prefix}.jacobian}`,
+                                    ""
+                                ),
+                                hessian: extractValue(
+                                    content,
+                                    `${prefix}.hessian}`,
+                                    ""
+                                ),
+                                niter: extractValue(
+                                    content,
+                                    `${prefix}.niter}`,
+                                    ""
+                                ),
+                                nstep: extractValue(
+                                    content,
+                                    `${prefix}.nstep}`,
+                                    ""
+                                ),
+                                bootstrap: extractValue(
+                                    content,
+                                    `${prefix}.bootstrap}`,
+                                    ""
+                                ),
                             };
                         });
 
@@ -779,7 +979,7 @@ function Simulations() {
 
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
         <Tooltip {...props} classes={{ popper: className }} />
-    ))(({ }) => ({
+    ))(({}) => ({
         [`& .${tooltipClasses.tooltip}`]: {
             maxWidth: 200,
         },
@@ -808,7 +1008,9 @@ function Simulations() {
             "nstep",
             "bootstrap",
         ];
-        const missingFields = requiredFields.filter((field) => !hmodOptions[field]);
+        const missingFields = requiredFields.filter(
+            (field) => !hmodOptions[field]
+        );
 
         if (missingFields.length > 0) {
             alert(
@@ -834,10 +1036,16 @@ function Simulations() {
             console.log("asdasdasdasdasasd: ", updatedContent);
             setFile1Content(updatedContent);
 
-            const updatedFile = new Blob([updatedContent], { type: "text/plain" });
-            const updatedFileObject = new File([updatedFile], selectedFile1.name, {
-                type: selectedFile1.type,
+            const updatedFile = new Blob([updatedContent], {
+                type: "text/plain",
             });
+            const updatedFileObject = new File(
+                [updatedFile],
+                selectedFile1.name,
+                {
+                    type: selectedFile1.type,
+                }
+            );
             setFile1Content(updatedContent);
             setSelectedFile1(updatedFileObject);
             uploadFiles(updatedFileObject);
@@ -896,7 +1104,9 @@ function Simulations() {
         const userId = auth.currentUser.uid;
         const intervalId = setInterval(async () => {
             try {
-                const response = await fetch(`https://api.hybpy.com/run-status?user_id=${userId}`);
+                const response = await fetch(
+                    `https://api.hybpy.com/run-status?user_id=${userId}`
+                );
                 const data = await response.json();
                 if (data.status === "no_runs") {
                     setRunInProgress(false);
@@ -924,10 +1134,13 @@ function Simulations() {
                     const formData = new FormData();
                     formData.append("file2", selectedFile2);
 
-                    const response = await fetch("https://api.hybpy.com/get-available-batches", {
-                        method: "POST",
-                        body: formData,
-                    });
+                    const response = await fetch(
+                        "https://api.hybpy.com/get-available-batches",
+                        {
+                            method: "POST",
+                            body: formData,
+                        }
+                    );
 
                     const data = await response.json();
                     setAvailableBatches(data);
@@ -966,7 +1179,11 @@ function Simulations() {
 
     const isStartTrainingDisabled = () => {
         if (mode === "1") {
-            return train_batches.size === 0 || test_batches.size === 0 || description === "";
+            return (
+                train_batches.size === 0 ||
+                test_batches.size === 0 ||
+                description === ""
+            );
         } else if (mode === "2") {
             return description === "";
         }
@@ -998,14 +1215,30 @@ function Simulations() {
             ] = `${prefix}.mlm.options={'hidden nodes', [${updatedOptions.hiddenNodes.join(
                 " "
             )}]};`;
-            optionsMap[`${prefix}\\.mlm\\.layer`] = `${prefix}.mlm.layer=${updatedOptions.layer};`;
-            optionsMap[`${prefix}\\.time\\.TAU`] = `${prefix}.time.TAU=${updatedOptions.tau};`;
-            optionsMap[`${prefix}\\.mode`] = `${prefix}.mode=${updatedOptions.mode};`;
-            optionsMap[`${prefix}\\.method`] = `${prefix}.method=${updatedOptions.method};`;
-            optionsMap[`${prefix}\\.jacobian`] = `${prefix}.jacobian=${updatedOptions.jacobian};`;
-            optionsMap[`${prefix}\\.hessian`] = `${prefix}.hessian=${updatedOptions.hessian};`;
-            optionsMap[`${prefix}\\.niter`] = `${prefix}.niter=${updatedOptions.niter};`;
-            optionsMap[`${prefix}\\.nstep`] = `${prefix}.nstep=${updatedOptions.nstep};`;
+            optionsMap[
+                `${prefix}\\.mlm\\.layer`
+            ] = `${prefix}.mlm.layer=${updatedOptions.layer};`;
+            optionsMap[
+                `${prefix}\\.time\\.TAU`
+            ] = `${prefix}.time.TAU=${updatedOptions.tau};`;
+            optionsMap[
+                `${prefix}\\.mode`
+            ] = `${prefix}.mode=${updatedOptions.mode};`;
+            optionsMap[
+                `${prefix}\\.method`
+            ] = `${prefix}.method=${updatedOptions.method};`;
+            optionsMap[
+                `${prefix}\\.jacobian`
+            ] = `${prefix}.jacobian=${updatedOptions.jacobian};`;
+            optionsMap[
+                `${prefix}\\.hessian`
+            ] = `${prefix}.hessian=${updatedOptions.hessian};`;
+            optionsMap[
+                `${prefix}\\.niter`
+            ] = `${prefix}.niter=${updatedOptions.niter};`;
+            optionsMap[
+                `${prefix}\\.nstep`
+            ] = `${prefix}.nstep=${updatedOptions.nstep};`;
             optionsMap[
                 `${prefix}\\.bootstrap`
             ] = `${prefix}.bootstrap=${updatedOptions.bootstrap};`;
@@ -1025,10 +1258,11 @@ function Simulations() {
         setSelectedFile1(updatedFileObject);
     };
 
-
     const navigate = useNavigate();
     const location = useLocation();
-    const [open, setOpen] = React.useState(localStorage.getItem("drawerOpen") === "true");
+    const [open, setOpen] = React.useState(
+        localStorage.getItem("drawerOpen") === "true"
+    );
     const toggleDrawer = () => {
         setOpen(!open);
         localStorage.setItem("drawerOpen", !open);
@@ -1068,7 +1302,12 @@ function Simulations() {
                                 color='inherit'
                                 size='small'
                                 onClick={() => navigateToPage("/")}>
-                                <img src={logo} alt='logo' width='200' height='75' />
+                                <img
+                                    src={logo}
+                                    alt='logo'
+                                    width='200'
+                                    height='75'
+                                />
                             </IconButton>
                         </Typography>
                     </Toolbar>
@@ -1079,13 +1318,14 @@ function Simulations() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "flex-end",
+                            marginBottom: "4px",
                         }}>
                         <IconButton onClick={toggleDrawer}>
                             <ChevronLeftIcon />
                         </IconButton>
                     </Toolbar>
                     <Divider />
-                    <List component='nav'>
+                    <List component='nav' disablePadding>
                         {mainListItems(navigate, location.pathname)}
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems(navigate)}
@@ -1105,8 +1345,12 @@ function Simulations() {
                     <Toolbar />
                     <Container maxWidth='lg' sx={{}}>
                         <div style={{ overflow: "auto", marginTop: 20 }}>
-                            <h2 style={{ float: "left", marginTop: 0 }}>Simulate Model </h2>
-                            <h3 style={{ color: "red" }}>(Under Development)</h3>
+                            <h2 style={{ float: "left", marginTop: 0 }}>
+                                Simulate Model{" "}
+                            </h2>
+                            <h3 style={{ color: "red" }}>
+                                (Under Development)
+                            </h3>
                             {/* 
                             <Button
                                 onClick={() => getTemplate(2)}
@@ -1133,13 +1377,22 @@ function Simulations() {
                                         marginBottom: 0.5,
                                         overflow: "auto",
                                     }}>
-                                    <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'> Step 1: Project Title</Typography>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                        }}>
+                                        <Typography variant='h5'>
+                                            {" "}
+                                            Step 1: Project Title
+                                        </Typography>
 
                                         <Tooltip
                                             title='In this section you can write the Title of the Model you are going to create.'
                                             arrow>
-                                            <IconButton size='xsmall' sx={{ ml: 0.5, mb: 1 }}>
+                                            <IconButton
+                                                size='xsmall'
+                                                sx={{ ml: 0.5, mb: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
@@ -1170,14 +1423,25 @@ function Simulations() {
                             </Grid>
 
                             <Grid item xs={20}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                                    <Typography variant='h5'>Select a Previous Run</Typography>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                    }}>
+                                    <Typography variant='h5'>
+                                        Select a Previous Run
+                                    </Typography>
                                     <Select
                                         fullWidth
                                         value={selectedRun}
-                                        onChange={(e) => handleRunSelection(e.target.value)}
+                                        onChange={(e) =>
+                                            handleRunSelection(e.target.value)
+                                        }
                                         renderValue={(selected) =>
-                                            selected ? selected.description : "Select a Run"
+                                            selected
+                                                ? selected.description
+                                                : "Select a Run"
                                         }
                                         MenuProps={{
                                             PaperProps: {
@@ -1189,7 +1453,9 @@ function Simulations() {
                                         {completedRuns.map((run) => (
                                             <MenuItem key={run.id} value={run}>
                                                 {run.description} -{" "}
-                                                {new Date(run.createdAt.toDate()).toLocaleString()}
+                                                {new Date(
+                                                    run.createdAt.toDate()
+                                                ).toLocaleString()}
                                             </MenuItem>
                                         ))}
                                     </Select>
@@ -1205,12 +1471,21 @@ function Simulations() {
                                         marginBottom: 0.5,
                                         overflow: "auto",
                                     }}>
-                                    <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'> Step 2: CSV</Typography>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                        }}>
+                                        <Typography variant='h5'>
+                                            {" "}
+                                            Step 2: CSV
+                                        </Typography>
                                         <Tooltip
                                             title='In this we will ask you to upload the CSV file which is a file containing the information about the batches. After uploading there will be a preview of the file.'
                                             arrow>
-                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                            <IconButton
+                                                size='small'
+                                                sx={{ ml: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
@@ -1231,26 +1506,45 @@ function Simulations() {
                                     </p>
                                     <TableContainer
                                         component={Paper}
-                                        sx={{ maxHeight: 240, overflow: "auto", fontSize: 1 }}>
-                                        <Table size='small' aria-label='a dense table'>
+                                        sx={{
+                                            maxHeight: 240,
+                                            overflow: "auto",
+                                            fontSize: 1,
+                                        }}>
+                                        <Table
+                                            size='small'
+                                            aria-label='a dense table'>
                                             <TableHead>
                                                 <TableRow>
                                                     {file2Content.length > 0 &&
-                                                        Object.keys(file2Content[0]).map((key) => (
-                                                            <TableCell key={key}>{key}</TableCell>
+                                                        Object.keys(
+                                                            file2Content[0]
+                                                        ).map((key) => (
+                                                            <TableCell
+                                                                key={key}>
+                                                                {key}
+                                                            </TableCell>
                                                         ))}
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {file2Content.map((row, idx) => (
-                                                    <TableRow key={idx}>
-                                                        {Object.keys(file2Content[0]).map((key) => (
-                                                            <TableCell key={idx + key}>
-                                                                {row[key]}
-                                                            </TableCell>
-                                                        ))}
-                                                    </TableRow>
-                                                ))}
+                                                {file2Content.map(
+                                                    (row, idx) => (
+                                                        <TableRow key={idx}>
+                                                            {Object.keys(
+                                                                file2Content[0]
+                                                            ).map((key) => (
+                                                                <TableCell
+                                                                    key={
+                                                                        idx +
+                                                                        key
+                                                                    }>
+                                                                    {row[key]}
+                                                                </TableCell>
+                                                            ))}
+                                                        </TableRow>
+                                                    )
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
@@ -1265,7 +1559,10 @@ function Simulations() {
                                         <Button
                                             fullWidth
                                             variant='contained'
-                                            sx={{ height: "60%", marginBottom: 2 }}
+                                            sx={{
+                                                height: "60%",
+                                                marginBottom: 2,
+                                            }}
                                             disabled={progress < 1}
                                             component='span'>
                                             <PublishIcon fontSize='large' />
@@ -1295,7 +1592,9 @@ function Simulations() {
                                     onClose={() => setModalOpen(false)}
                                     maxWidth='lg'
                                     fullWidth>
-                                    <DialogTitle>Experimental Data Visualization</DialogTitle>
+                                    <DialogTitle>
+                                        Experimental Data Visualization
+                                    </DialogTitle>
                                     <DialogContent>
                                         <Tabs
                                             value={tabIndex}
@@ -1305,7 +1604,10 @@ function Simulations() {
                                             variant='scrollable'
                                             scrollButtons='auto'>
                                             {batchData.map((batch, index) => (
-                                                <Tab key={index} label={`Batch ${index + 1}`} />
+                                                <Tab
+                                                    key={index}
+                                                    label={`Batch ${index + 1}`}
+                                                />
                                             ))}
                                         </Tabs>
                                         <DialogContent>
@@ -1314,7 +1616,9 @@ function Simulations() {
                                                     key={index}
                                                     style={{
                                                         display:
-                                                            tabIndex === index ? "block" : "none",
+                                                            tabIndex === index
+                                                                ? "block"
+                                                                : "none",
                                                     }}>
                                                     <LineChart data={batch} />
                                                 </div>
@@ -1322,7 +1626,9 @@ function Simulations() {
                                         </DialogContent>
                                     </DialogContent>
                                     <DialogActions>
-                                        <Button onClick={() => setModalOpen(false)} color='primary'>
+                                        <Button
+                                            onClick={() => setModalOpen(false)}
+                                            color='primary'>
                                             Close
                                         </Button>
                                     </DialogActions>
@@ -1339,15 +1645,19 @@ function Simulations() {
                                         overflow: "auto",
                                     }}>
                                     <Typography variant='h6'>
-                                        Step 3. Please select HMOD hybrid/standard model (.hmod).
-                                        The HMOD file is an intermediate format that enables
-                                        communication between the essential components of the
-                                        mechanistic and hybrid models. You can use the{" "}
-                                        <Link href='#'>SBML2HYB</Link> tool to create a hybrid HMOD
-                                        model format from any SBML model or see{" "}
+                                        Step 3. Please select HMOD
+                                        hybrid/standard model (.hmod). The HMOD
+                                        file is an intermediate format that
+                                        enables communication between the
+                                        essential components of the mechanistic
+                                        and hybrid models. You can use the{" "}
+                                        <Link href='#'>SBML2HYB</Link> tool to
+                                        create a hybrid HMOD model format from
+                                        any SBML model or see{" "}
                                         <Link href='#'> Example 1</Link> and{" "}
-                                        <Link href='#'> Example 2</Link> to edit/create your own
-                                        standard HMOD model.
+                                        <Link href='#'> Example 2</Link> to
+                                        edit/create your own standard HMOD
+                                        model.
                                     </Typography>
                                 </Paper>
                                 <Paper
@@ -1357,12 +1667,20 @@ function Simulations() {
                                         flexDirection: "column",
                                         height: 600,
                                     }}>
-                                    <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'>HMOD</Typography>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                        }}>
+                                        <Typography variant='h5'>
+                                            HMOD
+                                        </Typography>
                                         <Tooltip
                                             title='Insert your HMOD file containing the information about the mechanistic model and the settings for the machine learning model here.'
                                             arrow>
-                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                            <IconButton
+                                                size='small'
+                                                sx={{ ml: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
@@ -1388,7 +1706,10 @@ function Simulations() {
                                             component='span'
                                             fullWidth
                                             variant='contained'
-                                            sx={{ height: "60%", marginBottom: 2 }}
+                                            sx={{
+                                                height: "60%",
+                                                marginBottom: 2,
+                                            }}
                                             disabled={progress < 2}>
                                             <PublishIcon fontSize='large' />
                                             Upload Hmod
@@ -1415,13 +1736,26 @@ function Simulations() {
                             </Grid>
 
                             <Grid item xs={20}>
-                                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                                    <div style={{ display: "flex", alignItems: "center" }}>
-                                        <Typography variant='h5'>Trained Weights</Typography>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                    }}>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                        }}>
+                                        <Typography variant='h5'>
+                                            Trained Weights
+                                        </Typography>
                                         <Tooltip
                                             title='In this section you can upload the trained weights of the model you are going to simulate.'
                                             arrow>
-                                            <IconButton size='small' sx={{ ml: 1 }}>
+                                            <IconButton
+                                                size='small'
+                                                sx={{ ml: 1 }}>
                                                 <InfoIcon />
                                             </IconButton>
                                         </Tooltip>
@@ -1455,7 +1789,8 @@ function Simulations() {
                                         }}>
                                         <Typography variant='h5'>
                                             {" "}
-                                            Step 4: Select data split (train/test sets)
+                                            Step 4: Select data split
+                                            (train/test sets)
                                         </Typography>
                                     </Paper>
                                 </Grid>
@@ -1472,11 +1807,15 @@ function Simulations() {
                                                 display: "flex",
                                                 alignItems: "center",
                                             }}>
-                                            <Typography variant='h5'>Batch Selection</Typography>
+                                            <Typography variant='h5'>
+                                                Batch Selection
+                                            </Typography>
                                             <Tooltip
                                                 title='The experimental dataset selections can be manually adjust or automatically split into training/test sets (2/3 of the data split for the trainning).'
                                                 arrow>
-                                                <IconButton size='small' sx={{ ml: 1 }}>
+                                                <IconButton
+                                                    size='small'
+                                                    sx={{ ml: 1 }}>
                                                     <InfoIcon />
                                                 </IconButton>
                                             </Tooltip>
@@ -1488,8 +1827,12 @@ function Simulations() {
                                             sx={{ mt: 2 }}
                                             onChange={handleModeChange}
                                             disabled={progress < 3}>
-                                            <MenuItem value={"1"}>Manual</MenuItem>
-                                            <MenuItem value={"2"}>Automatic</MenuItem>
+                                            <MenuItem value={"1"}>
+                                                Manual
+                                            </MenuItem>
+                                            <MenuItem value={"2"}>
+                                                Automatic
+                                            </MenuItem>
                                         </Select>
                                     </Paper>
                                 </Grid>
@@ -1506,7 +1849,10 @@ function Simulations() {
                                                     overflow: "auto",
                                                 }}>
                                                 <Typography variant='h6'>
-                                                    Available Batches: {availableBatches.join(", ")}
+                                                    Available Batches:{" "}
+                                                    {availableBatches.join(
+                                                        ", "
+                                                    )}
                                                 </Typography>
                                             </Paper>
                                         </Grid>
@@ -1522,17 +1868,23 @@ function Simulations() {
                                                 <Typography variant='h6'>
                                                     Select Train Batches:{" "}
                                                 </Typography>
-                                                {availableBatches.map((batch) => (
-                                                    <div key={batch}>
-                                                        <Checkbox
-                                                            checked={train_batches.has(batch)}
-                                                            onChange={() =>
-                                                                handleTrainBatchSelection(batch)
-                                                            }
-                                                        />
-                                                        {batch}
-                                                    </div>
-                                                ))}
+                                                {availableBatches.map(
+                                                    (batch) => (
+                                                        <div key={batch}>
+                                                            <Checkbox
+                                                                checked={train_batches.has(
+                                                                    batch
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleTrainBatchSelection(
+                                                                        batch
+                                                                    )
+                                                                }
+                                                            />
+                                                            {batch}
+                                                        </div>
+                                                    )
+                                                )}
                                             </Paper>
                                         </Grid>
                                         <Grid item xs={20}>
@@ -1547,17 +1899,23 @@ function Simulations() {
                                                 <Typography variant='h6'>
                                                     Select Test Batches:{" "}
                                                 </Typography>
-                                                {availableBatches.map((batch) => (
-                                                    <div key={batch}>
-                                                        <Checkbox
-                                                            checked={test_batches.has(batch)}
-                                                            onChange={() =>
-                                                                handleTestBatchSelection(batch)
-                                                            }
-                                                        />
-                                                        {batch}
-                                                    </div>
-                                                ))}
+                                                {availableBatches.map(
+                                                    (batch) => (
+                                                        <div key={batch}>
+                                                            <Checkbox
+                                                                checked={test_batches.has(
+                                                                    batch
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleTestBatchSelection(
+                                                                        batch
+                                                                    )
+                                                                }
+                                                            />
+                                                            {batch}
+                                                        </div>
+                                                    )
+                                                )}
                                             </Paper>
                                         </Grid>
                                         <Grid
@@ -1629,8 +1987,9 @@ function Simulations() {
                             marginTop: "auto",
                         }}>
                         <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de Ciências e Tecnologia
-                            Universidade NOVA de Lisboa 2024. All rights reserved.
+                            &copy; {new Date().getFullYear()} Faculdade de
+                            Ciências e Tecnologia Universidade NOVA de Lisboa
+                            2024. All rights reserved.
                         </p>
 
                         <img
@@ -1649,7 +2008,10 @@ function Simulations() {
                 initialValues={initialValues}
                 setHmodOptions={setHmodOptions}
             />
-            <TrainingModal open={trainingModalOpen} handleClose={handleCloseTrainingModal} />
+            <TrainingModal
+                open={trainingModalOpen}
+                handleClose={handleCloseTrainingModal}
+            />
 
             <ControlModalSelection
                 open={headerModalOpen}

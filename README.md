@@ -1,9 +1,10 @@
 # HYBpy<sup>0.1(beta)</sup> <img align="left" src="Website/hybpy/src/Image/hybpy_logo.png" width="50" />   
 
+![Latest Release](https://img.shields.io/github/v/release/joko1712/HYBpy)
 
 ## Overview
 
-HYBpy is a python-based tool for hybrid modeling of bioprocesses and biological systems.
+HYBpy is a python-based tool for building and evaluating hybrid models of bioprocesses and biological systems.
 This repository contains the source code for the web-based application available at the www.hybpy.com website.
 
 

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { styled, alpha } from "@mui/material/styles";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
@@ -6,12 +7,26 @@ import BackupIcon from "@mui/icons-material/Backup";
 import LogoutIcon from "@mui/icons-material/Logout";
 import FaceIcon from "@mui/icons-material/Face";
 import InventoryIcon from "@mui/icons-material/Inventory";
-import FlightLandIcon from "@mui/icons-material/FlightLand";
 import HomeIcon from "@mui/icons-material/Home";
 import BatchPredictionIcon from "@mui/icons-material/BatchPrediction";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import SupportIcon from "@mui/icons-material/Support";
 import { auth } from "../firebase-config";
+
+const CustomListItemButton = styled(ListItemButton)(({ theme }) => ({
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+    "&.Mui-selected": {
+        backgroundColor: alpha(theme.palette.primary.main, 0.75),
+        color: theme.palette.common.white,
+        "& .MuiListItemIcon-root": {
+            color: theme.palette.common.white,
+        },
+    },
+    "&.Mui-selected:hover": {
+        backgroundColor: theme.palette.primary.main,
+    },
+}));
 
 const logout = (navigate) => {
     auth.signOut()
@@ -25,81 +40,77 @@ const logout = (navigate) => {
 
 export const mainListItems = (navigate, locationPath) => (
     <React.Fragment>
-        <ListItemButton
+        <CustomListItemButton
             onClick={() => navigate("/")}
-            selected={locationPath === "/"}
-        >
+            selected={locationPath === "/"}>
             <ListItemIcon>
                 <HomeIcon />
             </ListItemIcon>
             <ListItemText primary='Home' />
-        </ListItemButton>
+        </CustomListItemButton>
 
-        <ListItemButton
+        <CustomListItemButton
             onClick={() => navigate("/upload")}
-            selected={locationPath === "/upload"}
-        >
+            selected={locationPath === "/upload"}>
             <ListItemIcon>
                 <BackupIcon />
             </ListItemIcon>
             <ListItemText primary='New Project' />
-        </ListItemButton>
+        </CustomListItemButton>
 
-        <ListItemButton
+        <CustomListItemButton
             onClick={() => navigate("/simulations")}
-            selected={locationPath === "/simulations"}
-        >
+            selected={locationPath === "/simulations"}>
             <ListItemIcon>
                 <BatchPredictionIcon />
             </ListItemIcon>
             <ListItemText primary='Simulation' />
-        </ListItemButton>
+        </CustomListItemButton>
 
-        <ListItemButton
+        <CustomListItemButton
             onClick={() => navigate("/results")}
-            selected={locationPath === "/results"}
-        >
+            selected={locationPath === "/results"}>
             <ListItemIcon>
                 <QueryStatsIcon />
             </ListItemIcon>
             <ListItemText primary='Results' />
-        </ListItemButton>
+        </CustomListItemButton>
 
-        <ListItemButton
+        <CustomListItemButton
             onClick={() => navigate("/historical")}
-            selected={locationPath === "/historical"}
-        >
+            selected={locationPath === "/historical"}>
             <ListItemIcon>
                 <InventoryIcon />
             </ListItemIcon>
             <ListItemText primary='Historical' />
-        </ListItemButton>
+        </CustomListItemButton>
 
-        <ListItemButton
+        <CustomListItemButton
             onClick={() => navigate("/help")}
-            selected={locationPath === "/help"}
-        >
+            selected={locationPath === "/help"}>
             <ListItemIcon>
                 <SupportIcon />
             </ListItemIcon>
             <ListItemText primary='Help' />
-        </ListItemButton>
+        </CustomListItemButton>
     </React.Fragment>
 );
 
 export const secondaryListItems = (navigate) => (
     <React.Fragment>
-        <ListItemButton>
+        <CustomListItemButton>
             <ListItemIcon>
                 <FaceIcon />
             </ListItemIcon>
-            <ListItemText primary={auth.currentUser.displayName || auth.currentUser.email} />
-        </ListItemButton>
-        <ListItemButton onClick={() => logout(navigate)}>
+            <ListItemText
+                primary={auth.currentUser.displayName || auth.currentUser.email}
+            />
+        </CustomListItemButton>
+        <CustomListItemButton onClick={() => logout(navigate)}>
             <ListItemIcon>
                 <LogoutIcon />
             </ListItemIcon>
             <ListItemText primary='LogOut' />
-        </ListItemButton>
+        </CustomListItemButton>
     </React.Fragment>
 );

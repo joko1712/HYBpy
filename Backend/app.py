@@ -272,20 +272,6 @@ def upload_file():
             "finishedAt": firestore.SERVER_TIMESTAMP,
         })
 
-        createdAt = run_ref.get().to_dict().get("createdAt")
-        finishedAt = run_ref.get().to_dict().get("finishedAt")
-
-        if createdAt and finishedAt:
-            createdAt_ms = createdAt.timestamp() * 1000 
-            finishedAt_ms = finishedAt.timestamp() * 1000
-            time_difference = finishedAt_ms - createdAt_ms
-
-        duration = milliseconds_to_time(time_difference)
-
-        run_ref.update({
-            "duration": duration
-        })
-
         # Clean up temporary directory
         shutil.rmtree(temp_dir)
 
@@ -296,14 +282,7 @@ def upload_file():
         
         run_ref.update({"status": "error"})
         return jsonify({"error": str(e)}), 500
-
-def milliseconds_to_time(milliseconds):
-    seconds = (milliseconds // 1000) % 60
-    minutes = (milliseconds // (1000 * 60)) % 60
-    hours = (milliseconds // (1000 * 60 * 60)) % 24
-    days = milliseconds // (1000 * 60 * 60 * 24)
-
-    return f"{days}d {hours}h {minutes}m {seconds}s"
+        
 
 @app.route("/get-available-batches", methods=['POST'])
 def get_available_batches():

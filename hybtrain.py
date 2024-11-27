@@ -412,6 +412,8 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
         '''
 
         if trainedWeights == None:
+
+            simulation = 0
     
             if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
                 result = least_squares(evaluator.fobj_func, x0=weights, **options)
@@ -468,7 +470,8 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
                 optimized_weights, _ = ann.get_weights()
         
         else:
-
+            
+            simulation = 1
 
             trainedWeights = np.array(trainedWeights)
 
@@ -495,7 +498,7 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
     newHmodFile = os.path.join(temp_dir, "Newhmod.hmod")
     saveNN(model_path, projhyb["inputs"], projhyb["outputs"], hmod, newHmodFile, bestWeights, ann)
 
-    testing = teststate(ann, user_id, projhyb, file, bestWeights, temp_dir, projhyb['method'])
+    testing = teststate(ann, user_id, projhyb, file, bestWeights, temp_dir, simulation, projhyb['method'])
 
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
 
@@ -944,7 +947,7 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
 
     plt.tight_layout()
 
-def teststate(ann, user_id, projhyb, file, w, temp_dir, method=1):
+def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
     dictState = {}
     w = np.array(w)
 
@@ -967,172 +970,252 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, method=1):
     sjacall = np.zeros((npall * nres, nw))
 
     COUNT = 0
-    for l in range(file["nbatch"]):
-        l = l + 1
-        if not isinstance(file[l], dict):
-            continue
-        tb = file[l]["time"]
-        print("tb", tb)
-        Y = np.array(file[l]["y"]).astype(np.float64)
-        Y = torch.from_numpy(Y)
+    if simulation == 1:
+        for l in range(file["nbatch"]):
+            l = l + 1
+            if not isinstance(file[l], dict):
+                continue
+
+            if file[l]["istrain"] not in [1, 3]:
+                continue
+
+            tb = file[l]["time"]
+            Y = np.array(file[l]["y"]).astype(np.float64)
+            Y = torch.from_numpy(Y)
+
+            batch = str(l)
+
+            sY = np.array(file[l]["sy"]).astype(np.float64)
+            sY = torch.from_numpy(sY)
+
+            state = np.array(file[l]["y"][0])
+            state = state[0:ns+1]
+            Sw = np.zeros((nt, nw))
+
+            for i in range(1, file[l]["np"]):
+                statedict = file[l]["key_value_array"][i-1]
+
+                dict_items_list = list(statedict.items())
+                statedict =  dict(dict_items_list[ns:len(dict_items_list)])
+
+                batch_data = file[l]
+                _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, statedict, None, None, w, batch_data, projhyb)
+
+                if l not in dictState:
+                    dictState[l] = {}
+                    dictState[l][0] = file[l]["y"][0]
+                dictState[l][i] = state
+
+            break
+
+        for i in range(projhyb["nspecies"]):
+            actual_test = []
+            predicted_test = []
+            err = []
+
+            # Collect data for plotting from the processed batch
+            if l in dictState:
+                for t in range(1, file[l]["np"]):
+                    actual_test.append(np.array(file[l]["y"][t-1][i]))
+                    if t in dictState[l]:
+                        predicted_test.append(dictState[l][t-1][i])
+                        err.append(file[l]["sy"][t-1][i])
+
+            actual_test = np.array(actual_test, dtype=np.float64)
+            predicted_test = np.array(predicted_test, dtype=np.float64)
+            err = np.array(err, dtype=np.float64)
         
-        batch = str(l)
+            # Plot time series
+            x = file[l]["time"][:-1]
 
-        sY = np.array(file[l]["sy"]).astype(np.float64)
-        sY = torch.from_numpy(sY)
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
+            ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
+
+            plt.xlabel('Time (s)')
+            plt.ylabel('Concentration')
+            plt.title(f"Specie {projhyb['species'][str(i+1)]['id']}", verticalalignment='bottom', fontsize=16, fontweight='bold')
+            plt.legend()
+
+            temp = os.path.join(temp_dir, 'plots')
+            user_dir = os.path.join(temp, user_id)
+            date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
+            os.makedirs(date_dir, exist_ok=True)
+            
+            plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
+            plt.savefig(plot_filename, dpi=300)
+            plt.close(fig)
+
+        return {"Simulated_Model": True}
+
         
-        state = np.array(file[l]["y"][0])
+    else:
+        for l in range(file["nbatch"]):
+            l = l + 1
+            if not isinstance(file[l], dict):
+                continue
+            tb = file[l]["time"]
+            print("tb", tb)
+            Y = np.array(file[l]["y"]).astype(np.float64)
+            Y = torch.from_numpy(Y)
+            
+            batch = str(l)
 
-        state = state[0:ns+1]
-        Sw = np.zeros((nt, nw))
+            sY = np.array(file[l]["sy"]).astype(np.float64)
+            sY = torch.from_numpy(sY)
+            
+            state = np.array(file[l]["y"][0])
+
+            state = state[0:ns+1]
+            Sw = np.zeros((nt, nw))
 
 
-        for i in range(1, file[l]["np"]):
-            statedict = file[l]["key_value_array"][i-1]
+            for i in range(1, file[l]["np"]):
+                statedict = file[l]["key_value_array"][i-1]
 
-            dict_items_list = list(statedict.items())
-            statedict =  dict(dict_items_list[ns:len(dict_items_list)])
+                dict_items_list = list(statedict.items())
+                statedict =  dict(dict_items_list[ns:len(dict_items_list)])
 
-            batch_data = file[l]
-            _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, statedict, None, None, w, batch_data, projhyb)
+                batch_data = file[l]
+                _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, statedict, None, None, w, batch_data, projhyb)
 
-            if l not in dictState:
-                dictState[l] = {}
-                dictState[l][0] = file[l]["y"][0]
-            dictState[l][i] = state
+                if l not in dictState:
+                    dictState[l] = {}
+                    dictState[l][0] = file[l]["y"][0]
+                dictState[l][i] = state
 
-    overall_metrics = {
-        'mse_train': [],
-        'mse_test': [],
-        'r2_train': [],
-        'r2_test': []
-    }
-    print("ranfe", projhyb['mlm']['nx'])
-    print("Species", projhyb['species'])
-    for i in range(projhyb["nspecies"]):
-        actual_train = []
-        actual_test = []
-        predicted_train = []
-        predicted_test = []
-        err = []
+        overall_metrics = {
+            'mse_train': [],
+            'mse_test': [],
+            'r2_train': [],
+            'r2_test': []
+        }
+        print("ranfe", projhyb['mlm']['nx'])
+        print("Species", projhyb['species'])
+        for i in range(projhyb["nspecies"]):
+            actual_train = []
+            actual_test = []
+            predicted_train = []
+            predicted_test = []
+            err = []
 
-        train_batches = [batch for batch, data in file.items() if isinstance(data, dict) and data["istrain"] == 1]
-        test_batches = [batch for batch, data in file.items() if isinstance(data, dict) and data["istrain"] == 3]
+            train_batches = [batch for batch, data in file.items() if isinstance(data, dict) and data["istrain"] == 1]
+            test_batches = [batch for batch, data in file.items() if isinstance(data, dict) and data["istrain"] == 3]
 
-        for batch in train_batches:
-            for t in range(1, file[batch]["np"]):
-                actual_train.append(np.array(file[batch]["y"][t-1][i]))
-                if batch in dictState and t in dictState[batch]:
-                    predicted_train.append(dictState[batch][t-1][i])
-                else:
-                    print(f"Missing prediction for train batch {batch}, time {t}")
+            for batch in train_batches:
+                for t in range(1, file[batch]["np"]):
+                    actual_train.append(np.array(file[batch]["y"][t-1][i]))
+                    if batch in dictState and t in dictState[batch]:
+                        predicted_train.append(dictState[batch][t-1][i])
+                    else:
+                        print(f"Missing prediction for train batch {batch}, time {t}")
 
-        for batch in test_batches:
-            for t in range(1, file[batch]["np"]):
-                actual_test.append(np.array(file[batch]["y"][t-1][i]))
-                if batch in dictState and t in dictState[batch]:
-                    predicted_test.append(dictState[batch][t-1][i])
-                    err.append(file[batch]["sy"][t-1][i])
-                else:
-                    print(f"Missing prediction for test batch {batch}, time {t}")
+            for batch in test_batches:
+                for t in range(1, file[batch]["np"]):
+                    actual_test.append(np.array(file[batch]["y"][t-1][i]))
+                    if batch in dictState and t in dictState[batch]:
+                        predicted_test.append(dictState[batch][t-1][i])
+                        err.append(file[batch]["sy"][t-1][i])
+                    else:
+                        print(f"Missing prediction for test batch {batch}, time {t}")
 
-        actual_train = np.array(actual_train, dtype=np.float64)
-        actual_test = np.array(actual_test, dtype=np.float64)
-        predicted_train = np.array(predicted_train, dtype=np.float64)
-        predicted_test = np.array(predicted_test, dtype=np.float64)
-        err = np.array(err, dtype=np.float64)
-    
-        print("actual_train", actual_train)
-        print("actual_test", actual_test)
-        print("predicted_train", predicted_train)
-        print("predicted_test", predicted_test)
-        print("err", err)        
-
-        if actual_train.shape != predicted_train.shape:
-            print(f"Shape mismatch for training data: actual_train {actual_train.shape}, predicted_train {predicted_train.shape}")
-            continue
-
-        if actual_test.shape != predicted_test.shape:
-            print(f"Shape mismatch for test data: actual_test {actual_test.shape}, predicted_test {predicted_test.shape}")
-            continue
-
-        mse_train = mean_squared_error(actual_train, predicted_train)
-        mse_test = mean_squared_error(actual_test, predicted_test)
-        r2_train = r2_score(actual_train, predicted_train)
-        r2_test = r2_score(actual_test, predicted_test)
-
-        overall_metrics['mse_train'].append(mse_train)
-        overall_metrics['mse_test'].append(mse_test)
-        overall_metrics['r2_train'].append(r2_train)
-        overall_metrics['r2_test'].append(r2_test)
-
-        print(f'Training MSE: {mse_train}')
-        print(f'Test MSE: {mse_test}')
-        print(f'Training R²: {r2_train}')
-        print(f'Test R²: {r2_test}')
-
-        mse_train = abs(mse_train)
-        mse_test = abs(mse_test)
-        r2_test = abs(r2_test)
-        r2_train = abs(r2_train)
-
-        textstr = '\n'.join((
-            f'Training MSE: {mse_train:.4f}',
-            f'Training R²: {r2_train:.4f}',
-            f'Test MSE: {mse_test:.4f}',
-            f'Test R²: {r2_test:.4f}',
-        )) 
+            actual_train = np.array(actual_train, dtype=np.float64)
+            actual_test = np.array(actual_test, dtype=np.float64)
+            predicted_train = np.array(predicted_train, dtype=np.float64)
+            predicted_test = np.array(predicted_test, dtype=np.float64)
+            err = np.array(err, dtype=np.float64)
         
-        z_score = 2.05
-        margin = z_score * err
+            print("actual_train", actual_train)
+            print("actual_test", actual_test)
+            print("predicted_train", predicted_train)
+            print("predicted_test", predicted_test)
+            print("err", err)        
 
-        lower_bound = predicted_test - margin
-        upper_bound = predicted_test + margin
-        
-        for value in range(len(lower_bound)):
-            if lower_bound[value] < 0:
-                lower_bound[value] = 0
+            if actual_train.shape != predicted_train.shape:
+                print(f"Shape mismatch for training data: actual_train {actual_train.shape}, predicted_train {predicted_train.shape}")
+                continue
 
-        x = file[train_batches[0]]["time"][:-1]
-        
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
-        ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
-        #ax.fill_between(x, lower_bound[:len(x)], upper_bound[:len(x)], color='gray', label="Confidence Interval", alpha=0.5)
+            if actual_test.shape != predicted_test.shape:
+                print(f"Shape mismatch for test data: actual_test {actual_test.shape}, predicted_test {predicted_test.shape}")
+                continue
 
-        plt.xlabel('Time (s)')
-        plt.ylabel('Concentration')
-        plt.title(f"Specie {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+            mse_train = mean_squared_error(actual_train, predicted_train)
+            mse_test = mean_squared_error(actual_test, predicted_test)
+            r2_train = r2_score(actual_train, predicted_train)
+            r2_test = r2_score(actual_test, predicted_test)
 
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        #plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)
-        
-        plt.legend()
-        temp = os.path.join(temp_dir, 'plots')
-        user_dir = os.path.join(temp, user_id)
-        date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
-        os.makedirs(date_dir, exist_ok=True)
-        
-        time_series_plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
-        plt.savefig(time_series_plot_filename, dpi=300)
-        plt.close(fig)
+            overall_metrics['mse_train'].append(mse_train)
+            overall_metrics['mse_test'].append(mse_test)
+            overall_metrics['r2_train'].append(r2_train)
+            overall_metrics['r2_test'].append(r2_test)
 
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.scatter(predicted_train, actual_train, color='blue', label='Train', alpha=0.5)
-        ax.scatter(predicted_test, actual_test, color='red', label='Test', alpha=0.5)
-        ax.plot([0, max(actual_test)], [0, max(actual_test)], 'r--', color='gray', label='Ideal', alpha=0.25)
-        plt.xlabel('Observed')
-        plt.ylabel('Predicted')
-        plt.title(f"Predicted vs Observed for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
-        plt.legend()
-        
-        predicted_vs_actual_plot_filename = os.path.join(date_dir, f'predicted_vs_observed_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
-        plt.savefig(predicted_vs_actual_plot_filename, dpi=300)
-        plt.close(fig)
+            print(f'Training MSE: {mse_train}')
+            print(f'Test MSE: {mse_test}')
+            print(f'Training R²: {r2_train}')
+            print(f'Test R²: {r2_test}')
 
-    overall_mse_train = np.mean(overall_metrics['mse_train'])
-    overall_mse_test = np.mean(overall_metrics['mse_test'])
-    overall_r2_train = np.mean(overall_metrics['r2_train'])
-    overall_r2_test = np.mean(overall_metrics['r2_test'])
+            mse_train = abs(mse_train)
+            mse_test = abs(mse_test)
+            r2_test = abs(r2_test)
+            r2_train = abs(r2_train)
 
-    return {'mse_train': overall_mse_train, 'mse_test': overall_mse_test, 'r2_train': overall_r2_train, 'r2_test': overall_r2_test}
+            textstr = '\n'.join((
+                f'Training MSE: {mse_train:.4f}',
+                f'Training R²: {r2_train:.4f}',
+                f'Test MSE: {mse_test:.4f}',
+                f'Test R²: {r2_test:.4f}',
+            )) 
+            
+            z_score = 2.05
+            margin = z_score * err
+
+            lower_bound = predicted_test - margin
+            upper_bound = predicted_test + margin
+            
+            for value in range(len(lower_bound)):
+                if lower_bound[value] < 0:
+                    lower_bound[value] = 0
+
+            x = file[train_batches[0]]["time"][:-1]
+            
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
+            ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
+            #ax.fill_between(x, lower_bound[:len(x)], upper_bound[:len(x)], color='gray', label="Confidence Interval", alpha=0.5)
+
+            plt.xlabel('Time (s)')
+            plt.ylabel('Concentration')
+            plt.title(f"Specie {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+
+            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+            #plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)
+            
+            plt.legend()
+            temp = os.path.join(temp_dir, 'plots')
+            user_dir = os.path.join(temp, user_id)
+            date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
+            os.makedirs(date_dir, exist_ok=True)
+            
+            time_series_plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
+            plt.savefig(time_series_plot_filename, dpi=300)
+            plt.close(fig)
+
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.scatter(predicted_train, actual_train, color='blue', label='Train', alpha=0.5)
+            ax.scatter(predicted_test, actual_test, color='red', label='Test', alpha=0.5)
+            ax.plot([0, max(actual_test)], [0, max(actual_test)], 'r--', color='gray', label='Ideal', alpha=0.25)
+            plt.xlabel('Observed')
+            plt.ylabel('Predicted')
+            plt.title(f"Predicted vs Observed for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
+            plt.legend()
+            
+            predicted_vs_actual_plot_filename = os.path.join(date_dir, f'predicted_vs_observed_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
+            plt.savefig(predicted_vs_actual_plot_filename, dpi=300)
+            plt.close(fig)
+
+        overall_mse_train = np.mean(overall_metrics['mse_train'])
+        overall_mse_test = np.mean(overall_metrics['mse_test'])
+        overall_r2_train = np.mean(overall_metrics['r2_train'])
+        overall_r2_test = np.mean(overall_metrics['r2_test'])
+
+        return {'mse_train': overall_mse_train, 'mse_test': overall_mse_test, 'r2_train': overall_r2_train, 'r2_test': overall_r2_test}

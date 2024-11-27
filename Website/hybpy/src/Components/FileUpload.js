@@ -137,8 +137,8 @@ function FileUpload() {
     const [selectedHeaders, setSelectedHeaders] = useState([]);
     const [headerModalConfig, setHeaderModalConfig] = useState({
         headers: [],
-        onSave: () => {},
-        handleClose: () => {},
+        onSave: () => { },
+        handleClose: () => { },
     });
     const [mlmModalOpen, setMlmModalOpen] = useState(false);
     const [speciesOptions, setSpeciesOptions] = useState([]);
@@ -295,39 +295,30 @@ function FileUpload() {
 
         if (selectedHeaders.length > 0 && !controlExists) {
             let controlSection = `% control---------------------------\n`;
-            controlSection += `${
-                uniquePrefixes.values().next().value
-            }.ncontrol=${selectedHeaders.length};\n`;
+            controlSection += `${uniquePrefixes.values().next().value
+                }.ncontrol=${selectedHeaders.length};\n`;
 
             selectedHeaders.forEach((header, index) => {
                 let maxHeaderValue = Math.max(
                     ...batchData.map((row) => row[header])
                 );
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).id= '${header}';\n`;
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).val= 0;\n`;
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).min= 0;\n`;
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).max= ${maxHeaderValue};\n`;
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).constant= 1;\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).id= '${header}';\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).val= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).min= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).max= ${maxHeaderValue};\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).constant= 1;\n`;
             });
 
-            controlSection += `${
-                uniquePrefixes.values().next().value
-            }.fun_control=@control_function_${
-                uniquePrefixes.values().next().value
-            };\n`;
-            controlSection += `${
-                uniquePrefixes.values().next().value
-            }.fun_event=[];\n`;
+            controlSection += `${uniquePrefixes.values().next().value
+                }.fun_control=@control_function_${uniquePrefixes.values().next().value
+                };\n`;
+            controlSection += `${uniquePrefixes.values().next().value
+                }.fun_event=[];\n`;
 
             updatedContent += `\n${controlSection}`;
             controlExists = true;
@@ -366,113 +357,82 @@ function FileUpload() {
             const mlmOptions = await openMlmModal();
             if (Object.keys(mlmOptions).length > 0) {
                 let mlmSection = `% % MLM - Machine Learning Model --------------------------------------------\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.id = 'mlpnet';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.nx = ${mlmOptions.nx};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.id = 'mlpnet';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.nx = ${mlmOptions.nx};\n`;
 
                 mlmOptions.xOptions.forEach((x, index) => {
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.x(${index + 1}).val= '${x.val}';\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.x(${index + 1}).min= 0;\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.x(${index + 1}).max= ${Math.max(
-                        ...batchData.map((row) => row[x.val])
-                    )};\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.x(${index + 1}).val= '${x.val}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.x(${index + 1}).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.x(${index + 1}).max= ${Math.max(
+                            ...batchData.map((row) => row[x.val])
+                        )};\n`;
                 });
 
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.ny = ${mlmOptions.ny};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.ny = ${mlmOptions.ny};\n`;
 
                 mlmOptions.yOptions.forEach((y, index) => {
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.y(${index + 1}).id = '${y.id}';\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.y(${index + 1}).min= 0;\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.y(${index + 1}).max= ${Math.max(
-                        ...batchData.map((row) => row[y.id])
-                    )};\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.y(${index + 1}).id = '${y.id}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.y(${index + 1}).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.y(${index + 1}).max= ${Math.max(
+                            ...batchData.map((row) => row[y.id])
+                        )};\n`;
                 });
 
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.options={'hidden nodes', [1]};\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.layer=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.symbolic='full-symbolic';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.symbolic='semi-symbolic';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.datasource=3;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.datafun=@${uniquePrefixes.values().next().value};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.options={'hidden nodes', [1]};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.layer=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.symbolic='full-symbolic';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.symbolic='semi-symbolic';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.datasource=3;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.datafun=@${uniquePrefixes.values().next().value};\n`;
 
                 mlmSection += `%training configuration\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mode=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.method=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.jacobian=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.hessian=0;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.derivativecheck='off';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.niter=400;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.niteroptim=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.nstep=2;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.display='off';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.bootstrap=0;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.nensemble=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.crossval=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mode=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.method=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.jacobian=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.hessian=0;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.derivativecheck='off';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.niter=400;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.niteroptim=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.nstep=2;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.display='off';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.bootstrap=0;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.nensemble=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.crossval=1;\n`;
 
                 updatedContent += `\n${mlmSection}`;
                 mlmExists = true;
@@ -929,7 +889,7 @@ function FileUpload() {
 
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
         <Tooltip {...props} classes={{ popper: className }} />
-    ))(({}) => ({
+    ))(({ }) => ({
         [`& .${tooltipClasses.tooltip}`]: {
             maxWidth: 200,
         },
@@ -1817,7 +1777,7 @@ function FileUpload() {
                                                     sx={{
                                                         mt: 2,
                                                         display: "flex",
-                                                        width: "75%",
+                                                        width: "40%",
                                                     }}
                                                     disabled={isStartTrainingDisabled()}>
                                                     <PublishIcon fontSize='large' />
@@ -1845,7 +1805,7 @@ function FileUpload() {
                                                 sx={{
                                                     mt: 2,
                                                     display: "flex",
-                                                    width: "75%",
+                                                    width: "40%",
                                                 }}
                                                 disabled={description === ""}>
                                                 <PublishIcon fontSize='large' />

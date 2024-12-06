@@ -743,10 +743,7 @@ function Simulations() {
             return;
         }
 
-        if (mode !== "1" && mode !== "2") {
-            alert("Please select a mode (1 or 2)!");
-            return;
-        }
+        setMode("2");
 
         const requiredFields = [
             "hiddenNodes",
@@ -1485,7 +1482,7 @@ function Simulations() {
                                             }}
                                             disabled={!isStartTrainingEnabled()}>
                                             <PublishIcon fontSize='large' />
-                                            Start Training
+                                            Start Simulation
                                         </Button>
                                     </CustomWidthTooltip>
                                 </Grid>

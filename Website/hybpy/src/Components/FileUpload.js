@@ -258,6 +258,8 @@ function FileUpload() {
             }
         });
 
+        // TODO: set BatchData to length-1 if last row is empty or has batchNum
+
         let numBatches = new Set(batchData.map((row) => row.batchId)).size;
         let timeMax = maxTime * numBatches;
         let timeTAU = timeMax / 50;

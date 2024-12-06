@@ -26,6 +26,7 @@ import os
 import uuid
 import h5py
 from savetrainednn import saveNN
+import logging
 
 
 def default_fobj(w):
@@ -41,6 +42,15 @@ def save_model_to_h5(model, file_path):
 
 def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
     print("USer ID", user_id)
+    new_data = {}
+    for key, value in file.items():
+        try:
+            int_key = int(key)
+            new_data[int_key] = value
+        except ValueError:
+            new_data[key] = value
+
+    file = new_data
     fobj = default_fobj
 
     if projhyb is None:
@@ -216,9 +226,9 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
 
     for i in range(1, H):
         projhyb["mlm"]['nw'] += (projhyb["mlm"]['nh']
-                                 [i - 1] + 1) * projhyb["mlm"]['nh'][i]
+                                [i - 1] + 1) * projhyb["mlm"]['nh'][i]
     projhyb["mlm"]['nw'] += (projhyb["mlm"]['nh']
-                             [H - 1] + 1) * projhyb["mlm"]['ny']
+                            [H - 1] + 1) * projhyb["mlm"]['ny']
 
     print("Number of weights: ", projhyb["mlm"]['nw'])
     print("Number of inputs: ", projhyb["mlm"]['nx'])
@@ -276,7 +286,7 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
                     1.34426003e-02,  6.97196956e-07,  9.26678843e-05, -4.25188021e-09]
         
         weights = [ 0.46595111,  0.10995199,  0.15210865,  0.13458372,  0.10450351, -0.05684199,  0.3605971,  -1.14533527,
-          1.08100574, 0.49413338, -0.6545019,   1.12397129, -0.78435885, -2.40410101, -0.28280282,  0.24305272, -0.02864941,  0.88284648]
+        1.08100574, 0.49413338, -0.6545019,   1.12397129, -0.78435885, -2.40410101, -0.28280282,  0.24305272, -0.02864941,  0.88284648]
     
         weights = np.array(weights)
         '''
@@ -313,12 +323,10 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
 
     for istep in range(1, projhyb['nstep']+1):
         print("TESTING")
-
         for i in range(1, file['nbatch'] + 1):
             istrain = file[i]["istrain"]
             projhyb['istrain'] = [0] * file['nbatch']
             projhyb['istrain'][i - 1] = istrain
-            print(projhyb['istrain'])
 
         if projhyb['bootstrap'] == 1:
             ind = sorted(np.random.permutation(projhyb['ntrain'])[:nboot])
@@ -1029,7 +1037,7 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
             x = file[l]["time"][:-1]
 
             fig, ax = plt.subplots(figsize=(10, 6))
-            ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
+            #ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
             ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
 
             plt.xlabel('Time (s)')
@@ -1203,7 +1211,8 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.scatter(predicted_train, actual_train, color='blue', label='Train', alpha=0.5)
             ax.scatter(predicted_test, actual_test, color='red', label='Test', alpha=0.5)
-            ax.plot([0, max(actual_test)], [0, max(actual_test)], 'r--', color='gray', label='Ideal', alpha=0.25)
+            maxValue = max(max(predicted_test), max(actual_test), max(predicted_train), max(actual_train))
+            ax.plot([0, maxValue], [0, maxValue], 'r--', color='gray', label='Ideal', alpha=0.25)
             plt.xlabel('Observed')
             plt.ylabel('Predicted')
             plt.title(f"Predicted vs Observed for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
@@ -1212,6 +1221,8 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
             predicted_vs_actual_plot_filename = os.path.join(date_dir, f'predicted_vs_observed_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
             plt.savefig(predicted_vs_actual_plot_filename, dpi=300)
             plt.close(fig)
+
+            print("DONE!!!!!")
 
         overall_mse_train = np.mean(overall_metrics['mse_train'])
         overall_mse_test = np.mean(overall_metrics['mse_test'])

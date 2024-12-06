@@ -347,6 +347,18 @@ export default function LandingPage() {
                                     that will show you the data that was
                                     uploaded in a graphical way.
                                 </p>
+                                <Button
+                                    onClick={() =>
+                                        getTemplateDownloadLink(3, "xlsx")
+
+                                    }
+                                    variant='contained'
+                                    sx={{
+                                        marginBottom: 2,
+                                        marginRight: 2,
+                                    }}>
+                                    Get Csv Template
+                                </Button>
                                 <img src={step3} alt='Step 3' width='100%' />
 
                                 <p>

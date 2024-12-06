@@ -95,7 +95,7 @@ function Login({ manualSetCurrentUser }) {
 
                 <Container
                     component='main'
-                    maxWidth='md'
+
                     sx={{
                         display: "flex",
                         flexDirection: "column",
@@ -110,6 +110,7 @@ function Login({ manualSetCurrentUser }) {
                             flexDirection: "column",
                             alignItems: "center",
                             mt: 2,
+                            maxWidth: "50%",
                         }}>
                         <h1>What is HYBpy?</h1>
                         <p>
@@ -129,6 +130,7 @@ function Login({ manualSetCurrentUser }) {
                             </Link>{" "}
                             page.
                         </p>
+                        <Box sx={{ mt: "5%" }} />
                         <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
                             <LockOutlinedIcon />
                         </Avatar>
@@ -139,7 +141,7 @@ function Login({ manualSetCurrentUser }) {
                             component='form'
                             onSubmit={loginUser}
                             noValidate
-                            sx={{ mt: 1 }}>
+                            sx={{ mt: 1, maxWidth: "75%" }}>
                             <TextField
                                 margin='normal'
                                 required

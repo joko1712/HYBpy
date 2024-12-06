@@ -233,13 +233,12 @@ export default function LandingPage() {
                         <Typography variant='subtitle1' gutterBottom>
                             Hybrid modeling is a cutting-edge approach that
                             integrates the predictive power of machine learning
-                            algorithms (Nonparametric model) with the
+                            algorithms (nonparametric model) with the
                             foundational principles of mechanistic models
-                            (Parametric model). This synergy allows for the
+                            (parametric model). This synergy allows for the
                             creation of models that are not only highly accurate
                             but also deeply insightful, providing a
-                            comprehensive understanding of bioprocesses and bio
-                            (chemical) systems.
+                            comprehensive understanding of bioprocesses and bio(chemical) systems.
                         </Typography>
                         <div
                             style={{
@@ -262,8 +261,7 @@ export default function LandingPage() {
                                 marginTop: "10px",
                             }}>
                             <Typography variant='caption'>
-                                Example of a typical structure for a hybrid
-                                model.
+                                Figure. Example of a typical structure for a hybrid model
                             </Typography>
                         </div>
                         <h2>Why HYBpy?</h2>
@@ -324,7 +322,7 @@ export default function LandingPage() {
                                 borderBottomWidth: 1,
                             }}
                         />
-                        <Typography variant='h6' gutterBottom>
+                        <Typography variant='h6' gutterBottom sx={{ maxWidth: "70%", }}>
                             <b>
                                 Just proceed to the{" "}
                                 <Button

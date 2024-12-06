@@ -304,7 +304,7 @@ export default function Dashboard() {
                         overflow: "auto",
                     }}>
                     <Toolbar />
-                    <Container maxWidth='lg' sx={{ mt: 4, mb: 4 }}>
+                    <Container maxWidth='lg' sx={{ mt: 4, mb: 4, minHeight: "90%" }}>
                         <Grid container spacing={3}>
                             {/* Recent Run Details */}
                             <Grid item xs={12}>
@@ -359,7 +359,7 @@ export default function Dashboard() {
                                                 .filter(
                                                     (url) =>
                                                         selectedPlots.length ===
-                                                            0 ||
+                                                        0 ||
                                                         selectedPlots.includes(
                                                             url
                                                         )
@@ -369,7 +369,7 @@ export default function Dashboard() {
                                                         getFilteredPlots().filter(
                                                             (url) =>
                                                                 selectedPlots.length ===
-                                                                    0 ||
+                                                                0 ||
                                                                 selectedPlots.includes(
                                                                     url
                                                                 )
@@ -425,8 +425,8 @@ export default function Dashboard() {
                                             selected.length === 0
                                                 ? "All Plots"
                                                 : selected
-                                                      .map(getPlotTitle)
-                                                      .join(", ")
+                                                    .map(getPlotTitle)
+                                                    .join(", ")
                                         }>
                                         {getFilteredPlots().map(
                                             (url, index) => {
@@ -506,49 +506,29 @@ export default function Dashboard() {
                             </Box>
                         </Modal>
                     </Container>
-                    <Box
-                        component='main'
-                        sx={{
+                    <footer
+                        style={{
                             display: "flex",
-                            flexDirection: "column",
-                            flexGrow: 1,
-                            backgroundColor: (theme) => theme.palette.grey[100],
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "1em",
+                            background: "#f1f1f1",
+                            width: "100%",
+                            marginTop: "auto",
                         }}>
-                        <Toolbar />
-                        <Container maxWidth='lg'></Container>
+                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
+                            &copy; {new Date().getFullYear()} Faculdade de
+                            Ciências e Tecnologia Universidade NOVA de Lisboa
+                            2024. All rights reserved.
+                        </p>
 
-                        <Box
-                            component='footer'
-                            sx={{
-                                p: 2,
-                                backgroundColor: "#f1f1f1",
-                                position: "fixed",
-                                bottom: 0,
-                                left: open ? `${drawerWidth}px` : "56px", // Adjust based on drawer state
-                                width: open
-                                    ? `calc(100% - ${drawerWidth}px)`
-                                    : "calc(100% - 56px)",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                transition: "width 0.3s ease, left 0.3s ease", // Smooth transition when toggling drawer
-                            }}>
-                            <Typography
-                                variant='body2'
-                                align='center'
-                                sx={{ flexGrow: 1 }}>
-                                &copy; {new Date().getFullYear()} Faculdade de
-                                Ciências e Tecnologia Universidade NOVA de
-                                Lisboa. All rights reserved.
-                            </Typography>
-                            <img
-                                src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                                width='75'
-                                alt='FCT Logo'
-                                style={{ marginLeft: "auto" }}
-                            />
-                        </Box>
-                    </Box>
+                        <img
+                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                            width='75px'
+                            alt='FCT Logo'
+                            style={{ marginLeft: "auto" }}
+                        />
+                    </footer>
                 </Box>
             </Box>
         </ThemeProvider>

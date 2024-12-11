@@ -28,7 +28,7 @@ import {
     limit,
 } from "firebase/firestore";
 import { db } from "../firebase-config";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
 import Modal from "@mui/material/Modal";
@@ -174,7 +174,10 @@ export default function Dashboard() {
         try {
             const response = await fetch(`/run-status?user_id=${userId}`);
             const data = await response.json();
-            setRunInProgress(data.status === "in_progress");
+
+
+
+            setRunInProgress(data.status);
         } catch (error) {
             console.error("Error checking run status:", error);
         }
@@ -206,10 +209,17 @@ export default function Dashboard() {
                     setMode("Automatic");
                 }
 
-                if (latestRun[0].status === "in_progress") {
+                if (latestRun[0].status === "simulation in progress") {
+                    setRunInProgress("Simulation in progress...");
+                }
+                else if (latestRun[0].status === "training in progress") {
                     setRunInProgress("Training in progress...");
-                } else {
-                    setRunInProgress("Training completed");
+                }
+                else if (latestRun[0].status === "error") {
+                    setRunInProgress("Task failed");
+                }
+                else {
+                    setRunInProgress("Task completed");
                 }
 
                 checkRunStatus();
@@ -300,8 +310,9 @@ export default function Dashboard() {
                                 ? theme.palette.grey[100]
                                 : theme.palette.grey[900],
                         flexGrow: 1,
-                        height: "100%",
+                        height: "98vh",
                         overflow: "auto",
+                        hideScrollbar: { scrollbarWidth: "none" },
                     }}>
                     <Toolbar />
                     <Container maxWidth='lg' sx={{ mt: 4, mb: 4, minHeight: "90%" }}>
@@ -314,7 +325,7 @@ export default function Dashboard() {
                                         display: "flex",
                                         flexDirection: "column",
                                     }}>
-                                    {runs.length > 0 ? (
+                                    {runs.length > 0 && runs[0].trained_weights ? (
                                         <>
                                             <Typography
                                                 variant='h4'
@@ -324,14 +335,29 @@ export default function Dashboard() {
                                             <Typography variant='h6'>{`Title: ${runs[0].description}`}</Typography>
                                             <Typography>{`HMOD: ${runs[0].file1_name}`}</Typography>
                                             <Typography>{`CSV: ${runs[0].file2_name}`}</Typography>
-                                            <Typography>{`Mode: ${mode}`}</Typography>
                                             <Typography>{`Status: ${runInProgress}`}</Typography>
                                         </>
-                                    ) : (
-                                        <Typography>
-                                            No recent run details
-                                        </Typography>
-                                    )}
+                                    )
+                                        :
+                                        runs.length > 0 ? (
+                                            <>
+                                                <Typography
+                                                    variant='h4'
+                                                    gutterBottom>
+                                                    Hybrid Model Details
+                                                </Typography>
+                                                <Typography variant='h6'>{`Title: ${runs[0].description}`}</Typography>
+                                                <Typography>{`HMOD: ${runs[0].file1_name}`}</Typography>
+                                                <Typography>{`CSV: ${runs[0].file2_name}`}</Typography>
+
+                                                <Typography>{`Mode: ${mode}`}</Typography>
+                                                <Typography>{`Status: ${runInProgress}`}</Typography>
+                                            </>
+                                        ) : (
+                                            <Typography>
+                                                No recent run details
+                                            </Typography>
+                                        )}
                                 </Paper>
                             </Grid>
                             {/* Recent Runs */}
@@ -506,29 +532,49 @@ export default function Dashboard() {
                             </Box>
                         </Modal>
                     </Container>
-                    <footer
-                        style={{
+                    <Box
+                        component='main'
+                        sx={{
                             display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "1em",
-                            background: "#f1f1f1",
-                            width: "100%",
-                            marginTop: "auto",
+                            flexDirection: "column",
+                            flexGrow: 1,
+                            backgroundColor: (theme) => theme.palette.grey[100],
                         }}>
-                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de
-                            Ciências e Tecnologia Universidade NOVA de Lisboa
-                            2024. All rights reserved.
-                        </p>
+                        <Toolbar />
+                        <Container maxWidth='lg' ></Container>
 
-                        <img
-                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='75px'
-                            alt='FCT Logo'
-                            style={{ marginLeft: "auto" }}
-                        />
-                    </footer>
+                        <Box
+                            component='footer'
+                            sx={{
+                                p: 2,
+                                backgroundColor: "#f1f1f1",
+                                position: "fixed",
+                                bottom: 0,
+                                left: open ? `${drawerWidth}px` : "56px", // Adjust based on drawer state
+                                width: open
+                                    ? `calc(100% - ${drawerWidth}px)`
+                                    : "calc(100% - 56px)",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                transition: "width 0.3s ease, left 0.3s ease", // Smooth transition when toggling drawer
+                            }}>
+                            <Typography
+                                variant='body2'
+                                align='center'
+                                sx={{ flexGrow: 1 }}>
+                                &copy; {new Date().getFullYear()} Faculdade de
+                                Ciências e Tecnologia Universidade NOVA de
+                                Lisboa. All rights reserved.
+                            </Typography>
+                            <img
+                                src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                                width='75'
+                                alt='FCT Logo'
+                                style={{ marginLeft: "auto" }}
+                            />
+                        </Box>
+                    </Box>
                 </Box>
             </Box>
         </ThemeProvider>

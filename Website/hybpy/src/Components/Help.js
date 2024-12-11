@@ -34,7 +34,7 @@ import {
     limit,
 } from "firebase/firestore";
 import { db } from "../firebase-config";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import step1 from "../Image/Guide Print/Step1.png";
 import step2 from "../Image/Guide Print/Step2.png";
 import step3 from "../Image/Guide Print/Step3.png";

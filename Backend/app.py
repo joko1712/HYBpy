@@ -171,32 +171,61 @@ def upload_file():
 
         user_ref = db.collection('users').document(user_id)
         run_ref = user_ref.collection('runs').document()
-        run_ref.set({
-            "userId": user_id,
-            "file1": file1_url,
-            "file2": file2_url,
-            "file1_name": file1.filename,
-            "file2_name": file2.filename,
-            "description": description,
-            "trained_weights": trained_weights,
-            "mode": mode,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "Inputs": Inputs,
-            "Outputs": Outputs,
-            "MachineLearning": {
-                "HiddenNodes": HiddenNodes,
-                "Layer": Layer,
-                "Tau": Tau,
-                "Mode": Mode,
-                "Method": Method,
-                "Jacobian": Jacobian,
-                "Hessian": Hessian,
-                "Niter": Niter,
-                "Nstep": Nstep,
-                "Bootstrap": Bootstrap
-            },
-            "status": "in_progress"
-        })
+
+        if trained_weights == None:
+            run_ref.set({
+                "userId": user_id,
+                "file1": file1_url,
+                "file2": file2_url,
+                "file1_name": file1.filename,
+                "file2_name": file2.filename,
+                "description": description,
+                "trained_weights": trained_weights,
+                "mode": mode,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+                "Inputs": Inputs,
+                "Outputs": Outputs,
+                "MachineLearning": {
+                    "HiddenNodes": HiddenNodes,
+                    "Layer": Layer,
+                    "Tau": Tau,
+                    "Mode": Mode,
+                    "Method": Method,
+                    "Jacobian": Jacobian,
+                    "Hessian": Hessian,
+                    "Niter": Niter,
+                    "Nstep": Nstep,
+                    "Bootstrap": Bootstrap
+                },
+                "status": "training in progress",
+            })
+        else:
+            run_ref.set({
+                "userId": user_id,
+                "file1": file1_url,
+                "file2": file2_url,
+                "file1_name": file1.filename,
+                "file2_name": file2.filename,
+                "description": description,
+                "trained_weights": trained_weights,
+                "mode": mode,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+                "Inputs": Inputs,
+                "Outputs": Outputs,
+                "MachineLearning": {
+                    "HiddenNodes": HiddenNodes,
+                    "Layer": Layer,
+                    "Tau": Tau,
+                    "Mode": Mode,
+                    "Method": Method,
+                    "Jacobian": Jacobian,
+                    "Hessian": Hessian,
+                    "Niter": Niter,
+                    "Nstep": Nstep,
+                    "Bootstrap": Bootstrap
+                },
+                "status": "simulation in progress",
+            })
 
         # Process file2 and prepare data
         with open(file2_path, 'r') as f:
@@ -245,8 +274,6 @@ def upload_file():
         count = len(data)
         data["nbatch"] = count
 
-        print("data", data)
-        print("run_ref.id", run_ref.id)
 
         data_json_path = os.path.join(temp_dir, "data.json")
         with open(data_json_path, "w") as write_file:
@@ -262,9 +289,11 @@ def upload_file():
             'data_file': open(data_json_path, 'rb')
         }
 
+        print("trained_weights", trained_weights)
+
         data_params = {
             'user_id': user_id,
-            'trained_weights': trained_weights,
+            'trained_weights': json.dumps(trained_weights) if trained_weights else None,
             'file1_url': file1_url,
             'file1Filename': file1.filename,
             "folder_id": folder_id,

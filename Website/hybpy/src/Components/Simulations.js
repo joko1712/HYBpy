@@ -45,10 +45,10 @@ import {
     TableHead,
     TableRow,
 } from "@mui/material";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import { LineChart } from "./LineChart";
 import InfoIcon from "@mui/icons-material/Info";
-import TrainingModal from "./Modals/TrainingModal";
+import SimulationModal from "./Modals/SimulationModal";
 import HmodModal from "./Modals/HmodModal";
 import MlmModal from "./Modals/MlmModal";
 import ControlModalSelection from "./Modals/ControlModalSelection";
@@ -133,7 +133,7 @@ function Simulations() {
     const [progress, setProgress] = useState(0);
     const [hmodModalOpen, setHmodModalOpen] = useState(false);
     const [initialValues, setInitialValues] = useState(null);
-    const [trainingModalOpen, setTrainingModalOpen] = useState(false);
+    const [simulationModalOpen, setSimulationModalOpen] = useState(false);
     const [runInProgress, setRunInProgress] = useState(false);
     const [hmodOptions, setHmodOptions] = useState({});
     const [headerModalOpen, setHeaderModalOpen] = useState(false);
@@ -170,6 +170,7 @@ function Simulations() {
         const q = query(
             runsCollectionRef,
             where("status", "==", "completed"),
+            where("trained_weights", "==", null),
             where("userId", "==", userId),
             orderBy("createdAt", "desc")
         );
@@ -288,8 +289,9 @@ function Simulations() {
         });
     };
 
-    const handleCloseTrainingModal = () => {
-        setTrainingModalOpen(false);
+
+    const handleCloseSimulationModal = () => {
+        setSimulationModalOpen(false);
         navigate("/results");
     };
 
@@ -831,7 +833,7 @@ function Simulations() {
 
         console.log("Form Data: ", formData);
 
-        setTrainingModalOpen(true);
+        setSimulationModalOpen(true);
 
         try {
             const response = await fetch("https://api.hybpy.com/upload", {
@@ -1522,9 +1524,9 @@ function Simulations() {
                 initialValues={initialValues}
                 setHmodOptions={setHmodOptions}
             />
-            <TrainingModal
-                open={trainingModalOpen}
-                handleClose={handleCloseTrainingModal}
+            <SimulationModal
+                open={simulationModalOpen}
+                handleClose={handleCloseSimulationModal}
             />
 
             <ControlModalSelection

@@ -12,18 +12,14 @@ import json
 
 def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, jac, hess, w, batch, projhyb):
 
-    print("state start of hybodesolver", state)
     t = t0
     hopt = []   
 
     state_symbols = []
 
     anninp, rann, anninp_mat = anninp_rann_func(projhyb, state)
-    print("anninp", anninp)
-    print("len(anninp)", len(anninp))
-    print("statedict", statedict)
+
     anninp_mat = [expr.subs(statedict) for expr in anninp_mat]
-    print("anninp_mat", anninp_mat)
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
     anninp_tensor = anninp_tensor.view(-1, 1)       
@@ -63,8 +59,6 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
             continue
         state_symbols.append(sp.Symbol(projhyb["compartment"][str(i)]["id"]))
     
-    print("state_symbols", state_symbols)
-    print("len(state_symbols)", len(state_symbols)) 
     
     for key, value in statedict.items():
         values[key] = value
@@ -182,7 +176,6 @@ def anninp_rann_func(projhyb, state):
 
     species_values = extract_species_values(projhyb, state)
 
-    print("species_values", species_values)
 
     totalsyms = ["t", "dummyarg1", "dummyarg2", "w"]
 
@@ -250,7 +243,6 @@ def anninp_rann_func(projhyb, state):
 def extract_species_values(projhyb, state):
     species_values = {}
 
-    print("state",state)
     
     '''
     for key, species in projhyb['species'].items():
@@ -271,7 +263,6 @@ def extract_species_values(projhyb, state):
     
     species_values['V'] = float(state[-1])
 
-    print("species_values_extra", species_values)
 
     return species_values
 

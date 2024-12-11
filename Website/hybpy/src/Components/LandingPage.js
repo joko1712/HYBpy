@@ -26,7 +26,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { useEffect } from "react";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import hybrid from "../Image/hybridmodel.jpg";
 
 const drawerWidth = 200;
@@ -72,6 +72,7 @@ const Drawer = styled(MuiDrawer, {
                 width: theme.spacing(9),
             },
         }),
+        textAlign: "center"
     },
 }));
 
@@ -320,29 +321,37 @@ export default function LandingPage() {
                             sx={{
                                 my: 1,
                                 borderBottomWidth: 1,
+
                             }}
                         />
-                        <Typography variant='h6' gutterBottom sx={{ maxWidth: "70%", }}>
-                            <b>
-                                Just proceed to the{" "}
-                                <Button
-                                    color='inherit'
-                                    variant='text'
-                                    onClick={() => navigateToCreateRun()}>
-                                    New Project
-                                </Button>{" "}
-                                tab to start using the tool. If you have any
-                                questions or need assistance, please feel free
-                                to{" "}
-                                <Button
-                                    color='inherit'
-                                    variant='text'
-                                    onClick={handleContactUsClick}>
-                                    contact us
-                                </Button>
-                                .
-                            </b>
-                        </Typography>
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                            }}>
+                            <Typography align="center" variant='h6' gutterBottom sx={{ maxWidth: "70%", }}>
+                                <b>
+                                    Just proceed to the{" "}
+                                    <Button
+                                        color='inherit'
+                                        variant='text'
+                                        onClick={() => navigateToCreateRun()}>
+                                        New Project
+                                    </Button>{" "}
+                                    tab to start using the tool. If you have any
+                                    questions or need assistance, please feel free
+                                    to{" "}
+                                    <Button
+                                        color='inherit'
+                                        variant='text'
+                                        onClick={handleContactUsClick}>
+                                        contact us
+                                    </Button>
+                                    .
+                                </b>
+                            </Typography>
+                        </div>
                     </Container>
                     <footer
                         style={{

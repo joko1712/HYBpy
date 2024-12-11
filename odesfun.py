@@ -24,7 +24,6 @@ def computeDFDS(projhyb, fstate, state_symbols, NValues):
     else:
         DfDs = projhyb['mlm']['DFDS']
 
-    print("DfDs before subs", DfDs)
     
     DfDs = DfDs.subs(NValues)
     
@@ -50,8 +49,6 @@ def computeDFDRANN(projhyb, fstate, rann_symbol, NValues):
     DfDrann = DfDrann.subs(NValues)
     DfDrann = np.array(DfDrann).reshape(len(fstate), projhyb["mlm"]["ny"])
 
-    print("DfDrann", DfDrann)
-    print("DFdrann size", DfDrann.size)
 
     if np.iscomplexobj(DfDrann):
         DfDrann = DfDrann.real
@@ -100,14 +97,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
         fstate = [expr.subs(NValues) for expr in fstate]
         return fstate
 
-    print("fst", fstate)
-    print("state", state)
-    print("jac", jac)
-    print("anninp", anninp)
-    print("anninp_tensor", anninp_tensor)
-    print("state_symbols", state_symbols)
-    print("values", values)
-    print("rann", rann)
 
 
     if projhyb['mode'] == 1:
@@ -156,17 +145,10 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
         DrannDs = results['DrannDs']
         DfDrannDrannDw = results['DfDrannDrannDw']
-        print("DrannDs size", DrannDs.size())
-        print("DfDrannDrannDw size", DfDrannDrannDw.size())
-        print("DfDrann size", DfDrann.size())
-        print("DfDs size", DfDs.size())
 
         DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann, DrannDs)
-        print("DfDsDfDrannDrannDs size", DfDsDfDrannDrannDs.size())
 
-        print(" torch.mm(DfDsDfDrannDrannDs, jac) size", torch.mm(DfDsDfDrannDrannDs, jac).size())
         fjac = torch.mm(DfDsDfDrannDrannDs, jac) + DfDrannDrannDw
-        print("fjac size", fjac.size()) 
 
 
         fstate = [expr.subs(NValues) for expr in fstate]

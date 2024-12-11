@@ -335,7 +335,6 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
                 projhyb['istrain'][projhyb['itr'][idx]] = 1
         
         if istep > 1:
-            print('Weights initialization...2')
             ann = mlpnetcreate(projhyb, projhyb['mlm']['neuron'])
             projhyb['mlm']['fundata'] = ann
             weights, ann = ann.get_weights()
@@ -450,7 +449,6 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
                 fobj_history = []
 
                 for epoch in range(num_epochs):
-                    print(f"Epoch {epoch + 1}/{num_epochs}")
 
                     weights, ann = ann.get_weights()
                     fobjs, gradient = evaluator.evaluate_adam(weights)
@@ -528,7 +526,6 @@ def convert_numpy(obj):
 ####
 
 def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
-    print("weights", w)
 
 # LOAD THE WEIGHTS into the ann
     ann.set_weights(w)
@@ -538,7 +535,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 
     # ires = 11 
     ns = projhyb["nspecies"]
-    print("ns", ns)
     nt = ns + projhyb["ncompartment"]
     nw = projhyb["mlm"]["nw"]
     isres = []
@@ -558,10 +554,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 
     sjacall = np.zeros((npall * nres, nw))
 
-    print("sresall", npall*nres)
-    print("npall", nres)
 
-    print("nn:", ann)
 
     COUNT = 0
     for l in range(file["nbatch"]):
@@ -612,9 +605,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
                 result = (- Sw[isresY, :].detach().numpy()) / SYrepeat
                 sjacall[COUNT:COUNT + nres, 0:nw] = result
                 COUNT += nres
-               
-               
-
 
     valid_idx = ~np.isnan(sresall) & ~np.isinf(sresall)
     sresall = sresall[valid_idx]
@@ -653,7 +643,6 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 ####
 
 def resfun_semidirect_jac(ann, w, istrain, projhyb, file, method=1):
-    print("weights", w)
 
     ann.set_weights(w)
     ann.print_weights_and_biases()
@@ -738,7 +727,6 @@ def resfun_semidirect_jac(ann, w, istrain, projhyb, file, method=1):
 ####
 
 def resfun_direct_jac(ann, w, istrain, projhyb, file, method=1):
-    print("weights", w)
 
     # LOAD THE WEIGHTS into the ANN
     ann.set_weights(w)
@@ -807,10 +795,6 @@ def resfun_direct_jac(ann, w, istrain, projhyb, file, method=1):
                 state.grad.zero_()
 
                 COUNT += nres
-                print("#################################################")
-                print("------------------LOOP", i, "------------------")
-                print("#################################################")
-                print("state", state)
 
     valid_idx = ~np.isnan(sresall) & ~np.isinf(sresall)
     sresall = sresall[valid_idx]
@@ -1063,7 +1047,6 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
             if not isinstance(file[l], dict):
                 continue
             tb = file[l]["time"]
-            print("tb", tb)
             Y = np.array(file[l]["y"]).astype(np.float64)
             Y = torch.from_numpy(Y)
             
@@ -1132,12 +1115,7 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
             predicted_train = np.array(predicted_train, dtype=np.float64)
             predicted_test = np.array(predicted_test, dtype=np.float64)
             err = np.array(err, dtype=np.float64)
-        
-            print("actual_train", actual_train)
-            print("actual_test", actual_test)
-            print("predicted_train", predicted_train)
-            print("predicted_test", predicted_test)
-            print("err", err)        
+          
 
             if actual_train.shape != predicted_train.shape:
                 print(f"Shape mismatch for training data: actual_train {actual_train.shape}, predicted_train {predicted_train.shape}")

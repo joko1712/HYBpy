@@ -91,10 +91,6 @@ def run_hybtrain(request):
         logging.debug("Loaded data")
 
 
-        print("projhyb", projhyb)
-        print("data", data)
-        print("run_ref_id", run_ref_id)
-
         # Download file1
         file1_path = os.path.join(temp_dir, file1_filename)
         download_file_from_url(file1_url, file1_path)

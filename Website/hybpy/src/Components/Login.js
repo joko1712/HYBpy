@@ -19,7 +19,7 @@ import {
     Link,
     Button,
 } from "@mui/material";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 
 const defaultTheme = createTheme();
 

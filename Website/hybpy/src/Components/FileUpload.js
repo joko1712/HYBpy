@@ -42,7 +42,7 @@ import {
     TableHead,
     TableRow,
 } from "@mui/material";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import { LineChart } from "./LineChart";
 import InfoIcon from "@mui/icons-material/Info";
 import TrainingModal from "./Modals/TrainingModal";

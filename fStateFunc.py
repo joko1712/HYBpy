@@ -118,8 +118,6 @@ def fstate_func(projhyb,values):
 
     fState = [expr.subs(ruleassvariables) for expr in fState]
 
-    print("fState", fState)
-    print("len(fState)", len(fState))
 
 
 

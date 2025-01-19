@@ -27,7 +27,8 @@ class CustomMLP(nn.Module):
 
     def forward(self, x):
         for layer in self.layers:
-            x = x.to(dtype=torch.float64)
+
+            x = x.to(dtype=torch.float32)
 
             x = layer(x)
         return x
@@ -37,7 +38,7 @@ class CustomMLP(nn.Module):
         with torch.no_grad():  
             for layer in self.layers:
                 for w in layer.w.data:
-                    w *= scaling_factor * random.uniform(0.9, 1.1)
+                    w *= scaling_factor * torch.tensor(random.uniform(0.9, 1.1), dtype=torch.float32)
                 layer.b.data *= scaling_factor
 
     
@@ -116,7 +117,9 @@ class CustomMLP(nn.Module):
 
         for layer in self.layers:
 
-            x = x.to(dtype=torch.float64)
+
+            x = x.to(dtype=torch.float32)
+
             x = layer(x)
 
             activations.append(x)
@@ -131,7 +134,8 @@ class CustomMLP(nn.Module):
         tensorList = []
         DrannDw = []
         output_size = self.layers[-1].w.shape[0]
-        DrannDanninp = torch.eye(output_size, dtype=torch.float64)
+        DrannDanninp = torch.eye(output_size, dtype=torch.float32)
+
         A1 = DrannDanninp
         tensor_size = 0
         '''
@@ -170,7 +174,7 @@ class CustomMLP(nn.Module):
 
             '''
             
-            h1_reshaped = torch.cat((h1.t(), torch.tensor([[1]])), dim=1)
+            h1_reshaped = torch.cat((h1.t(), torch.tensor([[1]], dtype=torch.float32)), dim=1)
             
             layer_dydw = torch.kron(h1_reshaped,A1)
 
@@ -186,7 +190,8 @@ class CustomMLP(nn.Module):
 
             DrannDanninp = A1
 
-            h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]])), dim=1)
+            h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]], dtype=torch.float32)), dim=1)
+
 
 
         DrannDanninp = torch.mm(A1,self.layers[0].w)
@@ -205,8 +210,8 @@ class TanhLayer(nn.Module):
         self.input_size = input_size
         self.output_size = output_size
         super(TanhLayer, self).__init__()
-        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
-        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
+        self.w = nn.Parameter(torch.Tensor(output_size, input_size))
+        self.b = nn.Parameter(torch.Tensor(output_size, 1))
         nn.init.xavier_uniform_(self.w)
         nn.init.zeros_(self.b)
 
@@ -261,8 +266,8 @@ class Linear(nn.Module):
         self.input_size = input_size
         self.output_size = output_size
         super(Linear, self).__init__()
-        self.w = nn.Parameter(torch.Tensor(output_size, input_size).double())
-        self.b = nn.Parameter(torch.Tensor(output_size, 1).double())
+        self.w = nn.Parameter(torch.Tensor(output_size, input_size))
+        self.b = nn.Parameter(torch.Tensor(output_size, 1))
         nn.init.xavier_uniform_(self.w)
         nn.init.zeros_(self.b) 
 

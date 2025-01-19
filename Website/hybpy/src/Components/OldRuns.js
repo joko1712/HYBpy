@@ -765,7 +765,7 @@ export default function OldRuns() {
                                                                                 Inputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Inputs?.join(", ") ?? "N/A"}
+                                                                                {selectedRun.Inputs ?? "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
                                                                         <TableRow>
@@ -773,7 +773,7 @@ export default function OldRuns() {
                                                                                 Outputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Outputs?.join(", ") ?? "N/A"}
+                                                                                {selectedRun.Outputs ?? "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
 

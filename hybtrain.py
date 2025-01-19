@@ -209,7 +209,7 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir):
             } 
         }
     elif projhyb['method'] == 3:
-        print("   Optimiser:              Simulated Annealing")
+        print("   Optimiser:              Dual Annealing")
         bounds = species_bounds * projhyb['mlm']['nw']
         options = {
             'maxiter': 100 * projhyb['niter'] * projhyb['niteroptim'],
@@ -596,6 +596,8 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
                 
                 Y_select = Y[i, isresY]
                 state_tensor = torch.tensor(state, dtype=torch.float64)
+
+                state_tensor = state_tensor.to(dtype=torch.float32)
                 state_adjusted = state_tensor[0:nres]
                 Ystate = Y_select - state_adjusted.numpy()
                 
@@ -772,6 +774,7 @@ def resfun_direct_jac(ann, w, istrain, projhyb, file, method=1):
 
             state = np.array(file[l]["y"][0])
             state = torch.tensor(state, requires_grad=True, dtype=torch.float64)
+            state = state.to(dtype=torch.float32)
             statedict = np.array(file[l]["key_value_array"][0])
 
             for i in range(1, file[l]["np"]):
@@ -785,6 +788,7 @@ def resfun_direct_jac(ann, w, istrain, projhyb, file, method=1):
 
                 Y_select = Y[i, isresY]
                 state_tensor = torch.tensor(state, dtype=torch.float64)
+                state_tensor = state_tensor.to(dtype=torch.float32)
                 state_adjusted = state_tensor[0:nres]
                 Ystate = Y_select - state_adjusted
 

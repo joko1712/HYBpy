@@ -1555,7 +1555,7 @@ function FileUpload() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        height: 600,
+                                        height: 910,
                                     }}>
                                     <Typography variant='body1' sx={{ mt: 2 }}>
                                         {selectedFile1

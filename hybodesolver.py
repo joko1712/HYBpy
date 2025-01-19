@@ -22,6 +22,9 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     anninp_mat = [expr.subs(statedict) for expr in anninp_mat]
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
+
+    anninp_tensor = anninp_tensor.to(dtype=torch.float32)
+    
     anninp_tensor = anninp_tensor.view(-1, 1)       
 
     activations = [anninp_tensor]
@@ -65,6 +68,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
     
     if jac is not None:
         jac = torch.tensor(jac, dtype=torch.float64)
+        jac = jac.to(dtype=torch.float32)
     fstate = fstate_func(projhyb, values)
 
     while t < tf:
@@ -97,6 +101,7 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
 
         h2 = h / 2
         h2 = torch.tensor(h2, dtype=torch.float64)
+        h2 = h2.to(dtype=torch.float32)
         k1_state = np.array(k1_state)
         k1_state = k1_state.astype(np.float64)
         k1_state = torch.from_numpy(k1_state)
@@ -328,6 +333,7 @@ def rannRecalc(projhyb, state, ann, values):
 
 
     anninp_tensor = torch.tensor(anninp_mat, dtype=torch.float64)
+    anninp_tensor = anninp_tensor.to(dtype=torch.float32)
     anninp_tensor = anninp_tensor.view(-1, 1)       
 
     activations = [anninp_tensor]

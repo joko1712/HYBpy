@@ -283,7 +283,7 @@ def upload_file():
         with open(projhyb_json_path, "w") as write_file:
             json.dump(projhyb, write_file)
 
-
+        '''
         files = {
             'projhyb_file': open(projhyb_json_path, 'rb'),
             'data_file': open(data_json_path, 'rb')
@@ -308,18 +308,10 @@ def upload_file():
         response = requests.post(cloud_function_url, data=data_params, files=files)
         response.raise_for_status()
         '''
-        response_json = response.json()
-
-        print("BROTHER!!!!",response.json())
-
-        projhyb = response.json().get('projhyb')
-        trainData = response.json().get('trainData')
-        metrics = response.json().get('metrics')
-        newHmodFile = response.json().get('newHmod')
 
         
         # Adjust hybtrain to accept temp_dir and use paths accordingly
-        #projhyb, trainData, metrics, newHmodFile = hybtrain(projhyb, data, user_id, trained_weights, file1_path, temp_dir)
+        projhyb, trainData, metrics, newHmodFile = hybtrain(projhyb, data, user_id, trained_weights, file1_path, temp_dir)
 
         # Upload new Hmod file to storage
         new_hmod_filename = os.path.basename(newHmodFile)
@@ -348,7 +340,7 @@ def upload_file():
 
         # Clean up temporary directory
         shutil.rmtree(temp_dir)
-        '''
+        
 
         return jsonify("Done") , 200
 

@@ -13,12 +13,9 @@ import glob
 import re
 
 
-# Ensure logging is configured
 logging.basicConfig(level=logging.DEBUG)
 
-# Import your custom modules
-from hybtrain import hybtrain  # Ensure this module is included
-# Include other modules as needed
+from hybtrain import hybtrain 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 json_path = os.path.join(current_dir, "hybpy-test-firebase-adminsdk-20qxj-245fd03d89.json")
@@ -69,7 +66,6 @@ def run_hybtrain(request):
 
         logging.debug("Received files: projhyb_file=%s, data_file=%s", projhyb_file.filename, data_file.filename)
 
-        # Save the files to temporary paths
         temp_dir = tempfile.mkdtemp()
         logging.debug("Temporary directory created at %s", temp_dir)
 
@@ -81,7 +77,6 @@ def run_hybtrain(request):
 
         logging.debug("Files saved to temporary directory")
 
-        # Load the data from the files
         with open(projhyb_path, 'r') as f:
             projhyb = json.load(f)
         logging.debug("Loaded projhyb data")
@@ -91,7 +86,6 @@ def run_hybtrain(request):
         logging.debug("Loaded data")
 
 
-        # Download file1
         file1_path = os.path.join(temp_dir, file1_filename)
         download_file_from_url(file1_url, file1_path)
         logging.debug("Downloaded file1 to %s", file1_path)
@@ -103,7 +97,6 @@ def run_hybtrain(request):
         )
         logging.debug("hybtrain function completed successfully")
 
-        # Upload newHmodFile to Cloud Storage
         new_hmod_filename = os.path.basename(newHmodFile)
         new_hmod_url = upload_file_to_storage(newHmodFile, user_id, new_hmod_filename, folder_id, bucket_name)
 

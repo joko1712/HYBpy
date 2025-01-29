@@ -140,8 +140,8 @@ function Simulations() {
     const [selectedHeaders, setSelectedHeaders] = useState([]);
     const [headerModalConfig, setHeaderModalConfig] = useState({
         headers: [],
-        onSave: () => { },
-        handleClose: () => { },
+        onSave: () => {},
+        handleClose: () => {},
     });
     const [trainedWeights, setTrainedWeights] = useState("");
 
@@ -201,15 +201,18 @@ function Simulations() {
         );
 
         try {
-            const response = await fetch(`https://api.hybpy.com/get-new-hmod`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    url: run.response_data.new_hmod_url,
-                }),
-            });
+            const response = await fetch(
+                `https://my-flask-app-246502218926.us-central1.run.app/get-new-hmod`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        url: run.response_data.new_hmod_url,
+                    }),
+                }
+            );
 
             if (!response.ok) {
                 throw new Error(
@@ -288,7 +291,6 @@ function Simulations() {
             });
         });
     };
-
 
     const handleCloseSimulationModal = () => {
         setSimulationModalOpen(false);
@@ -413,30 +415,39 @@ function Simulations() {
 
         if (selectedHeaders.length > 0 && !controlExists) {
             let controlSection = `% control---------------------------\n`;
-            controlSection += `${uniquePrefixes.values().next().value
-                }.ncontrol=${selectedHeaders.length};\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.ncontrol=${selectedHeaders.length};\n`;
 
             selectedHeaders.forEach((header, index) => {
                 let maxHeaderValue = Math.max(
                     ...batchData.map((row) => row[header])
                 );
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).id= '${header}';\n`;
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).val= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).min= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).max= ${maxHeaderValue};\n`;
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).constant= 1;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).id= '${header}';\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).val= 0;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).min= 0;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).max= ${maxHeaderValue};\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).constant= 1;\n`;
             });
 
-            controlSection += `${uniquePrefixes.values().next().value
-                }.fun_control=@control_function_${uniquePrefixes.values().next().value
-                };\n`;
-            controlSection += `${uniquePrefixes.values().next().value
-                }.fun_event=[];\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.fun_control=@control_function_${
+                uniquePrefixes.values().next().value
+            };\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.fun_event=[];\n`;
 
             updatedContent += `\n${controlSection}`;
             controlExists = true;
@@ -475,82 +486,113 @@ function Simulations() {
             const mlmOptions = await openMlmModal();
             if (Object.keys(mlmOptions).length > 0) {
                 let mlmSection = `% % MLM - Machine Learning Model --------------------------------------------\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.id = 'mlpnet';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.nx = ${mlmOptions.nx};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.id = 'mlpnet';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.nx = ${mlmOptions.nx};\n`;
 
                 mlmOptions.xOptions.forEach((x, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.x(${index + 1}).val= '${x.val}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.x(${index + 1}).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.x(${index + 1}).max= ${Math.max(
-                            ...batchData.map((row) => row[x.val])
-                        )};\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).val= '${x.val}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).min= 0;\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).max= ${Math.max(
+                        ...batchData.map((row) => row[x.val])
+                    )};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.ny = ${mlmOptions.ny};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.ny = ${mlmOptions.ny};\n`;
 
                 mlmOptions.yOptions.forEach((y, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.y(${index + 1}).id = '${y.id}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.y(${index + 1}).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.y(${index + 1}).max= ${Math.max(
-                            ...batchData.map((row) => row[y.id])
-                        )};\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).id = '${y.id}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).min= 0;\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).max= ${Math.max(
+                        ...batchData.map((row) => row[y.id])
+                    )};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.options={'hidden nodes', [1]};\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.layer=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.symbolic='full-symbolic';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.symbolic='semi-symbolic';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.datasource=3;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.datafun=@${uniquePrefixes.values().next().value};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.options={'hidden nodes', [1]};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.layer=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.symbolic='full-symbolic';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.symbolic='semi-symbolic';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.datasource=3;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.datafun=@${uniquePrefixes.values().next().value};\n`;
 
                 mlmSection += `%training configuration\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mode=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.method=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.jacobian=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.hessian=0;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.derivativecheck='off';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.niter=400;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.niteroptim=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.nstep=2;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.display='off';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.bootstrap=0;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.nensemble=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.crossval=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mode=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.method=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.jacobian=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.hessian=0;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.derivativecheck='off';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.niter=400;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.niteroptim=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.nstep=2;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.display='off';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.bootstrap=0;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.nensemble=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.crossval=1;\n`;
 
                 updatedContent += `\n${mlmSection}`;
                 mlmExists = true;
@@ -733,7 +775,7 @@ function Simulations() {
 
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
         <Tooltip {...props} classes={{ popper: className }} />
-    ))(({ }) => ({
+    ))(({}) => ({
         [`& .${tooltipClasses.tooltip}`]: {
             maxWidth: 200,
         },
@@ -836,10 +878,13 @@ function Simulations() {
         setSimulationModalOpen(true);
 
         try {
-            const response = await fetch("https://api.hybpy.com/upload", {
-                method: "POST",
-                body: formData,
-            });
+            const response = await fetch(
+                "https://my-flask-app-246502218926.us-central1.run.app/upload",
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
 
             const data = await response.json();
             setBackendResponse(JSON.stringify(data, null, 2));
@@ -856,7 +901,7 @@ function Simulations() {
         const intervalId = setInterval(async () => {
             try {
                 const response = await fetch(
-                    `https://api.hybpy.com/run-status?user_id=${userId}`
+                    `https://my-flask-app-246502218926.us-central1.run.app/run-status?user_id=${userId}`
                 );
                 const data = await response.json();
                 if (data.status === "no_runs") {
@@ -886,7 +931,7 @@ function Simulations() {
                     formData.append("file2", selectedFile2);
 
                     const response = await fetch(
-                        "https://api.hybpy.com/get-available-batches",
+                        "https://my-flask-app-246502218926.us-central1.run.app/get-available-batches",
                         {
                             method: "POST",
                             body: formData,
@@ -903,7 +948,6 @@ function Simulations() {
 
         fetchAvailableBatches();
     }, [selectedFile2, mode]);
-
 
     const handleTabChange = (event, newValue) => {
         setTabIndex(newValue);
@@ -1061,7 +1105,6 @@ function Simulations() {
                             <h2 style={{ float: "left", marginTop: 0 }}>
                                 Simulate Model{" "}
                             </h2>
-
                         </div>
 
                         <Grid container spacing={3} columns={20}>
@@ -1385,7 +1428,6 @@ function Simulations() {
                                         marginTop: "8px",
                                         justifyContent: "flex-end",
                                     }}>
-
                                     <label htmlFor='hmod-upload'>
                                         <Button
                                             component='span'
@@ -1463,7 +1505,6 @@ function Simulations() {
                             </Grid>
 
                             <Grid item xs={20} columns={20}>
-
                                 <Grid
                                     item
                                     xs={12}
@@ -1482,13 +1523,14 @@ function Simulations() {
                                                 display: "flex",
                                                 width: "50%",
                                             }}
-                                            disabled={!isStartTrainingEnabled()}>
+                                            disabled={
+                                                !isStartTrainingEnabled()
+                                            }>
                                             <PublishIcon fontSize='large' />
                                             Start Simulation
                                         </Button>
                                     </CustomWidthTooltip>
                                 </Grid>
-
                             </Grid>
                         </Grid>
                     </Container>

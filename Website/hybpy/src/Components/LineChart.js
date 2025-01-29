@@ -33,7 +33,7 @@ export const LineChart = ({ data }) => {
     const chartData = useMemo(() => {
         const labels = data.map((item) => item.time);
         const datasets = Object.keys(data[0])
-            .filter((key) => key !== "time" && !key.startsWith("sd"))
+            .filter((key) => key !== "time" && !key.startsWith("sd") && !key.startsWith("Unnamed") && !key.startsWith("batch") && !key.startsWith("__"))
             .map((key, index) => {
                 return {
                     label: key,

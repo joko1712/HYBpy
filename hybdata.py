@@ -259,6 +259,7 @@ def hybdata(filename):
 
             nruleAss = int(i)
 
+        nruleAss = len(ruleAss_dict)
 
         if "nevent" in line:
             # Get the number of events

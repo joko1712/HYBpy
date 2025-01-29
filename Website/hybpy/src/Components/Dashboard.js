@@ -28,7 +28,7 @@ import {
     limit,
 } from "firebase/firestore";
 import { db } from "../firebase-config";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
 import Modal from "@mui/material/Modal";
@@ -174,7 +174,10 @@ export default function Dashboard() {
         try {
             const response = await fetch(`/run-status?user_id=${userId}`);
             const data = await response.json();
-            setRunInProgress(data.status === "in_progress");
+
+
+
+            setRunInProgress(data.status);
         } catch (error) {
             console.error("Error checking run status:", error);
         }
@@ -206,10 +209,17 @@ export default function Dashboard() {
                     setMode("Automatic");
                 }
 
-                if (latestRun[0].status === "in_progress") {
+                if (latestRun[0].status === "simulation in progress") {
+                    setRunInProgress("Simulation in progress...");
+                }
+                else if (latestRun[0].status === "training in progress") {
                     setRunInProgress("Training in progress...");
-                } else {
-                    setRunInProgress("Training completed");
+                }
+                else if (latestRun[0].status === "error") {
+                    setRunInProgress("Task failed");
+                }
+                else {
+                    setRunInProgress("Task completed");
                 }
 
                 checkRunStatus();
@@ -300,11 +310,12 @@ export default function Dashboard() {
                                 ? theme.palette.grey[100]
                                 : theme.palette.grey[900],
                         flexGrow: 1,
-                        height: "100%",
+                        height: "98vh",
                         overflow: "auto",
+                        hideScrollbar: { scrollbarWidth: "none" },
                     }}>
                     <Toolbar />
-                    <Container maxWidth='lg' sx={{ mt: 4, mb: 4 }}>
+                    <Container maxWidth='lg' sx={{ mt: 4, mb: 4, minHeight: "90%" }}>
                         <Grid container spacing={3}>
                             {/* Recent Run Details */}
                             <Grid item xs={12}>
@@ -314,7 +325,7 @@ export default function Dashboard() {
                                         display: "flex",
                                         flexDirection: "column",
                                     }}>
-                                    {runs.length > 0 ? (
+                                    {runs.length > 0 && runs[0].trained_weights ? (
                                         <>
                                             <Typography
                                                 variant='h4'
@@ -324,14 +335,29 @@ export default function Dashboard() {
                                             <Typography variant='h6'>{`Title: ${runs[0].description}`}</Typography>
                                             <Typography>{`HMOD: ${runs[0].file1_name}`}</Typography>
                                             <Typography>{`CSV: ${runs[0].file2_name}`}</Typography>
-                                            <Typography>{`Mode: ${mode}`}</Typography>
                                             <Typography>{`Status: ${runInProgress}`}</Typography>
                                         </>
-                                    ) : (
-                                        <Typography>
-                                            No recent run details
-                                        </Typography>
-                                    )}
+                                    )
+                                        :
+                                        runs.length > 0 ? (
+                                            <>
+                                                <Typography
+                                                    variant='h4'
+                                                    gutterBottom>
+                                                    Hybrid Model Details
+                                                </Typography>
+                                                <Typography variant='h6'>{`Title: ${runs[0].description}`}</Typography>
+                                                <Typography>{`HMOD: ${runs[0].file1_name}`}</Typography>
+                                                <Typography>{`CSV: ${runs[0].file2_name}`}</Typography>
+
+                                                <Typography>{`Mode: ${mode}`}</Typography>
+                                                <Typography>{`Status: ${runInProgress}`}</Typography>
+                                            </>
+                                        ) : (
+                                            <Typography>
+                                                No recent run details
+                                            </Typography>
+                                        )}
                                 </Paper>
                             </Grid>
                             {/* Recent Runs */}
@@ -359,7 +385,7 @@ export default function Dashboard() {
                                                 .filter(
                                                     (url) =>
                                                         selectedPlots.length ===
-                                                            0 ||
+                                                        0 ||
                                                         selectedPlots.includes(
                                                             url
                                                         )
@@ -369,7 +395,7 @@ export default function Dashboard() {
                                                         getFilteredPlots().filter(
                                                             (url) =>
                                                                 selectedPlots.length ===
-                                                                    0 ||
+                                                                0 ||
                                                                 selectedPlots.includes(
                                                                     url
                                                                 )
@@ -425,8 +451,8 @@ export default function Dashboard() {
                                             selected.length === 0
                                                 ? "All Plots"
                                                 : selected
-                                                      .map(getPlotTitle)
-                                                      .join(", ")
+                                                    .map(getPlotTitle)
+                                                    .join(", ")
                                         }>
                                         {getFilteredPlots().map(
                                             (url, index) => {
@@ -515,7 +541,7 @@ export default function Dashboard() {
                             backgroundColor: (theme) => theme.palette.grey[100],
                         }}>
                         <Toolbar />
-                        <Container maxWidth='lg'></Container>
+                        <Container maxWidth='lg' ></Container>
 
                         <Box
                             component='footer'

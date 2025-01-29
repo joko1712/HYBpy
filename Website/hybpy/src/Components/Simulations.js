@@ -45,10 +45,10 @@ import {
     TableHead,
     TableRow,
 } from "@mui/material";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import { LineChart } from "./LineChart";
 import InfoIcon from "@mui/icons-material/Info";
-import TrainingModal from "./Modals/TrainingModal";
+import SimulationModal from "./Modals/SimulationModal";
 import HmodModal from "./Modals/HmodModal";
 import MlmModal from "./Modals/MlmModal";
 import ControlModalSelection from "./Modals/ControlModalSelection";
@@ -133,7 +133,7 @@ function Simulations() {
     const [progress, setProgress] = useState(0);
     const [hmodModalOpen, setHmodModalOpen] = useState(false);
     const [initialValues, setInitialValues] = useState(null);
-    const [trainingModalOpen, setTrainingModalOpen] = useState(false);
+    const [simulationModalOpen, setSimulationModalOpen] = useState(false);
     const [runInProgress, setRunInProgress] = useState(false);
     const [hmodOptions, setHmodOptions] = useState({});
     const [headerModalOpen, setHeaderModalOpen] = useState(false);
@@ -156,12 +156,21 @@ function Simulations() {
     const [completedRuns, setCompletedRuns] = React.useState([]);
     const [selectedRun, setSelectedRun] = React.useState(null);
 
+    const isStartTrainingEnabled = () => {
+        return (
+            description.trim() !== "" &&
+            selectedFile1 !== null &&
+            selectedFile2 !== null
+        );
+    };
+
     const fetchCompletedRuns = async () => {
         const userId = auth.currentUser.uid;
         const runsCollectionRef = collection(db, "users", userId, "runs");
         const q = query(
             runsCollectionRef,
             where("status", "==", "completed"),
+            where("trained_weights", "==", null),
             where("userId", "==", userId),
             orderBy("createdAt", "desc")
         );
@@ -184,6 +193,7 @@ function Simulations() {
 
     const handleRunSelection = async (run) => {
         setSelectedRun(run);
+        setMode("2");
         console.log("Selected Run: ", run);
         console.log(
             "run.response_data.new_hmod_url: ",
@@ -282,8 +292,8 @@ function Simulations() {
         });
     };
 
-    const handleCloseTrainingModal = () => {
-        setTrainingModalOpen(false);
+    const handleCloseSimulationModal = () => {
+        setSimulationModalOpen(false);
         navigate("/results");
     };
 
@@ -763,229 +773,6 @@ function Simulations() {
         if (progress < 2) setProgress(2);
     };
 
-    const handleModeChange = (event) => {
-        setMode(event.target.value);
-        if (event.target.value === "1") {
-            if (progress < 4) setProgress(4);
-        } else if (event.target.value === "2") {
-            if (progress < 5) setProgress(5);
-        }
-    };
-
-    // Fetch the template HMOD and CSV files from the server
-    const getTemplate = (templateType) => {
-        fetch(
-            "https://my-flask-app-246502218926.us-central1.run.app/get-template-csv",
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ template_type: templateType }),
-            }
-        )
-            .then((response) => response.blob())
-            .then((blob) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const fileContent = reader.result;
-                    setFile2Content(fileContent);
-                };
-                reader.readAsText(blob);
-
-                const updatedFileObject = new File([blob], "template.csv", {
-                    type: "text/plain",
-                });
-                setSelectedFile2(updatedFileObject);
-                const file = selectedFile2;
-                reader.onload = (e) => {
-                    const workbook = XLSX.read(e.target.result, {
-                        type: "binary",
-                    });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const data = XLSX.utils.sheet_to_json(worksheet, {
-                        defval: "",
-                    });
-
-                    const separatedBatches = [];
-                    let currentBatch = [];
-
-                    data.forEach((row, index) => {
-                        const timeValue = row["time"];
-                        const nextTimeValue =
-                            index + 1 < data.length
-                                ? data[index + 1]["time"]
-                                : null;
-
-                        if (
-                            nextTimeValue !== null &&
-                            nextTimeValue < timeValue
-                        ) {
-                            currentBatch.push(row);
-                            separatedBatches.push(currentBatch);
-                            currentBatch = [];
-                        } else {
-                            currentBatch.push(row);
-                        }
-                    });
-
-                    if (currentBatch.length > 0) {
-                        separatedBatches.push(currentBatch);
-                    }
-
-                    setFile2Content(data);
-                    setBatchData(separatedBatches);
-                };
-                reader.readAsBinaryString(file);
-                if (progress < 2) setProgress(2);
-            })
-            .catch((error) => {
-                console.error("Error fetching template:", error);
-            });
-
-        fetch(
-            "https://my-flask-app-246502218926.us-central1.run.app/get-template-hmod",
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ template_type: templateType }),
-            }
-        )
-            .then((response) => response.blob())
-            .then((blob) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const fileContent = reader.result;
-
-                    const updatedContent = ensureHmodSections(
-                        fileContent,
-                        file2Content,
-                        Object.keys(file2Content[0] || {}).filter(
-                            (key) => key !== "time"
-                        ),
-                        handleOpenHeaderModal,
-                        selectedHeaders
-                    );
-
-                    setFile1Content(updatedContent);
-                };
-                reader.readAsText(blob);
-
-                const updatedFileObject = new File([blob], "template.hmod", {
-                    type: "text/plain",
-                });
-
-                setSelectedFile1(updatedFileObject);
-                setInitialValues(null);
-                setHmodOptions({});
-                const file = updatedFileObject;
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = async function (e) {
-                        const content = e.target.result;
-
-                        const updatedContent = await ensureHmodSections(
-                            content,
-                            file2Content,
-                            Object.keys(file2Content[0] || {}).filter(
-                                (key) => key !== "time"
-                            ),
-                            handleOpenHeaderModal,
-                            selectedHeaders
-                        );
-
-                        setFile1Content(updatedContent);
-
-                        const regexPrefix = /(\w+)\.nspecies=/g;
-                        const uniquePrefixes = new Set();
-                        let match;
-                        while ((match = regexPrefix.exec(content)) !== null) {
-                            uniquePrefixes.add(match[1]);
-                        }
-
-                        let initialValues = {};
-                        uniquePrefixes.forEach((prefix) => {
-                            const hiddenNodesMatch = content.match(
-                                new RegExp(
-                                    `${prefix}\\.mlm\\.options=\\{'hidden nodes', \\[(.*?)\\]\\};`
-                                )
-                            );
-
-                            if (hiddenNodesMatch) {
-                                console.log(
-                                    "Hidden Nodes Found: ",
-                                    hiddenNodesMatch[1]
-                                );
-                            } else {
-                                console.log(
-                                    "Hidden Nodes Not Found for prefix: ",
-                                    prefix
-                                );
-                            }
-
-                            const hiddenNodes = hiddenNodesMatch
-                                ? hiddenNodesMatch[1].trim().replace(/,/g, " ")
-                                : "";
-
-                            initialValues = {
-                                ...initialValues,
-                                hiddenNodes,
-                                layer: extractLayerValue(content, prefix, ""),
-                                tau: extractValue(
-                                    content,
-                                    `${prefix}.time.TAU`,
-                                    ""
-                                ),
-                                mode: extractValue(
-                                    content,
-                                    `${prefix}.mode`,
-                                    ""
-                                ),
-                                method: extractValue(
-                                    content,
-                                    `${prefix}.method`,
-                                    ""
-                                ),
-                                jacobian: extractValue(
-                                    content,
-                                    `${prefix}.jacobian}`,
-                                    ""
-                                ),
-                                hessian: extractValue(
-                                    content,
-                                    `${prefix}.hessian}`,
-                                    ""
-                                ),
-                                niter: extractValue(
-                                    content,
-                                    `${prefix}.niter}`,
-                                    ""
-                                ),
-                                nstep: extractValue(
-                                    content,
-                                    `${prefix}.nstep}`,
-                                    ""
-                                ),
-                                bootstrap: extractValue(
-                                    content,
-                                    `${prefix}.bootstrap}`,
-                                    ""
-                                ),
-                            };
-                        });
-
-                        console.log("Initial Values: ", initialValues);
-                        setHmodOptions(initialValues);
-                        setInitialValues(initialValues);
-                    };
-                    reader.readAsText(file);
-                }
-                if (progress < 3) setProgress(3);
-            })
-            .catch((error) => {
-                console.error("Error fetching template:", error);
-            });
-    };
-
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
         <Tooltip {...props} classes={{ popper: className }} />
     ))(({}) => ({
@@ -1000,10 +787,7 @@ function Simulations() {
             return;
         }
 
-        if (mode !== "1" && mode !== "2") {
-            alert("Please select a mode (1 or 2)!");
-            return;
-        }
+        setMode("2");
 
         const requiredFields = [
             "hiddenNodes",
@@ -1091,7 +875,7 @@ function Simulations() {
 
         console.log("Form Data: ", formData);
 
-        setTrainingModalOpen(true);
+        setSimulationModalOpen(true);
 
         try {
             const response = await fetch(
@@ -1165,43 +949,6 @@ function Simulations() {
         fetchAvailableBatches();
     }, [selectedFile2, mode]);
 
-    const handleTrainBatchSelection = (batch) => {
-        setTrainBatches((prevSelectedBatches) => {
-            const newSelection = new Set(prevSelectedBatches);
-            if (newSelection.has(batch)) {
-                newSelection.delete(batch);
-            } else if (!test_batches.has(batch)) {
-                newSelection.add(batch);
-            }
-            return newSelection;
-        });
-    };
-
-    const handleTestBatchSelection = (batch) => {
-        setTestBatches((prevSelectedBatches) => {
-            const newSelection = new Set(prevSelectedBatches);
-            if (newSelection.has(batch)) {
-                newSelection.delete(batch);
-            } else if (!train_batches.has(batch)) {
-                newSelection.add(batch);
-            }
-            return newSelection;
-        });
-    };
-
-    const isStartTrainingDisabled = () => {
-        if (mode === "1") {
-            return (
-                train_batches.size === 0 ||
-                test_batches.size === 0 ||
-                description === ""
-            );
-        } else if (mode === "2") {
-            return description === "";
-        }
-        return true;
-    };
-
     const handleTabChange = (event, newValue) => {
         setTabIndex(newValue);
     };
@@ -1211,15 +958,13 @@ function Simulations() {
 
         let updatedContent = file1Content;
 
-        const regexPrefix = /(\w+)\.nspecies=/g; // Match the prefix of the HMOD file (e.g. 'model' in 'model.nspecies=3;')
-        // Get all unique prefixes in the HMOD file (e.g. 'model') and store them in a Set to avoid duplicates
+        const regexPrefix = /(\w+)\.nspecies=/g;
         const uniquePrefixes = new Set();
         let match;
         while ((match = regexPrefix.exec(file1Content)) !== null) {
             uniquePrefixes.add(match[1]);
         }
 
-        // Create a map of options to update in the HMOD file based on the unique prefixes found in the file. This can be extended to include more options.
         const optionsMap = {};
         uniquePrefixes.forEach((prefix) => {
             optionsMap[
@@ -1360,23 +1105,6 @@ function Simulations() {
                             <h2 style={{ float: "left", marginTop: 0 }}>
                                 Simulate Model{" "}
                             </h2>
-                            <h3 style={{ color: "red" }}>
-                                (Under Development)
-                            </h3>
-                            {/* 
-                            <Button
-                                onClick={() => getTemplate(2)}
-                                variant='contained'
-                                style={{ float: "right", marginTop: 0, margin: 5 }}>
-                                Use Template Model 2
-                            </Button>
-                            <Button
-                                onClick={() => getTemplate(1)}
-                                variant='contained'
-                                style={{ float: "right", marginTop: 0, margin: 5 }}>
-                                Use Template Model 1
-                            </Button>
-                            */}
                         </div>
 
                         <Grid container spacing={3} columns={20}>
@@ -1442,7 +1170,7 @@ function Simulations() {
                                         flexDirection: "column",
                                     }}>
                                     <Typography variant='h5'>
-                                        Select a Previous Run
+                                        Step 2: Select a Previous Run
                                     </Typography>
                                     <Select
                                         fullWidth
@@ -1490,7 +1218,8 @@ function Simulations() {
                                         }}>
                                         <Typography variant='h5'>
                                             {" "}
-                                            Step 2: CSV
+                                            Step 3: Load CSV containing the
+                                            experimental data
                                         </Typography>
                                         <Tooltip
                                             title='In this we will ask you to upload the CSV file which is a file containing the information about the batches. After uploading there will be a preview of the file.'
@@ -1653,31 +1382,8 @@ function Simulations() {
                                         p: 2,
                                         display: "flex",
                                         flexDirection: "column",
-                                        marginBottom: 2,
+                                        marginBottom: 0.5,
                                         overflow: "auto",
-                                    }}>
-                                    <Typography variant='h6'>
-                                        Step 3. Please select HMOD
-                                        hybrid/standard model (.hmod). The HMOD
-                                        file is an intermediate format that
-                                        enables communication between the
-                                        essential components of the mechanistic
-                                        and hybrid models. You can use the{" "}
-                                        <Link href='#'>SBML2HYB</Link> tool to
-                                        create a hybrid HMOD model format from
-                                        any SBML model or see{" "}
-                                        <Link href='#'> Example 1</Link> and{" "}
-                                        <Link href='#'> Example 2</Link> to
-                                        edit/create your own standard HMOD
-                                        model.
-                                    </Typography>
-                                </Paper>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        height: 600,
                                     }}>
                                     <div
                                         style={{
@@ -1685,10 +1391,11 @@ function Simulations() {
                                             alignItems: "center",
                                         }}>
                                         <Typography variant='h5'>
-                                            HMOD
+                                            {" "}
+                                            Step 4: Load HMOD
                                         </Typography>
                                         <Tooltip
-                                            title='Insert your HMOD file containing the information about the mechanistic model and the settings for the machine learning model here.'
+                                            title='Upload the HMOD file (see template structure) or use SBML2HYB tool to generate the HMOD file.'
                                             arrow>
                                             <IconButton
                                                 size='small'
@@ -1697,10 +1404,18 @@ function Simulations() {
                                             </IconButton>
                                         </Tooltip>
                                     </div>
+                                </Paper>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        height: 600,
+                                    }}>
                                     <Typography variant='body1' sx={{ mt: 2 }}>
                                         {selectedFile1
                                             ? selectedFile1.name
-                                            : "Insert your HMOD file containing the information about the mechanistic model and the settings for the machine learning model here."}
+                                            : "Insert your HMOD file containing your model."}
                                     </Typography>
                                     <div style={{ overflowY: "auto", flex: 1 }}>
                                         <pre>{file1Content}</pre>
@@ -1742,7 +1457,7 @@ function Simulations() {
                                             height: "100%",
                                             marginBottom: 2,
                                         }}>
-                                        Edit HMOD Options
+                                        Edit HMOD Settings
                                     </Button>
                                 </div>
                             </Grid>
@@ -1790,201 +1505,32 @@ function Simulations() {
                             </Grid>
 
                             <Grid item xs={20} columns={20}>
-                                <Grid item xs={20}>
-                                    <Paper
-                                        sx={{
-                                            p: 2,
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            marginBottom: 0.5,
-                                            overflow: "auto",
-                                        }}>
-                                        <Typography variant='h5'>
-                                            {" "}
-                                            Step 4: Select data split
-                                            (train/test sets)
-                                        </Typography>
-                                    </Paper>
-                                </Grid>
-                                <Grid item xs={20}>
-                                    <Paper
-                                        sx={{
-                                            p: 2,
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            marginBottom: 2,
-                                        }}>
-                                        <div
-                                            style={{
+                                <Grid
+                                    item
+                                    xs={12}
+                                    container
+                                    justifyContent='center'
+                                    alignItems='center'>
+                                    <CustomWidthTooltip
+                                        title='After clicking on the Upload Information button, the information will be uploaded and the run will be created.'
+                                        followCursor
+                                        arrow>
+                                        <Button
+                                            onClick={handleUpload}
+                                            variant='contained'
+                                            sx={{
+                                                mt: 2,
                                                 display: "flex",
-                                                alignItems: "center",
-                                            }}>
-                                            <Typography variant='h5'>
-                                                Batch Selection
-                                            </Typography>
-                                            <Tooltip
-                                                title='The experimental dataset selections can be manually adjust or automatically split into training/test sets (2/3 of the data split for the trainning).'
-                                                arrow>
-                                                <IconButton
-                                                    size='small'
-                                                    sx={{ ml: 1 }}>
-                                                    <InfoIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </div>
-                                        <Select
-                                            labelId='Mode'
-                                            id='Mode'
-                                            value={mode}
-                                            sx={{ mt: 2 }}
-                                            onChange={handleModeChange}
-                                            disabled={progress < 3}>
-                                            <MenuItem value={"1"}>
-                                                Manual
-                                            </MenuItem>
-                                            <MenuItem value={"2"}>
-                                                Automatic
-                                            </MenuItem>
-                                        </Select>
-                                    </Paper>
+                                                width: "50%",
+                                            }}
+                                            disabled={
+                                                !isStartTrainingEnabled()
+                                            }>
+                                            <PublishIcon fontSize='large' />
+                                            Start Simulation
+                                        </Button>
+                                    </CustomWidthTooltip>
                                 </Grid>
-
-                                {mode === "1" && progress >= 4 && (
-                                    <>
-                                        <Grid item xs={20}>
-                                            <Paper
-                                                sx={{
-                                                    p: 2,
-                                                    display: "flex",
-                                                    flexDirection: "row",
-                                                    marginBottom: -0.5,
-                                                    overflow: "auto",
-                                                }}>
-                                                <Typography variant='h6'>
-                                                    Available Batches:{" "}
-                                                    {availableBatches.join(
-                                                        ", "
-                                                    )}
-                                                </Typography>
-                                            </Paper>
-                                        </Grid>
-                                        <Grid item xs={20}>
-                                            <Paper
-                                                sx={{
-                                                    p: 2,
-                                                    display: "flex",
-                                                    flexDirection: "row",
-                                                    marginBottom: -0.5,
-                                                    overflow: "auto",
-                                                }}>
-                                                <Typography variant='h6'>
-                                                    Select Train Batches:{" "}
-                                                </Typography>
-                                                {availableBatches.map(
-                                                    (batch) => (
-                                                        <div key={batch}>
-                                                            <Checkbox
-                                                                checked={train_batches.has(
-                                                                    batch
-                                                                )}
-                                                                onChange={() =>
-                                                                    handleTrainBatchSelection(
-                                                                        batch
-                                                                    )
-                                                                }
-                                                            />
-                                                            {batch}
-                                                        </div>
-                                                    )
-                                                )}
-                                            </Paper>
-                                        </Grid>
-                                        <Grid item xs={20}>
-                                            <Paper
-                                                sx={{
-                                                    p: 2,
-                                                    display: "flex",
-                                                    flexDirection: "row",
-                                                    marginBottom: 0.5,
-                                                    overflow: "auto",
-                                                }}>
-                                                <Typography variant='h6'>
-                                                    Select Test Batches:{" "}
-                                                </Typography>
-                                                {availableBatches.map(
-                                                    (batch) => (
-                                                        <div key={batch}>
-                                                            <Checkbox
-                                                                checked={test_batches.has(
-                                                                    batch
-                                                                )}
-                                                                onChange={() =>
-                                                                    handleTestBatchSelection(
-                                                                        batch
-                                                                    )
-                                                                }
-                                                            />
-                                                            {batch}
-                                                        </div>
-                                                    )
-                                                )}
-                                            </Paper>
-                                        </Grid>
-                                        <Grid
-                                            item
-                                            xs={12}
-                                            container
-                                            justifyContent='center'
-                                            alignItems='center'>
-                                            <CustomWidthTooltip
-                                                title={
-                                                    "After clicking on the Upload Information button, the information will be uploaded and the run will be created."
-                                                }
-                                                followCursor
-                                                arrow>
-                                                <Button
-                                                    onClick={handleUpload}
-                                                    variant='contained'
-                                                    sx={{
-                                                        mt: 2,
-                                                        display: "flex",
-                                                        width: "75%",
-                                                    }}
-                                                    disabled={isStartTrainingDisabled()}>
-                                                    <PublishIcon fontSize='large' />
-                                                    Start Training
-                                                </Button>
-                                            </CustomWidthTooltip>
-                                        </Grid>
-                                    </>
-                                )}
-
-                                {mode === "2" && progress >= 5 && (
-                                    <Grid
-                                        item
-                                        xs={12}
-                                        container
-                                        justifyContent='center'
-                                        alignItems='center'>
-                                        <CustomWidthTooltip
-                                            title='After clicking on the Upload Information button, the information will be uploaded and the run will be created.'
-                                            followCursor
-                                            arrow>
-                                            <Button
-                                                onClick={handleUpload}
-                                                variant='contained'
-                                                sx={{
-                                                    mt: 2,
-                                                    display: "flex",
-                                                    width: "75%",
-                                                }}
-                                                disabled={description === ""}>
-                                                <PublishIcon fontSize='large' />
-                                                Start Training
-                                            </Button>
-                                        </CustomWidthTooltip>
-                                    </Grid>
-                                )}
                             </Grid>
                         </Grid>
                     </Container>
@@ -2020,9 +1566,9 @@ function Simulations() {
                 initialValues={initialValues}
                 setHmodOptions={setHmodOptions}
             />
-            <TrainingModal
-                open={trainingModalOpen}
-                handleClose={handleCloseTrainingModal}
+            <SimulationModal
+                open={simulationModalOpen}
+                handleClose={handleCloseSimulationModal}
             />
 
             <ControlModalSelection

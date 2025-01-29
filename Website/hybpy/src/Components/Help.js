@@ -34,7 +34,7 @@ import {
     limit,
 } from "firebase/firestore";
 import { db } from "../firebase-config";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import step1 from "../Image/Guide Print/Step1.png";
 import step2 from "../Image/Guide Print/Step2.png";
 import step3 from "../Image/Guide Print/Step3.png";
@@ -350,6 +350,18 @@ export default function LandingPage() {
                                     that will show you the data that was
                                     uploaded in a graphical way.
                                 </p>
+                                <Button
+                                    onClick={() =>
+                                        getTemplateDownloadLink(3, "xlsx")
+
+                                    }
+                                    variant='contained'
+                                    sx={{
+                                        marginBottom: 2,
+                                        marginRight: 2,
+                                    }}>
+                                    Get Csv Template
+                                </Button>
                                 <img src={step3} alt='Step 3' width='100%' />
 
                                 <p>

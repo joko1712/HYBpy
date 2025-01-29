@@ -21,7 +21,7 @@ import {
     Link,
     Button,
 } from "@mui/material";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 
 const defaultTheme = createTheme();
 
@@ -123,7 +123,6 @@ function Register() {
 
                 <Container
                     component='main'
-                    maxWidth='md'
                     sx={{
                         display: "flex",
                         flexDirection: "column",
@@ -138,6 +137,7 @@ function Register() {
                             flexDirection: "column",
                             alignItems: "center",
                             mt: 2,
+                            maxWidth: "50%"
                         }}>
                         <h1>What is HYBpy?</h1>
                         <p>
@@ -157,6 +157,7 @@ function Register() {
                             </Link>{" "}
                             page.
                         </p>
+                        <Box sx={{ mt: "5%" }} />
                         <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
                             <LockOutlinedIcon />
                         </Avatar>
@@ -167,7 +168,7 @@ function Register() {
                             component='form'
                             noValidate
                             onSubmit={registerUser}
-                            sx={{ mt: 3 }}>
+                            sx={{ mt: 1, maxWidth: "75%" }}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12}>
                                     <TextField

@@ -27,7 +27,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { red } from "@mui/material/colors";
 import Modal from "@mui/material/Modal";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import DeleteIcon from "@mui/icons-material/Delete";
 import {
     ListItemButton,
@@ -45,6 +45,8 @@ import {
     TableHead,
     TableRow,
 } from "@mui/material";
+import BackupIcon from "@mui/icons-material/Backup";
+import BatchPredictionIcon from "@mui/icons-material/BatchPrediction";
 
 const drawerWidth = 200;
 
@@ -470,7 +472,7 @@ export default function OldRuns() {
                     <Toolbar />
                     <Container
                         maxWidth='lg'
-                        sx={{ mt: 1, mb: 4, minHeight: "79%" }}>
+                        sx={{ mt: 4, mb: 4, minHeight: "90%" }}>
                         <h1>
                             <strong>List of Historical Projects</strong>
                         </h1>
@@ -497,6 +499,17 @@ export default function OldRuns() {
                                             <ListItemButton
                                                 key={run.id}
                                                 onClick={() => handleOpen(run)}>
+                                                {run.trained_weights ? (
+                                                    <BatchPredictionIcon
+                                                        sx={{ mr: 2 }}
+                                                        titleAccess='Trained weights available'
+                                                    />
+                                                ) : (
+                                                    <BackupIcon
+                                                        sx={{ mr: 2 }}
+                                                        titleAccess='Trained weights not available'
+                                                    />
+                                                )}
                                                 <ListItemText
                                                     primary={`Title: ${run.description}`}
                                                     secondary={`HMOD:${
@@ -513,7 +526,6 @@ export default function OldRuns() {
                                                             : "Not finished"
                                                     }`}
                                                 />
-
                                                 <IconButton
                                                     sx={{ color: red[500] }}
                                                     onClick={(e) => {
@@ -631,7 +643,7 @@ export default function OldRuns() {
                                                                         {/* Display Metrics */}
                                                                         {selectedRun
                                                                             .response_data
-                                                                            .metrics &&
+                                                                            .metrics ? (
                                                                             Object.entries(
                                                                                 selectedRun
                                                                                     .response_data
@@ -653,13 +665,35 @@ export default function OldRuns() {
                                                                                             }
                                                                                         </TableCell>
                                                                                         <TableCell>
-                                                                                            {value.toFixed(
-                                                                                                5
-                                                                                            )}
+                                                                                            {typeof value ===
+                                                                                            "number"
+                                                                                                ? value.toFixed(
+                                                                                                      5
+                                                                                                  )
+                                                                                                : value}
                                                                                         </TableCell>
                                                                                     </TableRow>
                                                                                 )
-                                                                            )}
+                                                                            )
+                                                                        ) : (
+                                                                            <TableRow>
+                                                                                <TableCell
+                                                                                    colSpan={
+                                                                                        2
+                                                                                    }>
+                                                                                    <Typography
+                                                                                        variant='body2'
+                                                                                        color='textSecondary'>
+                                                                                        No
+                                                                                        metrics
+                                                                                        available
+                                                                                        for
+                                                                                        this
+                                                                                        run.
+                                                                                    </Typography>
+                                                                                </TableCell>
+                                                                            </TableRow>
+                                                                        )}
 
                                                                         {/* Trained Weights */}
                                                                         <TableRow>
@@ -811,7 +845,7 @@ export default function OldRuns() {
                                                                                 Inputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Inputs ||
+                                                                                {selectedRun.Inputs ??
                                                                                     "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
@@ -822,7 +856,7 @@ export default function OldRuns() {
                                                                                 Outputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Outputs ||
+                                                                                {selectedRun.Outputs ??
                                                                                     "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>

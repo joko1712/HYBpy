@@ -26,7 +26,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { useEffect } from "react";
-import logo from "../Image/HYBpyINVIS_logo_BETA.png";
+import logo from "../Image/HYBpyINVIS_logo.png";
 import hybrid from "../Image/hybridmodel.jpg";
 
 const drawerWidth = 200;
@@ -72,6 +72,7 @@ const Drawer = styled(MuiDrawer, {
                 width: theme.spacing(9),
             },
         }),
+        textAlign: "center"
     },
 }));
 
@@ -233,13 +234,12 @@ export default function LandingPage() {
                         <Typography variant='subtitle1' gutterBottom>
                             Hybrid modeling is a cutting-edge approach that
                             integrates the predictive power of machine learning
-                            algorithms (Nonparametric model) with the
+                            algorithms (nonparametric model) with the
                             foundational principles of mechanistic models
-                            (Parametric model). This synergy allows for the
+                            (parametric model). This synergy allows for the
                             creation of models that are not only highly accurate
                             but also deeply insightful, providing a
-                            comprehensive understanding of bioprocesses and bio
-                            (chemical) systems.
+                            comprehensive understanding of bioprocesses and bio(chemical) systems.
                         </Typography>
                         <div
                             style={{
@@ -262,8 +262,7 @@ export default function LandingPage() {
                                 marginTop: "10px",
                             }}>
                             <Typography variant='caption'>
-                                Example of a typical structure for a hybrid
-                                model.
+                                Figure. Example of a typical structure for a hybrid model
                             </Typography>
                         </div>
                         <h2>Why HYBpy?</h2>
@@ -322,29 +321,37 @@ export default function LandingPage() {
                             sx={{
                                 my: 1,
                                 borderBottomWidth: 1,
+
                             }}
                         />
-                        <Typography variant='h6' gutterBottom>
-                            <b>
-                                Just proceed to the{" "}
-                                <Button
-                                    color='inherit'
-                                    variant='text'
-                                    onClick={() => navigateToCreateRun()}>
-                                    New Project
-                                </Button>{" "}
-                                tab to start using the tool. If you have any
-                                questions or need assistance, please feel free
-                                to{" "}
-                                <Button
-                                    color='inherit'
-                                    variant='text'
-                                    onClick={handleContactUsClick}>
-                                    contact us
-                                </Button>
-                                .
-                            </b>
-                        </Typography>
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                            }}>
+                            <Typography align="center" variant='h6' gutterBottom sx={{ maxWidth: "70%", }}>
+                                <b>
+                                    Just proceed to the{" "}
+                                    <Button
+                                        color='inherit'
+                                        variant='text'
+                                        onClick={() => navigateToCreateRun()}>
+                                        New Project
+                                    </Button>{" "}
+                                    tab to start using the tool. If you have any
+                                    questions or need assistance, please feel free
+                                    to{" "}
+                                    <Button
+                                        color='inherit'
+                                        variant='text'
+                                        onClick={handleContactUsClick}>
+                                        contact us
+                                    </Button>
+                                    .
+                                </b>
+                            </Typography>
+                        </div>
                     </Container>
                     <footer
                         style={{

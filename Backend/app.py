@@ -14,12 +14,14 @@ import tempfile  # For creating temporary directories
 import glob
 import re
 import time
+import math
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import your custom modules (ensure these are thread-safe)
 from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, add_state_and_time_to_data
+
 
 # Firebase Admin SDK
 import firebase_admin
@@ -164,34 +166,66 @@ def upload_file():
         # Initialize hybdata with file1
         projhyb = hybdata(file1_path)
 
+        Inputs = projhyb["inputs"]
+        Outputs = projhyb["outputs"]
+
         user_ref = db.collection('users').document(user_id)
         run_ref = user_ref.collection('runs').document()
-        run_ref.set({
-            "userId": user_id,
-            "file1": file1_url,
-            "file2": file2_url,
-            "file1_name": file1.filename,
-            "file2_name": file2.filename,
-            "description": description,
-            "trained_weights": trained_weights,
-            "mode": mode,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "Inputs": Inputs,
-            "Outputs": Outputs,
-            "MachineLearning": {
-                "HiddenNodes": HiddenNodes,
-                "Layer": Layer,
-                "Tau": Tau,
-                "Mode": Mode,
-                "Method": Method,
-                "Jacobian": Jacobian,
-                "Hessian": Hessian,
-                "Niter": Niter,
-                "Nstep": Nstep,
-                "Bootstrap": Bootstrap
-            },
-            "status": "in_progress"
-        })
+
+        if trained_weights == None:
+            run_ref.set({
+                "userId": user_id,
+                "file1": file1_url,
+                "file2": file2_url,
+                "file1_name": file1.filename,
+                "file2_name": file2.filename,
+                "description": description,
+                "trained_weights": trained_weights,
+                "mode": mode,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+                "Inputs": Inputs,
+                "Outputs": Outputs,
+                "MachineLearning": {
+                    "HiddenNodes": HiddenNodes,
+                    "Layer": Layer,
+                    "Tau": Tau,
+                    "Mode": Mode,
+                    "Method": Method,
+                    "Jacobian": Jacobian,
+                    "Hessian": Hessian,
+                    "Niter": Niter,
+                    "Nstep": Nstep,
+                    "Bootstrap": Bootstrap
+                },
+                "status": "training in progress",
+            })
+        else:
+            run_ref.set({
+                "userId": user_id,
+                "file1": file1_url,
+                "file2": file2_url,
+                "file1_name": file1.filename,
+                "file2_name": file2.filename,
+                "description": description,
+                "trained_weights": trained_weights,
+                "mode": mode,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+                "Inputs": Inputs,
+                "Outputs": Outputs,
+                "MachineLearning": {
+                    "HiddenNodes": HiddenNodes,
+                    "Layer": Layer,
+                    "Tau": Tau,
+                    "Mode": Mode,
+                    "Method": Method,
+                    "Jacobian": Jacobian,
+                    "Hessian": Hessian,
+                    "Niter": Niter,
+                    "Nstep": Nstep,
+                    "Bootstrap": Bootstrap
+                },
+                "status": "simulation in progress",
+            })
 
         # Process file2 and prepare data
         with open(file2_path, 'r') as f:
@@ -240,10 +274,42 @@ def upload_file():
         count = len(data)
         data["nbatch"] = count
 
+
         data_json_path = os.path.join(temp_dir, "data.json")
         with open(data_json_path, "w") as write_file:
             json.dump(data, write_file)
 
+        projhyb_json_path = os.path.join(temp_dir, "projhyb.json")
+        with open(projhyb_json_path, "w") as write_file:
+            json.dump(projhyb, write_file)
+
+        '''
+        files = {
+            'projhyb_file': open(projhyb_json_path, 'rb'),
+            'data_file': open(data_json_path, 'rb')
+        }
+
+        print("trained_weights", trained_weights)
+
+        data_params = {
+            'user_id': user_id,
+            'trained_weights': json.dumps(trained_weights) if trained_weights else None,
+            'file1_url': file1_url,
+            'file1Filename': file1.filename,
+            "folder_id": folder_id,
+            "bucket_name": os.getenv("STORAGE_BUCKET_NAME"),
+            "run_ref_id": run_ref.id,
+        }
+        
+        #gcloud functions deploy run_hybtrain --runtime python39 --trigger-http --allow-unauthenticated --project hybpy-test --region us-central1 --entry-point run_hybtrain --memory 2048MB --timeout 3600s
+
+        cloud_function_url = 'https://us-central1-hybpy-test.cloudfunctions.net/run_hybtrain'
+
+        response = requests.post(cloud_function_url, data=data_params, files=files)
+        response.raise_for_status()
+        '''
+
+        
         # Adjust hybtrain to accept temp_dir and use paths accordingly
         projhyb, trainData, metrics, newHmodFile = hybtrain(projhyb, data, user_id, trained_weights, file1_path, temp_dir)
 
@@ -260,7 +326,7 @@ def upload_file():
             "trainData": trainData_serializable,
             "metrics": metrics,
             "new_hmod_url": new_hmod_url,
-            "new_hmod": new_hmod_filename
+            "new_hmod": new_hmod_filename,
         }
 
         # Upload plots to storage
@@ -272,38 +338,18 @@ def upload_file():
             "finishedAt": firestore.SERVER_TIMESTAMP,
         })
 
-        createdAt = run_ref.get().to_dict().get("createdAt")
-        finishedAt = run_ref.get().to_dict().get("finishedAt")
-
-        if createdAt and finishedAt:
-            createdAt_ms = createdAt.timestamp() * 1000 
-            finishedAt_ms = finishedAt.timestamp() * 1000
-            time_difference = finishedAt_ms - createdAt_ms
-
-        duration = milliseconds_to_time(time_difference)
-
-        run_ref.update({
-            "duration": duration
-        })
-
         # Clean up temporary directory
         shutil.rmtree(temp_dir)
+        
 
-        return jsonify(response_data) , 200
+        return jsonify("Done") , 200
 
     except Exception as e:
         logging.error("Error during file upload: %s", str(e), exc_info=True)
         
         run_ref.update({"status": "error"})
         return jsonify({"error": str(e)}), 500
-
-def milliseconds_to_time(milliseconds):
-    seconds = (milliseconds // 1000) % 60
-    minutes = (milliseconds // (1000 * 60)) % 60
-    hours = (milliseconds // (1000 * 60 * 60)) % 24
-    days = milliseconds // (1000 * 60 * 60 * 24)
-
-    return f"{days}d {hours}h {minutes}m {seconds}s"
+        
 
 @app.route("/get-available-batches", methods=['POST'])
 def get_available_batches():

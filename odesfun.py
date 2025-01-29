@@ -24,94 +24,78 @@ def computeDFDS(projhyb, fstate, state_symbols, NValues):
     else:
         DfDs = projhyb['mlm']['DFDS']
 
-    print("DfDs before subs", DfDs)
-    
     DfDs = DfDs.subs(NValues)
-    
-        
     DfDs = np.array(DfDs).reshape(len(fstate), len(state_symbols))
-
 
     if np.iscomplexobj(DfDs):
         DfDs = DfDs.real
 
-    DfDs = torch.from_numpy(DfDs.astype(np.float64))
+    # Change to float32
+    DfDs = torch.from_numpy(DfDs.astype(np.float32))
     return DfDs
 
 def computeDFDRANN(projhyb, fstate, rann_symbol, NValues):
-
     if projhyb['mlm']['DFDRANN'] is None:
         DfDrann = numerical_diferentiation_torch(fstate, rann_symbol, NValues)
         projhyb['mlm']['DFDRANN'] = DfDrann
     else:
         DfDrann = projhyb['mlm']['DFDRANN']
 
-        
     DfDrann = DfDrann.subs(NValues)
     DfDrann = np.array(DfDrann).reshape(len(fstate), projhyb["mlm"]["ny"])
 
-    print("DfDrann", DfDrann)
-    print("DFdrann size", DfDrann.size)
-
     if np.iscomplexobj(DfDrann):
         DfDrann = DfDrann.real
-    DfDrann = torch.from_numpy(DfDrann.astype(np.float64))
+
+    # Change to float32
+    DfDrann = torch.from_numpy(DfDrann.astype(np.float32))
     return DfDrann
 
 def computeDANNINPDSTATE(projhyb, anninp, state_symbols, NValues):
     if projhyb['mlm']['DANNINPDSTATE'] is None:
-
         DanninpDstate = numerical_diferentiation_torch(anninp, state_symbols, NValues)
-
         projhyb['mlm']['DANNINPDSTATE'] = DanninpDstate
     else:
         DanninpDstate = projhyb['mlm']['DANNINPDSTATE']
 
     DanninpDstate = DanninpDstate.subs(NValues)
-
     DanninpDstate = np.array(DanninpDstate)
+    
     if len(anninp) > 1:
-        
         DanninpDstate = DanninpDstate.reshape(len(anninp), len(state_symbols))
 
     if np.iscomplexobj(DanninpDstate):
         DanninpDstate = DanninpDstate.real
-    DanninpDstate = torch.from_numpy(DanninpDstate.astype(np.float64))
+
+    # Change to float32
+    DanninpDstate = torch.from_numpy(DanninpDstate.astype(np.float32))
     return DanninpDstate
 
 def computeBackpropagation(ann, anninp_tensor, projhyb):
     y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor, projhyb['mlm']['ny'])
-
     return y, DrannDanninp, DrannDw
 
 def computeDRANNDS(DrannDanninp, DanninpDstate):
-
+    # Ensure both tensors are float32
+    DrannDanninp = DrannDanninp.to(dtype=torch.float32)
+    DanninpDstate = DanninpDstate.to(dtype=torch.float32)
     return torch.mm(DrannDanninp, DanninpDstate)
 
 def computeDfDrannDrannDw(DfDrann, DrannDw):
-
-
+    # Ensure both tensors are float32
+    DfDrann = DfDrann.to(dtype=torch.float32)
+    DrannDw = DrannDw.to(dtype=torch.float32)
     return torch.mm(DfDrann, DrannDw)
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann):
-
     if jac is None and hess is None:
         NValues = {**values, **state}
         fstate = [expr.subs(NValues) for expr in fstate]
         return fstate
 
-    print("fst", fstate)
-    print("state", state)
-    print("jac", jac)
-    print("anninp", anninp)
-    print("anninp_tensor", anninp_tensor)
-    print("state_symbols", state_symbols)
-    print("values", values)
-    print("rann", rann)
-
-
     if projhyb['mode'] == 1:
         NValues = {**values, **state}
+        # Ensure cached items are sympified
         fstate = projhyb_cache.get('FSTATE', sp.sympify(fstate))
         state_symbols = projhyb_cache.get('STATE_SYMBOLS', sp.sympify(state_symbols))
         anninp = projhyb_cache.get('ANNINP', sp.sympify(anninp))
@@ -137,7 +121,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
                 key = future_to_function[future]
                 results[key] = future.result()
 
-
         DfDs = results['DfDs']
         DfDrann = results['DfDrann']
         DanninpDstate = results['DanninpDstate']
@@ -156,18 +139,12 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
         DrannDs = results['DrannDs']
         DfDrannDrannDw = results['DfDrannDrannDw']
-        print("DrannDs size", DrannDs.size())
-        print("DfDrannDrannDw size", DfDrannDrannDw.size())
-        print("DfDrann size", DfDrann.size())
-        print("DfDs size", DfDs.size())
 
-        DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann, DrannDs)
-        print("DfDsDfDrannDrannDs size", DfDsDfDrannDrannDs.size())
+        # Ensure DfDs and torch.mm(DfDrann, DrannDs) are float32
+        DfDsDfDrannDrannDs = DfDs + torch.mm(DfDrann, DrannDs).to(dtype=torch.float32)
 
-        print(" torch.mm(DfDsDfDrannDrannDs, jac) size", torch.mm(DfDsDfDrannDrannDs, jac).size())
-        fjac = torch.mm(DfDsDfDrannDrannDs, jac) + DfDrannDrannDw
-        print("fjac size", fjac.size()) 
-
+        # Ensure fjac is float32
+        fjac = torch.mm(DfDsDfDrannDrannDs, jac.to(dtype=torch.float32)) + DfDrannDrannDw.to(dtype=torch.float32)
 
         fstate = [expr.subs(NValues) for expr in fstate]
         return fstate, fjac

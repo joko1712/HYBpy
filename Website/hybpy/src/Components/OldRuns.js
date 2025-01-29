@@ -226,7 +226,7 @@ export default function OldRuns() {
 
     const fetchFileUrls = async (userId, runId) => {
         const response = await fetch(
-            `https://api.hybpy.com/get-file-urls?user_id=${userId}&run_id=${runId}`
+            `https://my-flask-app-246502218926.us-central1.run.app/get-file-urls?user_id=${userId}&run_id=${runId}`
         );
         const data = response.json();
         if (response.ok) {
@@ -242,17 +242,20 @@ export default function OldRuns() {
             const file1Url = runToDelete.file1;
             const folderPath = file1Url.split("/").slice(4, -1).join("/");
 
-            const response = await fetch("https://api.hybpy.com/delete-run", {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    user_id: userId,
-                    run_id: runToDelete.id,
-                    folder_path: folderPath,
-                }),
-            });
+            const response = await fetch(
+                "https://my-flask-app-246502218926.us-central1.run.app/delete-run",
+                {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        run_id: runToDelete.id,
+                        folder_path: folderPath,
+                    }),
+                }
+            );
             const result = await response.json();
             console.log("Delete response:", result);
             if (response.ok) {
@@ -650,9 +653,9 @@ export default function OldRuns() {
                                                                                             }
                                                                                         </TableCell>
                                                                                         <TableCell>
-                                                                                            {
-                                                                                                value
-                                                                                            }
+                                                                                            {value.toFixed(
+                                                                                                5
+                                                                                            )}
                                                                                         </TableCell>
                                                                                     </TableRow>
                                                                                 )

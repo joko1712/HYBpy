@@ -191,15 +191,18 @@ function Simulations() {
         );
 
         try {
-            const response = await fetch(`https://api.hybpy.com/get-new-hmod`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    url: run.response_data.new_hmod_url,
-                }),
-            });
+            const response = await fetch(
+                `https://my-flask-app-246502218926.us-central1.run.app/get-new-hmod`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        url: run.response_data.new_hmod_url,
+                    }),
+                }
+            );
 
             if (!response.ok) {
                 throw new Error(
@@ -771,11 +774,14 @@ function Simulations() {
 
     // Fetch the template HMOD and CSV files from the server
     const getTemplate = (templateType) => {
-        fetch("https://api.hybpy.com/get-template-csv", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ template_type: templateType }),
-        })
+        fetch(
+            "https://my-flask-app-246502218926.us-central1.run.app/get-template-csv",
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ template_type: templateType }),
+            }
+        )
             .then((response) => response.blob())
             .then((blob) => {
                 const reader = new FileReader();
@@ -836,11 +842,14 @@ function Simulations() {
                 console.error("Error fetching template:", error);
             });
 
-        fetch("https://api.hybpy.com/get-template-hmod", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ template_type: templateType }),
-        })
+        fetch(
+            "https://my-flask-app-246502218926.us-central1.run.app/get-template-hmod",
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ template_type: templateType }),
+            }
+        )
             .then((response) => response.blob())
             .then((blob) => {
                 const reader = new FileReader();
@@ -1085,10 +1094,13 @@ function Simulations() {
         setTrainingModalOpen(true);
 
         try {
-            const response = await fetch("https://api.hybpy.com/upload", {
-                method: "POST",
-                body: formData,
-            });
+            const response = await fetch(
+                "https://my-flask-app-246502218926.us-central1.run.app/upload",
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
 
             const data = await response.json();
             setBackendResponse(JSON.stringify(data, null, 2));
@@ -1105,7 +1117,7 @@ function Simulations() {
         const intervalId = setInterval(async () => {
             try {
                 const response = await fetch(
-                    `https://api.hybpy.com/run-status?user_id=${userId}`
+                    `https://my-flask-app-246502218926.us-central1.run.app/run-status?user_id=${userId}`
                 );
                 const data = await response.json();
                 if (data.status === "no_runs") {
@@ -1135,7 +1147,7 @@ function Simulations() {
                     formData.append("file2", selectedFile2);
 
                     const response = await fetch(
-                        "https://api.hybpy.com/get-available-batches",
+                        "https://my-flask-app-246502218926.us-central1.run.app/get-available-batches",
                         {
                             method: "POST",
                             body: formData,

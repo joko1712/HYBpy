@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import sys
 import os
 import json
@@ -41,9 +41,15 @@ firebase_admin.initialize_app(cred, {
 db = firestore.client()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": ["https://www.hybpy.com", "https://hybpy.com"]}}, supports_credentials=True)
 
-logging.basicConfig(level=logging.DEBUG)
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS, DELETE, PUT'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
 
 def upload_file_to_storage(file_path, user_id, filename, folder_id):
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
@@ -107,7 +113,8 @@ def ensure_json_serializable(data):
     else:
         return str(data)
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload', methods=['OPTIONS','POST'])
+@cross_origin()
 def upload_file():
     run_ref = None
     try:
@@ -351,7 +358,8 @@ def upload_file():
         return jsonify({"error": str(e)}), 500
         
 
-@app.route("/get-available-batches", methods=['POST'])
+@app.route("/get-available-batches", methods=['OPTIONS','POST'])
+@cross_origin()
 def get_available_batches():
     try:
         temp_dir = tempfile.mkdtemp()
@@ -394,7 +402,8 @@ def get_available_batches():
         logging.error("Error in get_available_batches: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/run-status', methods=['GET'])
+@app.route('/run-status', methods=['OPTIONS','GET'])
+@cross_origin()
 def run_status():
     user_id = request.args.get('user_id')
     try:
@@ -412,7 +421,8 @@ def run_status():
         logging.error("Error in run_status: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-template-hmod', methods=['POST'])
+@app.route('/get-template-hmod', methods=['OPTIONS','POST'])
+@cross_origin()
 def get_template_hmod():
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
 
@@ -436,7 +446,8 @@ def get_template_hmod():
         logging.error("Error in get_template_hmod: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-template-csv', methods=['POST'])
+@app.route('/get-template-csv', methods=['OPTIONS','POST'])
+@cross_origin()
 def get_template_csv():
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
 
@@ -460,7 +471,8 @@ def get_template_csv():
         logging.error("Error in get_template_csv: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-template-xlsx', methods=['POST'])
+@app.route('/get-template-xlsx', methods=['OPTIONS','POST'])
+@cross_origin()
 def get_template_xlsx():
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
 
@@ -481,7 +493,8 @@ def get_template_xlsx():
         logging.error("Error in get_template_xlsx: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-template-hmod-download', methods=['POST'])
+@app.route('/get-template-hmod-download', methods=['OPTIONS','POST'])
+@cross_origin()
 def get_template_hmod_download():
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
 
@@ -502,7 +515,8 @@ def get_template_hmod_download():
         logging.error("Error in get_template_xlsx: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/delete-run', methods=['DELETE'])
+@app.route('/delete-run', methods=['OPTIONS','DELETE'])
+@cross_origin()
 def delete_run():
     try:
         data = request.json
@@ -548,7 +562,8 @@ def delete_run():
         logging.error("Error deleting run: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-file-urls', methods=['GET'])
+@app.route('/get-file-urls', methods=['OPTIONS','GET'])
+@cross_origin()
 def get_file_urls():
     user_id = request.args.get('user_id')
     run_id = request.args.get('run_id')
@@ -573,7 +588,8 @@ def get_file_urls():
         logging.error("Error in get_file_urls: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route("/get-new-hmod", methods=['POST'])
+@app.route("/get-new-hmod", methods=['OPTIONS','POST'])
+@cross_origin()
 def get_new_hmod():
     data = request.json
     url = data.get('url')
@@ -593,4 +609,7 @@ def get_new_hmod():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True, host="0.0.0.0", port=8080)
+    app.run(debug=True, threaded=True, host="0.0.0.0", port=5000,  ssl_context=(
+        '/etc/letsencrypt/live/api.hybpy.com/fullchain.pem',
+        '/etc/letsencrypt/live/api.hybpy.com/privkey.pem'
+    ))

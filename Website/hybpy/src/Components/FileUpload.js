@@ -115,6 +115,12 @@ const extractValue = (content, key, defaultValue) => {
     return match ? match[1].trim() : defaultValue;
 };
 
+const extractValueNxNy = (content, key, defaultValue) => {
+    const regex = new RegExp(`${key}\\s*=\\s*([^;]+);`);
+    const match = content.match(regex);
+    return match ? match[1].trim() : defaultValue;
+};
+
 function FileUpload() {
     const [selectedFile1, setSelectedFile1] = useState(null);
     const [file1Content, setFile1Content] = useState("");
@@ -440,6 +446,29 @@ function FileUpload() {
                 mlmExists = true;
             }
         }
+        let extractedMlmOptions = {};
+        if (mlmExists) {
+                uniquePrefixes.forEach((prefix) => {
+                const nx = parseInt(extractValueNxNy(updatedContent, `${prefix}.mlm.nx`, "0"));
+                const ny = parseInt(extractValueNxNy(updatedContent, `${prefix}.mlm.ny`, "0"));
+
+                const xOptions = [];
+                for (let i = 1; i <= nx; i++) {
+                    const val = extractValue(updatedContent, `${prefix}.mlm.x(${i}).val`, "");
+                    if (val) xOptions.push({ val });
+                }
+
+                const yOptions = [];
+                for (let i = 1; i <= ny; i++) {
+                    const id = extractValue(updatedContent, `${prefix}.mlm.y(${i}).id`, "");
+                    if (id) yOptions.push({ id });
+                }
+
+                extractedMlmOptions = { nx, ny, xOptions, yOptions };
+            });
+
+            setMlmOptions(extractedMlmOptions);
+        }
 
         updatedContent += `\nend`;
 
@@ -453,7 +482,7 @@ function FileUpload() {
             " Control exists: ",
             controlExists
         );
-        if (controlExists && configExists && mlmExists) return updatedContent;
+        if (controlExists && configExists && mlmExists) return { updatedContent, extractedMlmOptions };
     };
 
     const handleFileChange1 = async (event) => {
@@ -467,7 +496,7 @@ function FileUpload() {
             reader.onload = async function (e) {
                 const content = e.target.result;
                 console.log("File content loaded, ensuring HMOD sections...");
-                const updatedContent = await ensureHmodSections(
+                const { updatedContent, extractedMlmOptions } = await ensureHmodSections(
                     content,
                     file2Content,
                     Object.keys(file2Content[0] || {}).filter(
@@ -562,6 +591,8 @@ function FileUpload() {
                             `${prefix}.bootstrap`,
                             ""
                         ),
+                        nx: extractedMlmOptions.nx || extractValueNxNy(updatedContent, `${prefix}.mlm.nx`, ""),
+                        ny: extractedMlmOptions.ny || extractValueNxNy(updatedContent, `${prefix}.mlm.ny`, ""),
                     };
                 });
 
@@ -788,7 +819,7 @@ function FileUpload() {
                     reader.onload = async function (e) {
                         const content = e.target.result;
 
-                        const updatedContent = await ensureHmodSections(
+                        const { updatedContent, extractedMlmOptions } = await ensureHmodSections(
                             content,
                             file2Content,
                             Object.keys(file2Content[0] || {}).filter(
@@ -882,6 +913,8 @@ function FileUpload() {
                                     `${prefix}.bootstrap`,
                                     ""
                                 ),
+                                nx: extractedMlmOptions.nx || extractValueNxNy(updatedContent, `${prefix}.mlm.nx`, ""),
+                                ny: extractedMlmOptions.ny || extractValueNxNy(updatedContent, `${prefix}.mlm.ny`, ""),
                             };
                         });
 
@@ -944,7 +977,7 @@ function FileUpload() {
         }
 
         // Ensure HMOD sections before upload
-        const updatedContent = await ensureHmodSections(
+        const { updatedContent, extractedMlmOptions } = await ensureHmodSections(
             file1Content,
             file2Content,
             Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
@@ -1469,6 +1502,7 @@ function FileUpload() {
                                         </Button>
                                         <VisuallyHiddenInput
                                             type='file'
+                                            accept='.csv'
                                             id='csv-upload'
                                             disabled={progress < 1}
                                             onChange={handleFileChange2}
@@ -1613,6 +1647,7 @@ function FileUpload() {
                                         </Button>
                                         <VisuallyHiddenInput
                                             type='file'
+                                            accept='.hmod'
                                             id='hmod-upload'
                                             disabled={progress < 2}
                                             onChange={handleFileChange1}
@@ -1862,6 +1897,7 @@ function FileUpload() {
                 handleSave={handleHmodModalSave}
                 initialValues={initialValues}
                 setHmodOptions={setHmodOptions}
+                disableMethod5={mlmOptions.ny < mlmOptions.nx}
             />
             <TrainingModal
                 open={trainingModalOpen}

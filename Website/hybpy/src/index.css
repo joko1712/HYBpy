@@ -9,3 +9,18 @@ body {
 code {
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-grid, #printable-grid * {
+    visibility: visible;
+  }
+  #printable-grid {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

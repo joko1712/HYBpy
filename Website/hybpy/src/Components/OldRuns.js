@@ -284,6 +284,7 @@ export default function OldRuns() {
                 2: "Trust-Constr",
                 3: "Simulated Annealing",
                 4: "ADAM",
+                5: "ADAM + ODEint",
             },
             Mode: { 1: "Indirect", 2: "Direct", 3: "Indirect" },
             Layer: { 1: "Tanh", 2: "ReLU", 3: "LSTM" },

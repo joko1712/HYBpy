@@ -48,7 +48,6 @@ import {
 import BackupIcon from "@mui/icons-material/Backup";
 import BatchPredictionIcon from "@mui/icons-material/BatchPrediction";
 
-
 const drawerWidth = 200;
 
 const AppBar = styled(MuiAppBar, {
@@ -229,7 +228,7 @@ export default function OldRuns() {
 
     const fetchFileUrls = async (userId, runId) => {
         const response = await fetch(
-            `https://api.hybpy.com/get-file-urls?user_id=${userId}&run_id=${runId}`
+            `https://my-flask-app-246502218926.us-central1.run.app/get-file-urls?user_id=${userId}&run_id=${runId}`
         );
         const data = response.json();
         if (response.ok) {
@@ -245,17 +244,20 @@ export default function OldRuns() {
             const file1Url = runToDelete.file1;
             const folderPath = file1Url.split("/").slice(4, -1).join("/");
 
-            const response = await fetch("https://api.hybpy.com/delete-run", {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    user_id: userId,
-                    run_id: runToDelete.id,
-                    folder_path: folderPath,
-                }),
-            });
+            const response = await fetch(
+                "https://my-flask-app-246502218926.us-central1.run.app/delete-run",
+                {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        run_id: runToDelete.id,
+                        folder_path: folderPath,
+                    }),
+                }
+            );
             const result = await response.json();
             console.log("Delete response:", result);
             if (response.ok) {
@@ -501,26 +503,29 @@ export default function OldRuns() {
                                                 {run.trained_weights ? (
                                                     <BatchPredictionIcon
                                                         sx={{ mr: 2 }}
-                                                        titleAccess="Trained weights available"
+                                                        titleAccess='Trained weights available'
                                                     />
                                                 ) : (
                                                     <BackupIcon
                                                         sx={{ mr: 2 }}
-                                                        titleAccess="Trained weights not available"
+                                                        titleAccess='Trained weights not available'
                                                     />
                                                 )}
                                                 <ListItemText
                                                     primary={`Title: ${run.description}`}
-                                                    secondary={`HMOD:${run.file1_name
-                                                        } - CSV:${run.file2_name
-                                                        } - Mode:${mode} - CreatedAt:${run.createdAt
-                                                            .toDate()
-                                                            .toLocaleString()} -  FinishedAt: ${run.finishedAt
-                                                                ? run.finishedAt
-                                                                    .toDate()
-                                                                    .toLocaleString()
-                                                                : "Not finished"
-                                                        }`}
+                                                    secondary={`HMOD:${
+                                                        run.file1_name
+                                                    } - CSV:${
+                                                        run.file2_name
+                                                    } - Mode:${mode} - CreatedAt:${run.createdAt
+                                                        .toDate()
+                                                        .toLocaleString()} -  FinishedAt: ${
+                                                        run.finishedAt
+                                                            ? run.finishedAt
+                                                                  .toDate()
+                                                                  .toLocaleString()
+                                                            : "Not finished"
+                                                    }`}
                                                 />
                                                 <IconButton
                                                     sx={{ color: red[500] }}
@@ -549,105 +554,142 @@ export default function OldRuns() {
                                                     md: "90%",
                                                 },
                                                 overflowY: "auto",
-                                            }}
-                                        >
+                                            }}>
                                             {selectedRun && (
                                                 <div
                                                     style={{
                                                         display: "flex",
                                                         flexDirection: "column",
-                                                    }}
-                                                >
+                                                    }}>
                                                     <Typography
-                                                        id="modal-modal-title"
-                                                        variant="h4"
-                                                        component="h2"
-                                                    >
+                                                        id='modal-modal-title'
+                                                        variant='h4'
+                                                        component='h2'>
                                                         <strong>
-                                                            Title: {selectedRun.description}
+                                                            Title:{" "}
+                                                            {
+                                                                selectedRun.description
+                                                            }
                                                         </strong>
                                                     </Typography>
 
                                                     <Typography
-                                                        id="modal-modal-title"
-                                                        variant="h4"
-                                                        component="h2"
+                                                        id='modal-modal-title'
+                                                        variant='h4'
+                                                        component='h2'
                                                         style={{
                                                             display: "flex",
                                                             alignSelf: "center",
-                                                        }}
-                                                    >
+                                                        }}>
                                                         Model Evaluation
                                                     </Typography>
 
                                                     {/* Display Plots */}
                                                     <div>
                                                         {selectedRun.plots &&
-                                                            selectedRun.plots.map((plotUrl, index) => (
-                                                                <img
-                                                                    key={index}
-                                                                    src={plotUrl}
-                                                                    alt={`Plot ${index}`}
-                                                                    style={{
-                                                                        width: "30%",
-                                                                        marginBottom: 10,
-                                                                        cursor: "pointer",
-                                                                    }}
-                                                                    onClick={() => handlePlotClick(index)}
-                                                                />
-                                                            ))}
+                                                            selectedRun.plots.map(
+                                                                (
+                                                                    plotUrl,
+                                                                    index
+                                                                ) => (
+                                                                    <img
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        src={
+                                                                            plotUrl
+                                                                        }
+                                                                        alt={`Plot ${index}`}
+                                                                        style={{
+                                                                            width: "30%",
+                                                                            marginBottom: 10,
+                                                                            cursor: "pointer",
+                                                                        }}
+                                                                        onClick={() =>
+                                                                            handlePlotClick(
+                                                                                index
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                )
+                                                            )}
                                                     </div>
 
                                                     {selectedRun.response_data ? (
                                                         <>
                                                             <TableContainer
-                                                                component={Paper}
+                                                                component={
+                                                                    Paper
+                                                                }
                                                                 sx={{
                                                                     marginTop: 3,
-                                                                }}
-                                                            >
-                                                                <Table aria-label="data table">
+                                                                }}>
+                                                                <Table aria-label='data table'>
                                                                     <TableBody>
                                                                         <TableRow>
                                                                             <TableCell
-                                                                                colSpan={2}
+                                                                                colSpan={
+                                                                                    2
+                                                                                }
                                                                                 sx={{
-                                                                                    backgroundColor: "#f5f5f5",
-                                                                                }}
-                                                                            >
-                                                                                <Typography variant="h6">
+                                                                                    backgroundColor:
+                                                                                        "#f5f5f5",
+                                                                                }}>
+                                                                                <Typography variant='h6'>
                                                                                     Metrics
                                                                                 </Typography>
                                                                             </TableCell>
                                                                         </TableRow>
 
                                                                         {/* Display Metrics */}
-                                                                        {selectedRun.response_data.metrics ? (
+                                                                        {selectedRun
+                                                                            .response_data
+                                                                            .metrics ? (
                                                                             Object.entries(
-                                                                                selectedRun.response_data.metrics
-                                                                            ).map(([key, value]) => (
-                                                                                <TableRow key={key}>
-                                                                                    <TableCell
-                                                                                        component="th"
-                                                                                        scope="row"
-                                                                                    >
-                                                                                        {key}
-                                                                                    </TableCell>
-                                                                                    <TableCell>
-                                                                                        {typeof value === "number"
-                                                                                            ? value.toFixed(5)
-                                                                                            : value}
-                                                                                    </TableCell>
-                                                                                </TableRow>
-                                                                            ))
+                                                                                selectedRun
+                                                                                    .response_data
+                                                                                    .metrics
+                                                                            ).map(
+                                                                                ([
+                                                                                    key,
+                                                                                    value,
+                                                                                ]) => (
+                                                                                    <TableRow
+                                                                                        key={
+                                                                                            key
+                                                                                        }>
+                                                                                        <TableCell
+                                                                                            component='th'
+                                                                                            scope='row'>
+                                                                                            {
+                                                                                                key
+                                                                                            }
+                                                                                        </TableCell>
+                                                                                        <TableCell>
+                                                                                            {typeof value ===
+                                                                                            "number"
+                                                                                                ? value.toFixed(
+                                                                                                      5
+                                                                                                  )
+                                                                                                : value}
+                                                                                        </TableCell>
+                                                                                    </TableRow>
+                                                                                )
+                                                                            )
                                                                         ) : (
                                                                             <TableRow>
-                                                                                <TableCell colSpan={2}>
+                                                                                <TableCell
+                                                                                    colSpan={
+                                                                                        2
+                                                                                    }>
                                                                                     <Typography
-                                                                                        variant="body2"
-                                                                                        color="textSecondary"
-                                                                                    >
-                                                                                        No metrics available for this
+                                                                                        variant='body2'
+                                                                                        color='textSecondary'>
+                                                                                        No
+                                                                                        metrics
+                                                                                        available
+                                                                                        for
+                                                                                        this
                                                                                         run.
                                                                                     </Typography>
                                                                                 </TableCell>
@@ -656,13 +698,17 @@ export default function OldRuns() {
 
                                                                         {/* Trained Weights */}
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
-                                                                                Trained Weights
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Trained
+                                                                                Weights
                                                                             </TableCell>
                                                                             <TableCell>
                                                                                 <DisplayJson
                                                                                     data={
-                                                                                        selectedRun.response_data
+                                                                                        selectedRun
+                                                                                            .response_data
                                                                                             .trainData
                                                                                     }
                                                                                 />
@@ -671,131 +717,180 @@ export default function OldRuns() {
 
                                                                         {/* File Names */}
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
                                                                                 Hmod
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.file1_name}
+                                                                                {
+                                                                                    selectedRun.file1_name
+                                                                                }
                                                                             </TableCell>
                                                                         </TableRow>
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
                                                                                 CSV
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.file2_name}
+                                                                                {
+                                                                                    selectedRun.file2_name
+                                                                                }
                                                                             </TableCell>
                                                                         </TableRow>
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
                                                                                 NewHmod
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.response_data.new_hmod}
+                                                                                {
+                                                                                    selectedRun
+                                                                                        .response_data
+                                                                                        .new_hmod
+                                                                                }
                                                                             </TableCell>
                                                                         </TableRow>
 
                                                                         {/* Mode */}
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
                                                                                 Mode
                                                                             </TableCell>
-                                                                            <TableCell>{mode}</TableCell>
+                                                                            <TableCell>
+                                                                                {
+                                                                                    mode
+                                                                                }
+                                                                            </TableCell>
                                                                         </TableRow>
 
                                                                         {/* Created At */}
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
-                                                                                Created At
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Created
+                                                                                At
                                                                             </TableCell>
                                                                             <TableCell>
                                                                                 {selectedRun.createdAt
                                                                                     ? selectedRun.createdAt
-                                                                                        .toDate()
-                                                                                        .toLocaleString()
+                                                                                          .toDate()
+                                                                                          .toLocaleString()
                                                                                     : "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
 
                                                                         {/* Finished At */}
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
-                                                                                Finished At
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
+                                                                                Finished
+                                                                                At
                                                                             </TableCell>
                                                                             <TableCell>
                                                                                 {selectedRun.finishedAt
                                                                                     ? selectedRun.finishedAt
-                                                                                        .toDate()
-                                                                                        .toLocaleString()
+                                                                                          .toDate()
+                                                                                          .toLocaleString()
                                                                                     : "Not Finished"}
                                                                             </TableCell>
                                                                         </TableRow>
 
                                                                         {/* Duration */}
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
                                                                                 Duration
                                                                             </TableCell>
                                                                             <TableCell>
                                                                                 {selectedRun.createdAt &&
-                                                                                    selectedRun.finishedAt
+                                                                                selectedRun.finishedAt
                                                                                     ? calculateDuration(
-                                                                                        selectedRun.createdAt,
-                                                                                        selectedRun.finishedAt
-                                                                                    )
+                                                                                          selectedRun.createdAt,
+                                                                                          selectedRun.finishedAt
+                                                                                      )
                                                                                     : "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
 
                                                                         <TableRow>
                                                                             <TableCell
-                                                                                colSpan={2}
+                                                                                colSpan={
+                                                                                    2
+                                                                                }
                                                                                 sx={{
-                                                                                    backgroundColor: "#f5f5f5",
-                                                                                }}
-                                                                            >
-                                                                                <Typography variant="h6">
-                                                                                    Machine Learning Options
+                                                                                    backgroundColor:
+                                                                                        "#f5f5f5",
+                                                                                }}>
+                                                                                <Typography variant='h6'>
+                                                                                    Machine
+                                                                                    Learning
+                                                                                    Options
                                                                                 </Typography>
                                                                             </TableCell>
                                                                         </TableRow>
 
                                                                         {/* Inputs and Outputs */}
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
                                                                                 Inputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Inputs ?? "N/A"}
+                                                                                {selectedRun.Inputs ??
+                                                                                    "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
                                                                         <TableRow>
-                                                                            <TableCell component="th" scope="row">
+                                                                            <TableCell
+                                                                                component='th'
+                                                                                scope='row'>
                                                                                 Outputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Outputs ?? "N/A"}
+                                                                                {selectedRun.Outputs ??
+                                                                                    "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
 
                                                                         {/* Machine Learning Options */}
                                                                         {selectedRun.MachineLearning &&
                                                                             machineLearningOptions.map(
-                                                                                ({ key, label }) => {
+                                                                                ({
+                                                                                    key,
+                                                                                    label,
+                                                                                }) => {
                                                                                     const value =
-                                                                                        selectedRun.MachineLearning[
-                                                                                        key
+                                                                                        selectedRun
+                                                                                            .MachineLearning[
+                                                                                            key
                                                                                         ];
-                                                                                    if (value === undefined) {
+                                                                                    if (
+                                                                                        value ===
+                                                                                        undefined
+                                                                                    ) {
                                                                                         return null;
                                                                                     }
                                                                                     return (
-                                                                                        <TableRow key={key}>
+                                                                                        <TableRow
+                                                                                            key={
+                                                                                                key
+                                                                                            }>
                                                                                             <TableCell
-                                                                                                component="th"
-                                                                                                scope="row"
-                                                                                            >
-                                                                                                {label}
+                                                                                                component='th'
+                                                                                                scope='row'>
+                                                                                                {
+                                                                                                    label
+                                                                                                }
                                                                                             </TableCell>
                                                                                             <TableCell>
                                                                                                 {getDisplayValue(
@@ -815,46 +910,51 @@ export default function OldRuns() {
                                                             <div
                                                                 style={{
                                                                     marginTop: 20,
-                                                                }}
-                                                            >
+                                                                }}>
                                                                 <Button
-                                                                    variant="contained"
-                                                                    href={fileUrls.file1_url}
-                                                                    target="_blank"
+                                                                    variant='contained'
+                                                                    href={
+                                                                        fileUrls.file1_url
+                                                                    }
+                                                                    target='_blank'
                                                                     download
                                                                     style={{
                                                                         margin: "10px",
-                                                                    }}
-                                                                >
-                                                                    Download HMOD
+                                                                    }}>
+                                                                    Download
+                                                                    HMOD
                                                                 </Button>
                                                                 <Button
-                                                                    variant="contained"
-                                                                    href={fileUrls.file2_url}
-                                                                    target="_blank"
+                                                                    variant='contained'
+                                                                    href={
+                                                                        fileUrls.file2_url
+                                                                    }
+                                                                    target='_blank'
                                                                     download
                                                                     style={{
                                                                         margin: "10px",
-                                                                    }}
-                                                                >
+                                                                    }}>
                                                                     Download CSV
                                                                 </Button>
                                                                 <Button
-                                                                    variant="contained"
-                                                                    href={fileUrls.new_hmod_url}
-                                                                    target="_blank"
+                                                                    variant='contained'
+                                                                    href={
+                                                                        fileUrls.new_hmod_url
+                                                                    }
+                                                                    target='_blank'
                                                                     download
                                                                     style={{
                                                                         margin: "10px",
-                                                                    }}
-                                                                >
-                                                                    Download Trained HMOD
+                                                                    }}>
+                                                                    Download
+                                                                    Trained HMOD
                                                                 </Button>
                                                             </div>
                                                         </>
                                                     ) : (
-                                                        <Typography color="error">
-                                                            Error: No response data available
+                                                        <Typography color='error'>
+                                                            Error: No response
+                                                            data available
                                                         </Typography>
                                                     )}
                                                 </div>
@@ -922,7 +1022,7 @@ export default function OldRuns() {
                                                     <img
                                                         src={
                                                             selectedRun.plots[
-                                                            selectedPlotIndex
+                                                                selectedPlotIndex
                                                             ]
                                                         }
                                                         alt={`Plot ${selectedPlotIndex}`}

@@ -105,11 +105,14 @@ export default function LandingPage() {
         let url = "";
 
         if (fileType === "csv") {
-            url = "https://api.hybpy.com/get-template-csv";
+            url =
+                "https://my-flask-app-246502218926.us-central1.run.app/get-template-csv";
         } else if (fileType === "hmod") {
-            url = "https://api.hybpy.com/get-template-hmod-download";
+            url =
+                "https://my-flask-app-246502218926.us-central1.run.app/get-template-hmod-download";
         } else if (fileType === "xlsx") {
-            url = "https://api.hybpy.com/get-template-xlsx";
+            url =
+                "https://my-flask-app-246502218926.us-central1.run.app/get-template-xlsx";
         }
 
         if (templateType === 3) {

@@ -17,4 +17,6 @@ EXPOSE 3000
 
 # CMD ["sh", "-c", "npm start -- --port 8050"]
 
-CMD ["npm", "start"]
+# CMD ["npm", "start"]
+
+CMD ["npx", "serve", "-s", "build", "-l", "3000"]

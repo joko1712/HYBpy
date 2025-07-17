@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import IconButton from "@mui/material/IconButton";
-const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOptions }) => {
+const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOptions, disableMethod5  }) => {
     const [hiddenNodes, setHiddenNodes] = useState(initialValues ? initialValues.hiddenNodes : "");
     const [layer, setLayer] = useState(initialValues ? initialValues.layer : 1);
     const [tau, setTau] = useState(initialValues ? initialValues.tau : 0.25);
@@ -124,6 +124,13 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                             <MenuItem value={3}>Dual Annealing</MenuItem>
 
                             <MenuItem value={4}>ADAM</MenuItem>
+
+                            <MenuItem
+                                value={5}
+                                disabled={disableMethod5}
+                            >
+                                {disableMethod5 ? "ADAM + ODEint (Disabled: ny > nx)" : "ADAM + ODEint"}
+                            </MenuItem>
                         </TextField>
                         <Tooltip
                             title='Trust Region Reflective: Suitable for large-scale nonlinear least-squares problems. Trust-Region Constrained or L-BFGS-B: Suitable for constrained optimization problems. Simulated Annealing: Probabilistic technique for approximating the global optimum. ADAM: Optimization algorithm that computes adaptive learning rates for each parameter.'

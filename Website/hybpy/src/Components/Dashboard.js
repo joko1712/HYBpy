@@ -170,14 +170,41 @@ export default function Dashboard() {
         setModalOpen(false);
     };
 
+    const handleStopRun = async () => {
+        try {
+            const response = await fetch(`https://api.hybpy.com/cancel-run?user_id=${userId}`, {
+            method: "POST",
+            });
+
+            const result = await response.json();
+            alert(result.message);
+
+            checkRunStatus();
+        } catch (error) {
+            console.error("Failed to stop run:", error);
+            alert("Failed to stop the run.");
+        }
+    };
+
     const checkRunStatus = async () => {
         try {
-            const response = await fetch(`/run-status?user_id=${userId}`);
+            const response = await fetch(`https://api.hybpy.com/run-status?user_id=${userId}`);
             const data = await response.json();
 
 
 
-            setRunInProgress(data.status);
+            if (data.status === "simulation in progress") {
+                    setRunInProgress("Simulation in progress...");
+                }
+                else if (data.status === "training in progress") {
+                    setRunInProgress("Training in progress...");
+                }
+                else if (data.status === "error") {
+                    setRunInProgress("Task failed");
+                }
+                else {
+                    setRunInProgress("Task completed");
+                }     
         } catch (error) {
             console.error("Error checking run status:", error);
         }
@@ -228,6 +255,8 @@ export default function Dashboard() {
 
         fetchLatestRun();
     }, [userId]);
+    
+    const cancelButton = runInProgress === "Training in progress...";
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -336,6 +365,16 @@ export default function Dashboard() {
                                             <Typography>{`HMOD: ${runs[0].file1_name}`}</Typography>
                                             <Typography>{`CSV: ${runs[0].file2_name}`}</Typography>
                                             <Typography>{`Status: ${runInProgress}`}</Typography>
+                                            {cancelButton && (
+                                                <Button
+                                                    variant="outlined"
+                                                    color="error"
+                                                    onClick={handleStopRun}
+                                                    sx={{ mt: 2 }}
+                                                >
+                                                    Stop Current Run
+                                                </Button>
+                                            )}
                                         </>
                                     )
                                         :
@@ -352,6 +391,16 @@ export default function Dashboard() {
 
                                                 <Typography>{`Mode: ${mode}`}</Typography>
                                                 <Typography>{`Status: ${runInProgress}`}</Typography>
+                                                {cancelButton && (
+                                                    <Button
+                                                        variant="outlined"
+                                                        color="error"
+                                                        onClick={handleStopRun}
+                                                        sx={{ mt: 2 }}
+                                                    >
+                                                        Stop Current Run
+                                                    </Button>
+                                                )}
                                             </>
                                         ) : (
                                             <Typography>
@@ -550,14 +599,14 @@ export default function Dashboard() {
                                 backgroundColor: "#f1f1f1",
                                 position: "fixed",
                                 bottom: 0,
-                                left: open ? `${drawerWidth}px` : "56px", // Adjust based on drawer state
+                                left: open ? `${drawerWidth}px` : "56px",
                                 width: open
                                     ? `calc(100% - ${drawerWidth}px)`
                                     : "calc(100% - 56px)",
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center",
-                                transition: "width 0.3s ease, left 0.3s ease", // Smooth transition when toggling drawer
+                                transition: "width 0.3s ease, left 0.3s ease",
                             }}>
                             <Typography
                                 variant='body2'

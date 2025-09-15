@@ -47,6 +47,10 @@ import {
 } from "@mui/material";
 import BackupIcon from "@mui/icons-material/Backup";
 import BatchPredictionIcon from "@mui/icons-material/BatchPrediction";
+import { handleContactUsClick } from "./ContactUs";
+import EmailIcon from '@mui/icons-material/Email';
+
+
 
 const drawerWidth = 200;
 
@@ -228,7 +232,7 @@ export default function OldRuns() {
 
     const fetchFileUrls = async (userId, runId) => {
         const response = await fetch(
-            `https://my-flask-app-246502218926.us-central1.run.app/get-file-urls?user_id=${userId}&run_id=${runId}`
+            `https://api.hybpy.com/get-file-urls?user_id=${userId}&run_id=${runId}`
         );
         const data = response.json();
         if (response.ok) {
@@ -245,7 +249,7 @@ export default function OldRuns() {
             const folderPath = file1Url.split("/").slice(4, -1).join("/");
 
             const response = await fetch(
-                "https://my-flask-app-246502218926.us-central1.run.app/delete-run",
+                "https://api.hybpy.com/delete-run",
                 {
                     method: "DELETE",
                     headers: {
@@ -295,32 +299,6 @@ export default function OldRuns() {
             : value;
     };
 
-    useEffect(() => {
-        const fetchLatestRun = async () => {
-            const runsCollectionRef = collection(db, "users", userId, "runs");
-            const q = query(
-                runsCollectionRef,
-                where("status", "==", "completed"),
-                where("userId", "==", userId),
-                orderBy("createdAt", "desc")
-            );
-            const querySnapshot = await getDocs(q);
-            const latestRun = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setRuns(latestRun);
-            if (latestRun.length > 0) {
-                if (latestRun[0].mode === "1") {
-                    setMode("Manual");
-                } else {
-                    setMode("Automatic");
-                }
-            }
-        };
-
-        fetchLatestRun();
-    }, [userId]);
 
     const filteredRuns = runs.filter((run) => {
         return (
@@ -343,6 +321,8 @@ export default function OldRuns() {
 
     const navigate = useNavigate();
     const location = useLocation();
+    const selectedRunIdFromState = location.state?.selectedRunId;
+
     const [open, setOpen] = React.useState(
         localStorage.getItem("drawerOpen") === "true"
     );
@@ -397,6 +377,43 @@ export default function OldRuns() {
 
         return durationString;
     };
+
+    useEffect(() => {
+        const fetchLatestRun = async () => {
+            const runsCollectionRef = collection(db, "users", userId, "runs");
+            const q = query(
+                runsCollectionRef,
+                where("status", "==", "completed"),
+                where("userId", "==", userId),
+                orderBy("createdAt", "desc")
+            );
+            const querySnapshot = await getDocs(q);
+            const latestRun = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setRuns(latestRun);
+            if (latestRun.length > 0) {
+                if (latestRun[0].mode === "1") {
+                    setMode("Manual");
+                } else {
+                    setMode("Automatic");
+                }
+
+                if (selectedRunIdFromState) {
+                    const matchedRun = latestRun.find(
+                        (run) => run.id === selectedRunIdFromState
+                    );
+                    if (matchedRun) {
+                        handleOpen(matchedRun);
+                        navigate(location.pathname, { replace: true });
+                    }
+                }
+            }
+        };
+
+        fetchLatestRun();
+    }, [userId]);
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -641,62 +658,31 @@ export default function OldRuns() {
                                                                             </TableCell>
                                                                         </TableRow>
 
-                                                                        {/* Display Metrics */}
-                                                                        {selectedRun
-                                                                            .response_data
-                                                                            .metrics ? (
-                                                                            Object.entries(
-                                                                                selectedRun
-                                                                                    .response_data
-                                                                                    .metrics
-                                                                            ).map(
-                                                                                ([
-                                                                                    key,
-                                                                                    value,
-                                                                                ]) => (
-                                                                                    <TableRow
-                                                                                        key={
-                                                                                            key
-                                                                                        }>
-                                                                                        <TableCell
-                                                                                            component='th'
-                                                                                            scope='row'>
-                                                                                            {
-                                                                                                key
-                                                                                            }
+                                                                        
+                                                                        {selectedRun.response_data.metrics ? (
+                                                                            ["r2_train", "r2_test", "mse_train", "mse_test"].map((key) => {
+                                                                                const value = selectedRun.response_data.metrics[key];
+                                                                                if (value === undefined) return null;
+                                                                                return (
+                                                                                    <TableRow key={key}>
+                                                                                        <TableCell component='th' scope='row'>
+                                                                                            {key}
                                                                                         </TableCell>
                                                                                         <TableCell>
-                                                                                            {typeof value ===
-                                                                                            "number"
-                                                                                                ? value.toFixed(
-                                                                                                      5
-                                                                                                  )
-                                                                                                : value}
+                                                                                            {typeof value === "number" ? value.toFixed(5) : value}
                                                                                         </TableCell>
                                                                                     </TableRow>
-                                                                                )
-                                                                            )
+                                                                                );
+                                                                            })
                                                                         ) : (
                                                                             <TableRow>
-                                                                                <TableCell
-                                                                                    colSpan={
-                                                                                        2
-                                                                                    }>
-                                                                                    <Typography
-                                                                                        variant='body2'
-                                                                                        color='textSecondary'>
-                                                                                        No
-                                                                                        metrics
-                                                                                        available
-                                                                                        for
-                                                                                        this
-                                                                                        run.
+                                                                                <TableCell colSpan={2}>
+                                                                                    <Typography variant='body2' color='textSecondary'>
+                                                                                        No metrics available for this run.
                                                                                     </Typography>
                                                                                 </TableCell>
                                                                             </TableRow>
                                                                         )}
-
-                                                                        {/* Trained Weights */}
                                                                         <TableRow>
                                                                             <TableCell
                                                                                 component='th'
@@ -1100,18 +1086,40 @@ export default function OldRuns() {
                             width: "100%",
                             marginTop: "auto",
                         }}>
-                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de
-                            Ciências e Tecnologia Universidade NOVA de Lisboa
-                            2024. All rights reserved.
-                        </p>
+                        
+                        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                            <p style={{ margin: 0, textAlign: "center" }}>
+                            &copy; {new Date().getFullYear()} NOVA School of Science and Technology,
+                            Universidade NOVA de Lisboa. All rights reserved.
+                            </p>
 
-                        <img
-                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='75px'
-                            alt='FCT Logo'
-                            style={{ marginLeft: "auto" }}
-                        />
+                            <Button
+                            color="inherit"
+                            variant="text"
+                            onClick={handleContactUsClick}
+                            style={{
+                                marginTop: "0.5em",
+                                alignSelf: "center",
+                                textTransform: "none",
+                            }}
+                            startIcon={<EmailIcon />}
+                            >
+                            Contact Us
+                            </Button>
+                        </div>
+
+                        <a
+                            href="https://www.fct.unl.pt/en"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <img
+                            src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
+                            width="75px"
+                            alt="FCT Logo"
+                            style={{ marginLeft: "1em" }}
+                            />
+                        </a>
                     </footer>
                 </Box>
             </Box>

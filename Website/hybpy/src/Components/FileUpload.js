@@ -49,6 +49,10 @@ import TrainingModal from "./Modals/TrainingModal";
 import HmodModal from "./Modals/HmodModal";
 import MlmModal from "./Modals/MlmModal";
 import ControlModalSelection from "./Modals/ControlModalSelection";
+import { handleContactUsClick } from "./ContactUs";
+import EmailIcon from '@mui/icons-material/Email';
+
+
 
 const drawerWidth = 200;
 
@@ -657,13 +661,13 @@ function FileUpload() {
 
         if (fileType === "csv") {
             url =
-                "https://my-flask-app-246502218926.us-central1.run.app/get-template-csv";
+                "https://api.hybpy.com/get-template-csv";
         } else if (fileType === "hmod") {
             url =
-                "https://my-flask-app-246502218926.us-central1.run.app/get-template-hmod-download";
+                "https://api.hybpy.com/get-template-hmod-download";
         } else if (fileType === "xlsx") {
             url =
-                "https://my-flask-app-246502218926.us-central1.run.app/get-template-xlsx";
+                "https://api.hybpy.com/get-template-xlsx";
         }
 
         if (templateType === 3) {
@@ -700,7 +704,7 @@ function FileUpload() {
     // Fetch the template HMOD and CSV files from the server
     const getTemplate = (templateType) => {
         fetch(
-            "https://my-flask-app-246502218926.us-central1.run.app/get-template-csv",
+            "https://api.hybpy.com/get-template-csv",
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -777,7 +781,7 @@ function FileUpload() {
             });
 
         fetch(
-            "https://my-flask-app-246502218926.us-central1.run.app/get-template-hmod",
+            "https://api.hybpy.com/get-template-hmod",
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1039,7 +1043,7 @@ function FileUpload() {
 
         try {
             const response = await fetch(
-                "https://my-flask-app-246502218926.us-central1.run.app/upload",
+                "https://api.hybpy.com/upload",
                 {
                     method: "POST",
                     body: formData,
@@ -1061,7 +1065,7 @@ function FileUpload() {
         const intervalId = setInterval(async () => {
             try {
                 const response = await fetch(
-                    `https://my-flask-app-246502218926.us-central1.run.app/run-status?user_id=${userId}`
+                    `https://api.hybpy.com/run-status?user_id=${userId}`
                 );
                 const data = await response.json();
                 if (data.status === "no_runs") {
@@ -1091,7 +1095,7 @@ function FileUpload() {
                     formData.append("file2", selectedFile2);
 
                     const response = await fetch(
-                        "https://my-flask-app-246502218926.us-central1.run.app/get-available-batches",
+                        "https://api.hybpy.com/get-available-batches",
                         {
                             method: "POST",
                             body: formData,
@@ -1876,18 +1880,40 @@ function FileUpload() {
                             width: "100%",
                             marginTop: "auto",
                         }}>
-                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de
-                            Ciências e Tecnologia Universidade NOVA de Lisboa
-                            2024. All rights reserved.
-                        </p>
+                        
+                        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                            <p style={{ margin: 0, textAlign: "center" }}>
+                            &copy; {new Date().getFullYear()} NOVA School of Science and Technology,
+                            Universidade NOVA de Lisboa. All rights reserved.
+                            </p>
 
-                        <img
-                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='75px'
-                            alt='FCT Logo'
-                            style={{ marginLeft: "auto" }}
-                        />
+                            <Button
+                            color="inherit"
+                            variant="text"
+                            onClick={handleContactUsClick}
+                            style={{
+                                marginTop: "0.5em",
+                                alignSelf: "center",
+                                textTransform: "none",
+                            }}
+                            startIcon={<EmailIcon />}
+                            >
+                            Contact Us
+                            </Button>
+                        </div>
+
+                        <a
+                            href="https://www.fct.unl.pt/en"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <img
+                            src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
+                            width="75px"
+                            alt="FCT Logo"
+                            style={{ marginLeft: "1em" }}
+                            />
+                        </a>
                     </footer>
                 </Box>
             </Box>

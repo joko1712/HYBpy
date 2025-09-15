@@ -124,13 +124,14 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                             <MenuItem value={3}>Dual Annealing</MenuItem>
 
                             <MenuItem value={4}>ADAM</MenuItem>
-
+                            {/*
                             <MenuItem
                                 value={5}
                                 disabled={disableMethod5}
                             >
                                 {disableMethod5 ? "ADAM + ODEint (Disabled: ny > nx)" : "ADAM + ODEint"}
                             </MenuItem>
+                            */}
                         </TextField>
                         <Tooltip
                             title='Trust Region Reflective: Suitable for large-scale nonlinear least-squares problems. Trust-Region Constrained or L-BFGS-B: Suitable for constrained optimization problems. Simulated Annealing: Probabilistic technique for approximating the global optimum. ADAM: Optimization algorithm that computes adaptive learning rates for each parameter.'

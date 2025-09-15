@@ -20,6 +20,9 @@ import {
     Button,
 } from "@mui/material";
 import logo from "../Image/HYBpyINVIS_logo.png";
+import { handleContactUsClick } from "./ContactUs";
+import EmailIcon from '@mui/icons-material/Email';
+
 
 const defaultTheme = createTheme();
 
@@ -210,20 +213,39 @@ function Login({ manualSetCurrentUser }) {
                         bottom: 0,
                         left: 0,
                     }}>
-                    <Typography
-                        variant='body2'
-                        align='center'
-                        sx={{ flexGrow: 1 }}>
-                        &copy; {new Date().getFullYear()} Faculdade de Ciências
-                        e Tecnologia Universidade NOVA de Lisboa. All rights
-                        reserved.
-                    </Typography>
-                    <img
-                        src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                        width='75'
-                        alt='FCT Logo'
-                        style={{ marginLeft: "auto" }}
-                    />
+                    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                    
+                        <Typography
+                            variant='body2'
+                            align='center'
+                            sx={{ flexGrow: 1 }}>
+                            &copy; {new Date().getFullYear()} NOVA School of Science and Technology, Universidade NOVA de Lisboa. All rights
+                            reserved.
+                        </Typography>
+
+                        <Button
+                            color="inherit"
+                            variant="text"
+                            onClick={handleContactUsClick}
+                            style={{ marginLeft: "1em", textTransform: "none", paddingRight: "2em" }}
+                            startIcon={<EmailIcon />}
+                        >
+                            Contact Us
+                        </Button>
+                    </div>
+
+                    <a
+                        href="https://www.fct.unl.pt/en"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <img
+                        src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
+                        width="75px"
+                        alt="FCT Logo"
+                        style={{ marginLeft: "1em" }}
+                        />
+                    </a>
                 </Box>
             </Box>
         </ThemeProvider>

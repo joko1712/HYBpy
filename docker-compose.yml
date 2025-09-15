@@ -1,61 +1,61 @@
-version: '3.7'
+version: "3.7"
 
 services:
-  hybpy_frontend:
-    build: ./Website/hybpy
-    container_name: hybpy_frontend_prod
-    restart: always
-    expose:
-      - 3000
-#    volumes:
-#      - static_data:/home/hybpy/frontend/assets
-    env_file:
-      - ./Website/hybpy/.env
+    hybpy_frontend:
+        build: ./Website/hybpy
+        container_name: hybpy_frontend_prod
+        restart: always
+        expose:
+            - 3000
+        #    volumes:
+        #      - static_data:/home/hybpy/frontend/assets
+        env_file:
+            - ./Website/hybpy/.env
 
-  hybpy_api:
-    build: ./
-    container_name: hybpy_api_prod
-    restart: always
-    expose:
-      - 5000
-    env_file:
-      - ./Backend/.env
+    hybpy_api:
+        build: ./
+        container_name: hybpy_api_prod
+        restart: always
+        expose:
+            - 5000
+        env_file:
+            - ./Backend/.env
 
-  nginx:
-    image: hybpy_nginx
-    build: ./nginx
-    container_name: hybpy_nginx_prod
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-    restart: always
-    ports:
-      # - <Port in Browser>:<Port Nginx listens to>
-      - 8082:80
-      - 8444:443
-    volumes:
-#      - static_data:/home/hybpy/frontend/assets
-      - ssl_data_conf:/etc/letsencrypt/:ro
-      - ssl_data_www:/var/www/certbot/:ro
-      - /var/run/docker.sock:/tmp/docker.sock
-    depends_on:
-      - hybpy_frontend
-      - hybpy_api
-      - certbot
-  
-  certbot:
-    build: ./certbot
-    entrypoint: ["/bin/bash",  "/home/hybpy/setup.sh"]
-    container_name: hybpy_certbot_prod
-    restart: always
-    environment:
-      DEV: "false"
-      SSL_EMAIL: "my_email@icloud.com"
-      NGINX_CONTAINER: "hybpy_nginx_prod"
-    volumes:
-      - ssl_data_conf:/etc/letsencrypt/:rw
-      - ssl_data_www:/var/www/certbot/:rw
-      - /var/run/docker.sock:/tmp/docker.sock
+    nginx:
+        image: hybpy_nginx
+        build: ./nginx
+        container_name: hybpy_nginx_prod
+        command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
+        restart: always
+        ports:
+            # - <Port in Browser>:<Port Nginx listens to>
+            - 8082:80
+            - 8444:443
+        volumes:
+            #      - static_data:/home/hybpy/frontend/assets
+            - ssl_data_conf:/etc/letsencrypt/:ro
+            - ssl_data_www:/var/www/certbot/:ro
+            - /var/run/docker.sock:/tmp/docker.sock
+        depends_on:
+            - hybpy_frontend
+            - hybpy_api
+            - certbot
+
+    certbot:
+        build: ./certbot
+        entrypoint: ["/bin/bash", "/home/hybpy/setup.sh"]
+        container_name: hybpy_certbot_prod
+        restart: always
+        environment:
+            DEV: "false"
+            SSL_EMAIL: "my_email@icloud.com"
+            NGINX_CONTAINER: "hybpy_nginx_prod"
+        volumes:
+            - ssl_data_conf:/etc/letsencrypt/:rw
+            - ssl_data_www:/var/www/certbot/:rw
+            - /var/run/docker.sock:/tmp/docker.sock
 
 volumes:
-#  static_data:
-  ssl_data_conf:
-  ssl_data_www:
+    #  static_data:
+    ssl_data_conf:
+    ssl_data_www:

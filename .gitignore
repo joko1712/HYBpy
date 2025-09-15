@@ -194,3 +194,9 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode
 *firebase-adminsdk*.json
+
+/Backend/Files/Workshop/Model1
+/Backend/Files/Workshop/Model2
+/Backend/Files/Workshop/Model3
+
+testUploadScript.py

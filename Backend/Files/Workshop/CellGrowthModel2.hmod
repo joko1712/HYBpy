@@ -1,3 +1,4 @@
+CellGrowthModel2.time.tspan=0:1:24
 %--------------------------------------------------------------------------
 % hybrid model definition data structure
 
@@ -47,5 +48,57 @@ CellGrowthModel2.nruleAss=0;
 % Events
 CellGrowthModel2.nevents=0;
 
+
+
+% control---------------------------
+CellGrowthModel2.ncontrol=1;
+CellGrowthModel2.control(1).id= 'Feed';
+CellGrowthModel2.control(1).val= 0;
+CellGrowthModel2.control(1).min= 0;
+CellGrowthModel2.control(1).max= 0.5;
+CellGrowthModel2.control(1).constant= 1;
+CellGrowthModel2.fun_control=@control_function_CellGrowthModel2;
+CellGrowthModel2.fun_event=[];
+
+% %model configuration
+CellGrowthModel2.time.min=0;
+CellGrowthModel2.time.max=24;
+CellGrowthModel2.time.id='t[h]';
+CellGrowthModel2.time.TAU=0.48;
+CellGrowthModel2.time.tspan=0:1:24;
+
+% % MLM - Machine Learning Model --------------------------------------------
+CellGrowthModel2.mlm.id = 'mlpnet';
+CellGrowthModel2.mlm.nx = 1;
+CellGrowthModel2.mlm.x(1).id = 'anninp1';
+CellGrowthModel2.mlm.x(1).val= 'X';
+CellGrowthModel2.mlm.x(1).min= 0;
+CellGrowthModel2.mlm.x(1).max= 46.7556911;
+CellGrowthModel2.mlm.ny = 1;
+CellGrowthModel2.mlm.y(1).id = 'miu';
+CellGrowthModel2.mlm.y(1).val= 'rann1';
+CellGrowthModel2.mlm.y(1).min= 0;
+CellGrowthModel2.mlm.y(1).max= NaN;
+CellGrowthModel2.mlm.options={'hidden nodes', [3]};
+CellGrowthModel2.mlm.layer=1;
+CellGrowthModel2.mlm.xfun=str2func('autoA_hybmod_anninp');
+CellGrowthModel2.mlm.yfun=str2func('autoA_hybmod_rann');
+CellGrowthModel2.symbolic='full-symbolic';
+CellGrowthModel2.symbolic='semi-symbolic';
+CellGrowthModel2.datasource=3;
+CellGrowthModel2.datafun=@CellGrowthModel2;
+%training configuration
+CellGrowthModel2.mode=1;
+CellGrowthModel2.method=1;
+CellGrowthModel2.jacobian=1;
+CellGrowthModel2.hessian=0;
+CellGrowthModel2.derivativecheck='off';
+CellGrowthModel2.niter=400;
+CellGrowthModel2.niteroptim=1;
+CellGrowthModel2.nstep=1;
+CellGrowthModel2.display='off';
+CellGrowthModel2.bootstrap=0;
+CellGrowthModel2.nensemble=1;
+CellGrowthModel2.crossval=1;
 
 end

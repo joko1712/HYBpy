@@ -14,65 +14,98 @@ from derivativeXY import numerical_diferentiation_torch
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Caching for expensive computations
 projhyb_cache = {}
 
 def computeDFDS(projhyb, fstate, state_symbols, NValues):
-    if projhyb['mlm']['DFDS'] is None:
-        DfDs = numerical_diferentiation_torch(fstate, state_symbols, NValues)
-        projhyb['mlm']['DFDS'] = DfDs
+    if 'DFDS_FUNC' not in projhyb['mlm']:
+        x_matrix = sp.Matrix(fstate)
+        jacobian_matrix = x_matrix.jacobian(state_symbols)
+
+        all_symbols = sorted(jacobian_matrix.free_symbols, key=lambda s: s.name)
+        projhyb['mlm']['DFDS_SYMBOLS'] = all_symbols
+
+        jacobian_func = sp.lambdify(all_symbols, jacobian_matrix, modules='numpy')
+        projhyb['mlm']['DFDS_FUNC'] = jacobian_func
     else:
-        DfDs = projhyb['mlm']['DFDS']
+        jacobian_func = projhyb['mlm']['DFDS_FUNC']
+        all_symbols = projhyb['mlm']['DFDS_SYMBOLS']
 
-    DfDs = DfDs.subs(NValues)
-    DfDs = np.array(DfDs).reshape(len(fstate), len(state_symbols))
+    all_values = [NValues[str(sym)] for sym in all_symbols]
+    jacobian_evaluated = jacobian_func(*all_values)
 
-    if np.iscomplexobj(DfDs):
-        DfDs = DfDs.real
+    jacobian_evaluated = np.array(jacobian_evaluated, dtype=np.float32)
 
-    # Change to float32
-    DfDs = torch.from_numpy(DfDs.astype(np.float32))
-    return DfDs
+    if np.iscomplexobj(jacobian_evaluated):
+        jacobian_evaluated = jacobian_evaluated.real
+
+    jacobian_evaluated = jacobian_evaluated.reshape(len(fstate), len(state_symbols))
+
+    return torch.from_numpy(jacobian_evaluated)
+
 
 def computeDFDRANN(projhyb, fstate, rann_symbol, NValues):
-    if projhyb['mlm']['DFDRANN'] is None:
-        DfDrann = numerical_diferentiation_torch(fstate, rann_symbol, NValues)
-        projhyb['mlm']['DFDRANN'] = DfDrann
+    if 'DFDRANN_FUNC' not in projhyb['mlm']:
+        x_matrix = sp.Matrix(fstate)
+        jacobian_matrix = x_matrix.jacobian(rann_symbol)
+
+        all_symbols = sorted(jacobian_matrix.free_symbols, key=lambda s: s.name)
+        projhyb['mlm']['DFDRANN_SYMBOLS'] = all_symbols
+
+        jacobian_func = sp.lambdify(all_symbols, jacobian_matrix, modules='numpy')
+        projhyb['mlm']['DFDRANN_FUNC'] = jacobian_func
     else:
-        DfDrann = projhyb['mlm']['DFDRANN']
+        jacobian_func = projhyb['mlm']['DFDRANN_FUNC']
+        all_symbols = projhyb['mlm']['DFDRANN_SYMBOLS']
 
-    DfDrann = DfDrann.subs(NValues)
-    DfDrann = np.array(DfDrann).reshape(len(fstate), projhyb["mlm"]["ny"])
+    all_values = [NValues[str(sym)] for sym in all_symbols]
+    jacobian_evaluated = jacobian_func(*all_values)
 
-    if np.iscomplexobj(DfDrann):
-        DfDrann = DfDrann.real
+    jacobian_evaluated = np.array(jacobian_evaluated, dtype=np.float32)
 
-    # Change to float32
-    DfDrann = torch.from_numpy(DfDrann.astype(np.float32))
-    return DfDrann
+    if np.iscomplexobj(jacobian_evaluated):
+        jacobian_evaluated = jacobian_evaluated.real
+
+    jacobian_evaluated = jacobian_evaluated.reshape(len(fstate), projhyb["mlm"]["ny"])
+
+    return torch.from_numpy(jacobian_evaluated)
+
 
 def computeDANNINPDSTATE(projhyb, anninp, state_symbols, NValues):
-    if projhyb['mlm']['DANNINPDSTATE'] is None:
-        DanninpDstate = numerical_diferentiation_torch(anninp, state_symbols, NValues)
-        projhyb['mlm']['DANNINPDSTATE'] = DanninpDstate
+    if 'DANNINPDSTATE_FUNC' not in projhyb['mlm']:
+        x_matrix = sp.Matrix(anninp)
+        jacobian_matrix = x_matrix.jacobian(state_symbols)
+
+        all_symbols = sorted(jacobian_matrix.free_symbols, key=lambda s: s.name)
+        projhyb['mlm']['DANNINPDSTATE_SYMBOLS'] = all_symbols
+
+        jacobian_func = sp.lambdify(all_symbols, jacobian_matrix, modules='numpy')
+        projhyb['mlm']['DANNINPDSTATE_FUNC'] = jacobian_func
     else:
-        DanninpDstate = projhyb['mlm']['DANNINPDSTATE']
+        jacobian_func = projhyb['mlm']['DANNINPDSTATE_FUNC']
+        all_symbols = projhyb['mlm']['DANNINPDSTATE_SYMBOLS']
 
-    DanninpDstate = DanninpDstate.subs(NValues)
-    DanninpDstate = np.array(DanninpDstate)
-    
+    all_values = [NValues[str(sym)] for sym in all_symbols]
+    jacobian_evaluated = jacobian_func(*all_values)
+
+    jacobian_evaluated = np.array(jacobian_evaluated, dtype=np.float32)
+
+    if np.iscomplexobj(jacobian_evaluated):
+        jacobian_evaluated = jacobian_evaluated.real
+
     if len(anninp) > 1:
-        DanninpDstate = DanninpDstate.reshape(len(anninp), len(state_symbols))
+        jacobian_evaluated = jacobian_evaluated.reshape(len(anninp), len(state_symbols))
 
-    if np.iscomplexobj(DanninpDstate):
-        DanninpDstate = DanninpDstate.real
+    return torch.from_numpy(jacobian_evaluated)
 
-    # Change to float32
-    DanninpDstate = torch.from_numpy(DanninpDstate.astype(np.float32))
-    return DanninpDstate
 
 def computeBackpropagation(ann, anninp_tensor, projhyb):
-    y, DrannDanninp, DrannDw = ann.backpropagate(anninp_tensor, projhyb['mlm']['ny'])
+    loss_fn = torch.nn.MSELoss()
+    ny = projhyb['mlm']['ny']
+    target_tensor = torch.zeros((ny, 1), dtype=torch.float32)
+
+    y, DrannDanninp, DrannDw = ann.backpropagate_lstm(
+        anninp_tensor, target_tensor, loss_fn
+    )
     return y, DrannDanninp, DrannDw
 
 def computeDRANNDS(DrannDanninp, DanninpDstate):
@@ -88,6 +121,14 @@ def computeDfDrannDrannDw(DfDrann, DrannDw):
     return torch.mm(DfDrann, DrannDw)
 
 def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anninp_tensor, state_symbols, values, rann):
+    
+    global projhyb_cache
+
+    run_id = projhyb.get("run_id", "default")
+    if run_id not in projhyb_cache:
+        projhyb_cache[run_id] = {}
+    cache = projhyb_cache[run_id]
+
     if jac is None and hess is None:
         NValues = {**values, **state}
         fstate = [expr.subs(NValues) for expr in fstate]
@@ -95,12 +136,12 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
 
     if projhyb['mode'] == 1:
         NValues = {**values, **state}
-        # Ensure cached items are sympified
-        fstate = projhyb_cache.get('FSTATE', sp.sympify(fstate))
-        state_symbols = projhyb_cache.get('STATE_SYMBOLS', sp.sympify(state_symbols))
-        anninp = projhyb_cache.get('ANNINP', sp.sympify(anninp))
 
-        projhyb_cache.update({
+        fstate = cache.get('FSTATE', sp.sympify(fstate))
+        state_symbols = cache.get('STATE_SYMBOLS', sp.sympify(state_symbols))
+        anninp = cache.get('ANNINP', sp.sympify(anninp))
+
+        cache.update({
             'FSTATE': fstate,
             'STATE_SYMBOLS': state_symbols,
             'ANNINP': anninp
@@ -146,7 +187,26 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
         # Ensure fjac is float32
         fjac = torch.mm(DfDsDfDrannDrannDs, jac.to(dtype=torch.float32)) + DfDrannDrannDw.to(dtype=torch.float32)
 
-        fstate = [expr.subs(NValues) for expr in fstate]
+        if 'FSTATE_FUNC' not in projhyb['mlm']:
+            fstate_expr_list = fstate_func(projhyb, NValues)
+            all_symbols = sorted(
+                list(set().union(*(expr.free_symbols for expr in fstate_expr_list))),
+                key=lambda s: s.name
+            )
+            fstate_func_lambdified = sp.lambdify(all_symbols, fstate_expr_list, modules='numpy')
+            projhyb['mlm']['FSTATE_FUNC'] = fstate_func_lambdified
+            projhyb['mlm']['FSTATE_SYMBOLS'] = all_symbols
+        else:
+            fstate_func_lambdified = projhyb['mlm']['FSTATE_FUNC']
+            all_symbols = projhyb['mlm']['FSTATE_SYMBOLS']
+
+        all_values = [NValues[str(sym)] for sym in all_symbols]
+        fstate = fstate_func_lambdified(*all_values)
+
+        if projhyb["thread"] and not getattr(projhyb["thread"], "do_run", True):
+            return projhyb, {}, {}, None
+
+        #fstate = [expr.subs(NValues) for expr in fstate]
         return fstate, fjac
 
     elif projhyb['mode'] == 3:

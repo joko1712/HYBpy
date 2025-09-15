@@ -6,8 +6,91 @@ from sympy import symbols, sympify, simplify, Matrix, Eq, Symbol
 import numpy as np
 from sympy.parsing.sympy_parser import parse_expr
 
+def fstate_func(projhyb, values):
+    Species = []
+    species_dict = {}
+    parameters_dict = {}
 
+    if 'SYMBOL_CACHE' not in projhyb:
+        projhyb['SYMBOL_CACHE'] = {}
+    symbol_cache = projhyb['SYMBOL_CACHE']
 
+    def get_symbol(name):
+        if name not in symbol_cache:
+            symbol_cache[name] = sp.Symbol(name)
+        return symbol_cache[name]
+
+    for i in range(1, projhyb["nspecies"]+1):
+        species_name = projhyb["species"][str(i)]["id"]
+        Species.append(get_symbol(species_name))
+        species_dict[species_name] = get_symbol(species_name)
+        projhyb["species"][str(i)]["dcomp"] = 0
+        for m in range(1, projhyb["nraterules"]+1):
+            if projhyb["raterules"][str(m)]["id"] == projhyb["species"][str(i)]["compartment"]:
+                projhyb["species"][str(i)]["dcomp"] = sp.sympify(projhyb["raterules"][str(m)]["val"])
+
+    Compartments = [get_symbol(projhyb["compartment"][str(i)]["id"]) for i in range(1, projhyb["ncompartment"]+1)]
+
+    variables = {get_symbol(projhyb["mlm"]["x"][str(i)]["id"]): sp.sympify(projhyb["mlm"]["x"][str(i)]["val"])
+                 for i in range(1, projhyb["mlm"]["nx"]+1)}
+
+    output = {get_symbol(projhyb["mlm"]["y"][str(i)]["id"]): sp.sympify(projhyb["mlm"]["y"][str(i)]["val"])
+              for i in range(1, projhyb["mlm"]["ny"]+1)}
+
+    parametersvariables = {}
+    for i in range(1, projhyb["nparameters"]+1):
+        param_name = projhyb["parameters"][str(i)]["id"]
+        parameters_dict[param_name] = get_symbol(param_name)
+        parametersvariables[get_symbol(param_name)] = sp.sympify(projhyb["parameters"][str(i)]["val"])
+
+    ruleassvariables = {}
+    for i in range(1, projhyb["nruleAss"] + 1):
+        rule_id = projhyb["ruleAss"][str(i)]["id"]
+        rule_val = projhyb["ruleAss"][str(i)]["val"]
+        parsed_expr = parse_rule_val(rule_val)
+        ruleassvariables[get_symbol(rule_id)] = parsed_expr
+
+    combined_dict = {**species_dict, **parameters_dict}
+
+    Raterules = [get_symbol(projhyb["raterules"][str(i)]["id"]) for i in range(1, projhyb["nraterules"]+1)]
+    fRaterules = [sp.sympify(projhyb["raterules"][str(i)]["val"]) for i in range(1, projhyb["nraterules"]+1)]
+
+    ucontrol = [get_symbol(projhyb["control"][str(i)]["id"]) for i in range(1, projhyb["ncontrol"]+1)]
+
+    rates = []
+    for i in range(1, projhyb["nspecies"]+1):
+        for j in range(1, projhyb["nreaction"]+1):
+            if projhyb["reaction"][str(j)]["id"] in projhyb["outputs"]:
+                nvalues = get_symbol(projhyb["reaction"][str(j)]["id"]) * projhyb["reaction"][str(j)]["Y"][str(i)]
+            else:
+                nvalues = sp.sympify(projhyb["reaction"][str(j)]["rate"], locals=combined_dict) * projhyb["reaction"][str(j)]["Y"][str(i)]
+            rates.append(nvalues)
+
+    fSpecies = []
+    for i in range(1, projhyb["nspecies"]+1):
+        species_id = projhyb["species"][str(i)]["id"]
+        if species_id.startswith("chybrid"):
+            continue
+        rates_sum = sum(rates[(i-1)*projhyb["nreaction"]:i*projhyb["nreaction"]])
+        fSpecies.append(
+            rates_sum - (projhyb["species"][str(i)]["dcomp"] /
+                         sp.sympify(projhyb["species"][str(i)]["compartment"])) *
+            get_symbol(species_id)
+        )
+
+    State = Species + Raterules
+    fState = fSpecies + fRaterules
+
+    subout = {get_symbol(projhyb["mlm"]["y"][str(i)]["id"]): sp.sympify(projhyb["mlm"]["y"][str(i)]["val"])
+              for i in range(1, projhyb["mlm"]["ny"]+1)}
+
+    fState = sp.Matrix(fState).subs(subout)
+    fState = fState.subs(ruleassvariables)
+    fState = list(fState)
+
+    return fState
+
+'''
 def fstate_func(projhyb,values):
     Species = []
 
@@ -118,10 +201,10 @@ def fstate_func(projhyb,values):
 
     fState = [expr.subs(ruleassvariables) for expr in fState]
 
+'''
 
 
-
-    '''
+'''
     nspecies = data["nspecies"]
     nraterules = data["nraterules"]
     nstate = nspecies + nraterules
@@ -163,9 +246,10 @@ def fstate_func(projhyb,values):
     DrDrann = Matrix([rates]).jacobian(Matrix([rann]))
     print("DrDrann", DrDrann)
 
-    '''
+    
     return fState
 
+'''
 
 def parse_rule_val(rule_val):
     # Extract all unique variables from the string

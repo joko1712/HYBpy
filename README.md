@@ -44,7 +44,7 @@ python app.py
 
 ## ⸎ Developed at
 
--   HYBpy is developed and maintaned at NOVA School of Science and Technology, Universidade NOVA de Lisboa.
+-   HYBpy is developed and maintaned at UCIBIO - Applied Molecular Biosciences Unit, NOVA School of Science and Technology, Universidade NOVA de Lisboa, 2829-516 Caparica, Portugal
 
 *Authors:* [José Pereira](https://github.com/joko1712), [Rafael Costa](https://github.com/r-costa), José Pinto
 

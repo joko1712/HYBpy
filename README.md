@@ -1,4 +1,4 @@
-# HYBpy<sup></sup> <img align="left" src="Website/hybpy/src/Image/hybpy_logo.png" width="50" />   
+# HYBpy<sup></sup> <img align="left" src="Website/hybpy/src/Image/hybpy_logo.png" width="50" />
 
 ![Latest Release](https://img.shields.io/github/v/release/joko1712/HYBpy)
 
@@ -7,46 +7,103 @@
 HYBpy is a python-based tool for building and evaluating hybrid models of bioprocesses and biological systems.
 This repository contains the source code for the web-based application available at the www.hybpy.com website.
 
+### Installing and Running HYBpy Locally
 
-________________________________________________________________
+This guide provides a comprehensive, step-by-step process for setting up and running **HYBpy** on your local machine. Following these instructions will ensure a clean and isolated environment for your project.
 
-## Installation
+---
 
-To install HYBpy, you first need to have node and npm installed. You can download them from [here](https://nodejs.org/en/download/).
+### Step 1: Obtain the HYBpy Repository
 
-After installing node and npm, you can install HYBpy by running the following command inside the Website folder:
+First, you need to get the HYBpy code onto your computer. There are two primary methods for doing this:
+
+-   **Using Git:** Clone the repository directly from GitHub using the command line. This is the recommended method as it makes it easier to update the code in the future.
+
+    ```bash
+    git clone https://github.com/joko1712/HYBpy.git
+    ```
+
+-   **Downloading a ZIP file:** Alternatively, you can download the repository as a compressed file from the GitHub page. Navigate to `github.com/joko1712/HYBpy` and click on the "Code" button, then select "Download ZIP."
+
+Once you have the code, use your terminal or command prompt to navigate into the project's root directory.
 
 ```bash
-npm install
+cd HYBpy
 ```
 
-this will install all the dependencies needed to run the application.
+---
 
-After that we need to install the dependencies for the backend. To do that, run the following command inside the Backend folder:
+### Step 2: Create a Virtual Environment
+
+To avoid conflicts with other Python projects and their dependencies, it's best practice to create a dedicated **virtual environment**. This isolates the project's required packages.
+
+Use the following command to create a new virtual environment named `HYBpyEnv`:
 
 ```bash
-pip install -r requirements.txt
+python -m venv HYBpyEnv
 ```
 
-## Running the application
+---
 
-After installing all the dependencies, you can run the application by running the web server and the backend server. To do that, run the following command inside the Website folder:
+### Step 3: Activate the Virtual Environment
+
+Before installing any packages, you must **activate** the virtual environment. The commands differ slightly based on your operating system:
+
+-   **Windows:**
+
+    ```bash
+    HYBpyEnv\Scripts\activate
+    ```
+
+-   **macOS / Linux:**
+
+    ```bash
+    source HYBpyEnv/bin/activate
+    ```
+
+You'll know the environment is active when the name `(HYBpyEnv)` appears at the beginning of your command prompt.
+
+---
+
+### Step 4: Install Required Packages
+
+With the virtual environment active, you can now install all the necessary dependencies. It's a good practice to first upgrade `pip` (the package installer) to its latest version.
 
 ```bash
-npm run start
+pip install --upgrade pip
 ```
 
-And in another terminal, run the following command inside the Backend folder:
+Next, install the required libraries. This can be done with a single command:
 
 ```bash
-python app.py
+pip install numpy scipy matplotlib torch scikit-learn h5py torchdiffeq pandas
+```
+
+---
+
+### Step 5: Run the tool
+
+After installing the dependencies, you can run the tool using the following command:
+
+```bash
+python run_hybtrain_local.py
+```
+
+---
+
+### Step 6: Deactivate the Virtual Environment
+
+Once you are finished working on the project, you should deactivate the virtual environment. This will return you to your system's global Python environment.
+
+```bash
+deactivate
 ```
 
 ## ⸎ Developed at
 
 -   HYBpy is developed and maintaned at UCIBIO - Applied Molecular Biosciences Unit, NOVA School of Science and Technology, Universidade NOVA de Lisboa, 2829-516 Caparica, Portugal
 
-*Authors:* [José Pereira](https://github.com/joko1712), [Rafael Costa](https://github.com/r-costa), José Pinto
+_Authors:_ [José Pereira](https://github.com/joko1712), [Rafael Costa](https://github.com/r-costa), José Pinto
 
 ## License
 

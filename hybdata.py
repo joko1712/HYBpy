@@ -159,7 +159,7 @@ def hybdata(filename):
                 "compartment": compartment,
                 "fixed": int(fixed),
                 "min": int(min),
-                "max": int(max),
+                "max": float(max),
                 "isres": int(isres),
                 "dcomp": 0,
             }
@@ -195,7 +195,7 @@ def hybdata(filename):
                 "id": id,
                 "val": val,
                 "min": int(min),
-                "max": int(max),
+                "max": float(max),
                 "isres": int(isres),
             }
 
@@ -559,10 +559,10 @@ def hybdata(filename):
             adalfa = float(line[line.find("=")+1:len(line)])
 
         if "admini" in line:
-            admini = int(line[line.find("=")+1:len(line)])
+            admini = float(line[line.find("=")+1:len(line)])
 
         if "addrop" in line:
-            addrop = int(line[line.find("=")+1:len(line)])
+            addrop = float(line[line.find("=")+1:len(line)])
 
     proj_dict = {
         "id": projId,

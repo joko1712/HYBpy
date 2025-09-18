@@ -1277,9 +1277,18 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
             date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
             os.makedirs(date_dir, exist_ok=True)
             
+            '''
             time_series_plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
             plt.savefig(time_series_plot_filename, dpi=300)
             plt.close(fig)
+            '''
+            
+            species_id = projhyb["species"][str(i+1)]["id"]
+
+            time_series_plot_filename = os.path.join(
+                date_dir, f'metabolite_{species_id}.png'
+            )
+            plt.savefig(time_series_plot_filename, dpi=300)
 
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.scatter(predicted_train, actual_train, color='blue', label='Train', alpha=0.5)
@@ -1291,9 +1300,18 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
             plt.title(f"Predicted vs Observed for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
             plt.legend()
             
+            '''
             predicted_vs_actual_plot_filename = os.path.join(date_dir, f'predicted_vs_observed_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
             plt.savefig(predicted_vs_actual_plot_filename, dpi=300)
             plt.close(fig)
+            '''
+
+            predicted_vs_actual_plot_filename = os.path.join(
+                date_dir, f'predicted_vs_observed_{species_id}.png'
+            )
+            plt.savefig(predicted_vs_actual_plot_filename, dpi=300)
+            plt.close(fig)
+
 
             print("DONE!!!!!")
 

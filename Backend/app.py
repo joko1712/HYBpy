@@ -18,7 +18,6 @@ import time
 from threading import Thread
 import threading
 import traceback
-import multiprocessing
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -374,12 +373,13 @@ def upload_file():
         shutil.rmtree(temp_dir)
         '''
 
-        process = multiprocessing.Process(
+        thread = Thread(
             target=background_training,
             args=(projhyb, data, user_id, trained_weights, file1_path, temp_dir, run_ref, folder_id)
         )
-        process.start()
-        running_threads[run_ref.id] = process
+        thread.do_run = True
+        thread.start()
+        running_threads[run_ref.id] = thread
 
         return jsonify({"message": "Training started"}), 202
     except Exception as e:

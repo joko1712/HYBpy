@@ -31,4 +31,5 @@ COPY hybpy-test-firebase-adminsdk-20qxj-fc73476cba.json /home/hybpy/Backend/
 #CMD ["gunicorn", "--workers=2", "--bind", "0.0.0.0:8080", "app:app"]
 #CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers=4", "--timeout=7200", "--certfile=/etc/letsencrypt/live/api.hybpy.com/fullchain.pem", "--keyfile=/etc/letsencrypt/live/api.hybpy.com/privkey.pem", "app:app"]
 #CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers=2", "--threads=4", "--timeout=7200", "--certfile=/etc/letsencrypt/live/api.hybpy.com/fullchain.pem", "--keyfile=/etc/letsencrypt/live/api.hybpy.com/privkey.pem", "--worker-class=gthread", "app:app"]
+#CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers=2", "--threads=4", "--timeout=7200", "--certfile=/etc/letsencrypt/live/api.hybpy.com/fullchain.pem", "--keyfile=/etc/letsencrypt/live/api.hybpy.com/privkey.pem", "--worker-class=gthread", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers=4", "--timeout=7200", "--certfile=/etc/letsencrypt/live/api.hybpy.com/fullchain.pem", "--keyfile=/etc/letsencrypt/live/api.hybpy.com/privkey.pem", "app:app"]

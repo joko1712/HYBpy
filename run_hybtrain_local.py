@@ -9,43 +9,85 @@ from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, add_state_and_time_to_data
 
-# Model 1
-#file1_path = "Backend/Files/Workshop/CellGrowthModel1.hmod"
-#file2_path = "Backend/Files/Workshop/CellGrowth.csv"
-#temp_dir = "Backend/Files/Workshop/Model1"
-
-# Model 2
-#file1_path = "Backend/Files/Workshop/CellGrowthModel2.hmod"
-#file2_path = "Backend/Files/Workshop/CellGrowth.csv"
-#temp_dir = "Backend/Files/Workshop/Model2"
-
-# Model 3
-#file1_path = "Backend/Files/Workshop/CellGrowthModel3.hmod"
-#file2_path = "Backend/Files/Workshop/CellGrowth.csv"
-#temp_dir = "Backend/Files/Workshop/Model3"
-
-# CHO
-file1_path = "Backend/Files/CHO/CHOsimplenew.hmod"
-file2_path = "Backend/Files/CHO/CHOdata.csv"
-temp_dir = "Backend/Files/CHO"
-
+start_time = time.time()
 user_id = "local_user"
     
 run_id = str(uuid.uuid4())
 trained_weights = None
 
-#train_batches = [15]
-#test_batches = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]
+# Model 1
+file1_path = "Backend/Files/Workshop/CellGrowthModel1.hmod"
+file2_path = "Backend/Files/Workshop/CellGrowth.csv"
+temp_dir = "Backend/Files/Workshop/CellGrowthModel1"
 
-train_batches = [9,1,2,3,4,5]
-test_batches = [6,7,8]
-start_time = time.time()
+# Model 2
+#file1_path = "Backend/Files/Workshop/CellGrowthModel2.hmod"
+#file2_path = "Backend/Files/Workshop/CellGrowth.csv"
+#temp_dir = "Backend/Files/Workshop/CellGrowthModel2"
+
+# Model 3
+#file1_path = "Backend/Files/Workshop/CellGrowthModel3.hmod"
+#file2_path = "Backend/Files/Workshop/CellGrowth.csv"
+#temp_dir = "Backend/Files/Workshop/CellGrowthModel3"
+
+# CHO
+#file1_path = "Backend/Files/CHO/CHOsimplenew.hmod"
+#file2_path = "Backend/Files/CHO/CHOdata.csv"
+#temp_dir = "Backend/Files/CHO"
+
+#Chassagnole
+#file1_path = "Backend/Files/Chassagnole/Chass1.hmod"
+#file2_path = "Backend/Files/Chassagnole/combined_chass_50.csv"
+#temp_dir = "Backend/Files/Chassagnole"
+
+#ParkAndRamirez
+#file1_path = "Backend/Files/ParkAndRamirez/parkramstandard.hmod"
+#file2_path = "Backend/Files/ParkAndRamirez/PARK_COMBINED_PM_PT_S_X.csv"
+#temp_dir = "Backend/Files/ParkAndRamirez"
+
+# RUN Manual Hold-Out Cross Validation:
+
+train_batches = [1,2,3,4,5,6,7,8,9,10,11,13,14]
+test_batches = [15]
+val_batches = [12]
+
+mode = "1"
+Kfolds = 1
+nensemble = 1
+split_ratio = 0.5
+Crossval = "1"
+
+# RUN Automatic Hold-Out Cross Validation
+'''
+train_batches = []
+test_batches = [13,14,15]
+val_batches = []
+
+
+mode = "2"
+Kfolds = 1
+nensemble = 1
+split_ratio = 0.5
+Crossval = "1"
+'''
+
+# RUN K-Fold Cross Validation
+'''
+test_batches = [13,14,15]
+train_batches = []
+val_batches = []
+
+mode = "3"
+Kfolds = 5
+nensemble = 3
+split_ratio = 0.5
+Crossval = "1"
+'''
 
 projhyb = hybdata(file1_path)
-projhyb["train_batches"] = train_batches
-projhyb["test_batches"] = test_batches
-mode = "1"
 
+
+use_validation = True if Crossval == "1" else False
 data = {}
 current_time_group = 1
 current_time = None
@@ -74,26 +116,40 @@ with open(file2_path, 'r') as f:
 if mode == "1":
     train_batches = list(map(int, train_batches))
     test_batches = list(map(int, test_batches))
+    val_batches = list(map(int, val_batches))
     for batch in train_batches:
-        if batch in data:
-            data[batch]["istrain"] = 1
+        if int(batch) in data:
+            data[int(batch)]["istrain"] = [1]  
+
+    for batch in val_batches:
+        if int(batch) in data:
+            data[int(batch)]["istrain"] = [2]
+
     for batch in test_batches:
-        if batch in data:
-            data[batch]["istrain"] = 3
+        if int(batch) in data:
+            data[int(batch)]["istrain"] = [3]
 
     all_batches = set(data.keys())
     for batch in all_batches:
-        if batch not in train_batches and batch not in test_batches:
-            data[batch]["istrain"] = 0
+        if int(batch) not in train_batches and int(batch) not in test_batches and int(batch) not in val_batches:
+            data[int(batch)]["istrain"] = [0]
 
-    projhyb["train_batches"] = train_batches
-    projhyb["test_batches"] = test_batches
+if mode == "2" or mode == "3":
+    test_batches = list(map(int, test_batches))
+    kfolds = int(Kfolds) if Kfolds else 1
+    use_validation = Crossval == "1"
 
-if mode == "2":
-    data, projhyb = label_batches(data, projhyb, mode)
+    data, projhyb = label_batches(
+        data,
+        projhyb,
+        mode,
+        use_validation=use_validation,
+        val_ratio=1 - float(split_ratio),
+        kfolds=kfolds,
+        manual_test_batches=test_batches
+    )
+    
 
-print(projhyb["train_batches"])
-print(projhyb["test_batches"])
 
 data = add_state_and_time_to_data(data, projhyb)
 count = len(data)
@@ -104,10 +160,20 @@ data_json_path = os.path.join(temp_dir, "data.json")
 with open(data_json_path, "w") as write_file:
     json.dump(data, write_file)
 
+projhyb['kfolds'] = Kfolds
+projhyb['nensemble'] = nensemble
+projhyb["train_batches"] = train_batches
+projhyb["test_batches"] = test_batches
+projhyb["val_batches"] = val_batches
+projhyb["crossval"] = Crossval
+projhyb["split_ratio"] = split_ratio
+print("train batches:", train_batches)
+print("test batches:", test_batches)
+print("val batches:", val_batches)
+
 projhyb_json_path = os.path.join(temp_dir, "projhyb.json")
 with open(projhyb_json_path, "w") as write_file:
     json.dump(projhyb, write_file)
-
 
 
 projhyb, bestWeights, testing, newHmodFile = hybtrain(
@@ -118,6 +184,4 @@ endTime = time.time()
 
 print(f"⏱️ Training Time: {endTime - start_time:.2f} seconds")
 print("\n✅ Training Complete")
-print(f"Best Weights (first 5): {bestWeights[:5]}")
 print(f"Metrics: {testing}")
-print(f"Saved HMOD File: {newHmodFile}")

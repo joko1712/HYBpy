@@ -27,20 +27,3 @@ def mlpnetcreate(projhyb, neuron):
     ann = CustomMLP(layer_sizes, layer_types)
 
     return ann
-
-'''
-Traceback (most recent call last):
-  File "/Users/joko/Documents/GitHub/HYBpy/run_hybtrain_local.py", line 53, in <module>
-    projhyb, bestWeights, testing, newHmodFile = hybtrain(
-                                                 ~~~~~~~~^
-        projhyb, data, user_id, trained_weights, file1_path, temp_dir, run_id
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/joko/Documents/GitHub/HYBpy/hybtrain.py", line 260, in hybtrain
-    ann = mlpnetcreate(projhyb, projhyb['mlm']['neuron'])
-  File "/Users/joko/Documents/GitHub/HYBpy/mlpnetcreate.py", line 13, in mlpnetcreate
-    assert H <= 5, 'more than 5 hidden layers not implemented'
-           ^^^^^^
-AssertionError: more than 5 hidden layers not implemented
-'''

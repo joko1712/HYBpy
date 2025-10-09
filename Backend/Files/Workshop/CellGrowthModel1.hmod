@@ -73,7 +73,7 @@ CellGrowthModel.control(1).val= 0;
 CellGrowthModel.control(1).min= 0;
 CellGrowthModel.control(1).max= 0.5;
 CellGrowthModel.control(1).constant= 1;
-CellGrowthModel.fun_control=@control_function_CellGrowthModel;
+CellGrowthModel.fun_control=[];
 CellGrowthModel.fun_event=[];
 
 % %model configuration
@@ -128,5 +128,7 @@ CellGrowthModel.display='off';
 CellGrowthModel.bootstrap=0;
 CellGrowthModel.nensemble=1;
 CellGrowthModel.crossval=1;
+
+
 
 end

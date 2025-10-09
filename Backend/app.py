@@ -86,7 +86,7 @@ def upload_plots_to_gcs(temp_dir, user_id, folder_id):
     plot_urls = []
     temp = os.path.join(temp_dir, 'plots')
     user_dir = os.path.join(temp, user_id)
-    date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
+    date_dir = os.path.join(user_dir, time.strftime("%Y%m%d%H%M"))
 
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
 
@@ -156,6 +156,7 @@ def upload_file():
         description = request.form.get('description')
         train_batches = request.form.get('train_batches').split(",") if request.form.get('train_batches') else []
         test_batches = request.form.get('test_batches').split(",") if request.form.get('test_batches') else []
+        val_batches = request.form.get('val_batches').split(",") if request.form.get('val_batches') else []
 
         HiddenNodes = request.form.get('HiddenNodes')
         Layer = request.form.get('Layer')
@@ -169,6 +170,12 @@ def upload_file():
         Bootstrap = request.form.get('Bootstrap')
         Inputs = request.form.get('Inputs')
         Outputs = request.form.get('Outputs')
+
+        Crossval = request.form.get('Crossval')
+        Ensemble = request.form.get('Ensemble')
+        Kfolds = request.form.get('Kfolds')
+
+        split_ratio = float(request.form.get("split_ratio", 0.5))
 
         trained_weights = request.form.get('trained_weights')
         logging.debug("trained_weights: %s", trained_weights)
@@ -207,6 +214,8 @@ def upload_file():
         user_ref = db.collection('users').document(user_id)
         run_ref = user_ref.collection('runs').document()
 
+        use_validation = 'true' if Crossval == 1 else 'false'
+
         if trained_weights == None:
             run_ref.set({
                 "userId": user_id,
@@ -230,7 +239,10 @@ def upload_file():
                     "Hessian": Hessian,
                     "Niter": Niter,
                     "Nstep": Nstep,
-                    "Bootstrap": Bootstrap
+                    "Bootstrap": Bootstrap,
+                    "Crossval": Crossval,
+                    "Ensemble": Ensemble,
+                    "Kfolds": Kfolds
                 },
                 "status": "training in progress",
             })
@@ -257,7 +269,10 @@ def upload_file():
                     "Hessian": Hessian,
                     "Niter": Niter,
                     "Nstep": Nstep,
-                    "Bootstrap": Bootstrap
+                    "Bootstrap": Bootstrap,
+                    "Crossval": Crossval,
+                    "Ensemble": Ensemble,
+                    "Kfolds": Kfolds
                 },
                 "status": "simulation in progress",
             })
@@ -287,28 +302,49 @@ def upload_file():
         if mode == "1":
             train_batches = list(map(int, train_batches))
             test_batches = list(map(int, test_batches))
+            val_batches = list(map(int, val_batches))
             for batch in train_batches:
-                if batch in data:
-                    data[batch]["istrain"] = 1
+                if int(batch) in data:
+                    data[int(batch)]["istrain"] = 1
+            for batch in val_batches:
+                if int(batch) in data:
+                    data[int(batch)]["istrain"] = 2
             for batch in test_batches:
-                if batch in data:
-                    data[batch]["istrain"] = 3
+                if int(batch) in data:
+                    data[int(batch)]["istrain"] = 3
 
             all_batches = set(data.keys())
             for batch in all_batches:
-                if batch not in train_batches and batch not in test_batches:
-                    data[batch]["istrain"] = 0
+                if int(batch) not in train_batches and int(batch) not in test_batches and int(batch) not in val_batches:
+                    data[int(batch)]["istrain"] = 0
 
             projhyb["train_batches"] = train_batches
             projhyb["test_batches"] = test_batches
+            projhyb["val_batches"] = val_batches
 
-        if mode == "2":
-            data, projhyb = label_batches(data, projhyb, mode)
+        if mode == "2" or mode == "3":
+            test_batches = list(map(int, test_batches))
+            kfolds = int(Kfolds) if Kfolds else 1
+            use_validation = Crossval == "1"
+
+            data, projhyb = label_batches(
+                data,
+                projhyb,
+                mode,
+                use_validation=use_validation,
+                val_ratio=1 - float(split_ratio),
+                kfolds=kfolds,
+                manual_test_batches=test_batches
+            )
+
 
         data = add_state_and_time_to_data(data, projhyb)
         count = len(data)
         data["nbatch"] = count
 
+        projhyb["crossval"] = Crossval
+        projhyb["nensemble"] = Ensemble
+        projhyb['kfolds'] = Kfolds
 
         data_json_path = os.path.join(temp_dir, "data.json")
         with open(data_json_path, "w") as write_file:

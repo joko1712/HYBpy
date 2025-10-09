@@ -80,6 +80,7 @@ def hybdata(filename):
 
         # Eliminate the ; at the end of the line
         line = line.replace(";", "")
+        line_options = line
         line = line.replace(" ", "")
 
         # Check if line is last line
@@ -158,7 +159,7 @@ def hybdata(filename):
                 "val": float(val),
                 "compartment": compartment,
                 "fixed": int(fixed),
-                "min": int(min),
+                "min": float(min),
                 "max": float(max),
                 "isres": int(isres),
                 "dcomp": 0,
@@ -194,7 +195,7 @@ def hybdata(filename):
             compartment_dict[i] = {
                 "id": id,
                 "val": val,
-                "min": int(min),
+                "min": float(min),
                 "max": float(max),
                 "isres": int(isres),
             }
@@ -350,7 +351,7 @@ def hybdata(filename):
 
             raterules_dict[i] = {
                 "id": id,
-                "min": int(min),
+                "min": float(min),
                 "max": float(max),
                 "val": val,
                 "isres": int(isres),
@@ -372,7 +373,7 @@ def hybdata(filename):
 
             time_dict = {
                 "id": id,
-                "min": int(min),
+                "min": float(min),
                 "max": float(max),
                 "TAU": float(tau),
                 "tspan": listArray,
@@ -403,7 +404,7 @@ def hybdata(filename):
 
             control_dict[i] = {
                 "id": id,
-                "min": int(min),
+                "min": float(min),
                 "max": float(max),
                 "val": val,
                 "constant": int(constant),
@@ -421,16 +422,16 @@ def hybdata(filename):
                 funEvent = j.split(", ")
                 funEvent = [val.replace('"', '') for val in y]
 
-        if "mlm" in line:
+        if "mlm" in line_options:
 
-            if "mlm.id" in line:
-                id = line[line.find("=")+2:len(line)-1]
+            if "mlm.id" in line_options:
+                id = line_options[line_options.find("=")+2:len(line_options)-1]
 
-            if "options" in line:
-                start = line.find('[')
-                end = line.find(']') + 1
-                text = line[start:end]
-                spaced_text = ' '.join(text.strip('[]'))
+            if "options" in line_options:
+                start = line_options.find('[')
+                end = line_options.find(']') + 1
+                text = line_options[start:end]
+                spaced_text = text.replace("[", "").replace("]", "")
                 numbers = spaced_text.split()
                 numbers = [int(num) for num in numbers]
                 options = numbers
@@ -562,7 +563,7 @@ def hybdata(filename):
             admini = float(line[line.find("=")+1:len(line)])
 
         if "addrop" in line:
-            addrop = float(line[line.find("=")+1:len(line)])
+            addrop = int(line[line.find("=")+1:len(line)])
 
     proj_dict = {
         "id": projId,

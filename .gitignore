@@ -199,5 +199,12 @@ pyrightconfig.json
 /Backend/Files/Workshop/Model2
 /Backend/Files/Workshop/Model3
 /Backend/Files/CHO
-
+/Backend/Files/ParkAndRamirez/plots
+/Backend/Files/Chassagnole/plots
 testUploadScript.py
+
+/Backend/Files/Workshop/Cell
+/Backend/Files/Workshop/Model2
+/Backend/Files/Workshop/Model3
+
+ensemble_evaluation_plots.py

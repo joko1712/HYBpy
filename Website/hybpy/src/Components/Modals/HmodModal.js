@@ -12,17 +12,36 @@ import {
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import IconButton from "@mui/material/IconButton";
-const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOptions, disableMethod5  }) => {
-    const [hiddenNodes, setHiddenNodes] = useState(initialValues ? initialValues.hiddenNodes : "");
+const HmodModal = ({
+    open,
+    handleClose,
+    handleSave,
+    initialValues,
+    setHmodOptions,
+    disableMethod5,
+}) => {
+    const [hiddenNodes, setHiddenNodes] = useState(
+        initialValues ? initialValues.hiddenNodes : ""
+    );
     const [layer, setLayer] = useState(initialValues ? initialValues.layer : 1);
     const [tau, setTau] = useState(initialValues ? initialValues.tau : 0.25);
     const [mode, setMode] = useState(initialValues ? initialValues.mode : 1);
-    const [method, setMethod] = useState(initialValues ? initialValues.method : 2);
-    const [jacobian, setJacobian] = useState(initialValues ? initialValues.jacobian : 1);
-    const [hessian, setHessian] = useState(initialValues ? initialValues.hessian : 0);
-    const [niter, setNiter] = useState(initialValues ? initialValues.niter : 400);
+    const [method, setMethod] = useState(
+        initialValues ? initialValues.method : 2
+    );
+    const [jacobian, setJacobian] = useState(
+        initialValues ? initialValues.jacobian : 1
+    );
+    const [hessian, setHessian] = useState(
+        initialValues ? initialValues.hessian : 0
+    );
+    const [niter, setNiter] = useState(
+        initialValues ? initialValues.niter : 400
+    );
     const [nstep, setNstep] = useState(initialValues ? initialValues.nstep : 2);
-    const [bootstrap, setBootstrap] = useState(initialValues ? initialValues.bootstrap : 0);
+    const [bootstrap, setBootstrap] = useState(
+        initialValues ? initialValues.bootstrap : 0
+    );
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
     const toggleAdvancedSettings = () => {
@@ -125,11 +144,10 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
 
                             <MenuItem value={4}>ADAM</MenuItem>
 
-                            <MenuItem
-                                value={5}
-                                disabled={disableMethod5}
-                            >
-                                {disableMethod5 ? "ADAM + ODEint (Disabled: ny > nx)" : "ADAM + ODEint"}
+                            <MenuItem value={5} disabled={disableMethod5}>
+                                {disableMethod5
+                                    ? "ADAM + ODEint (Disabled: ny > nx)"
+                                    : "ADAM + ODEint"}
                             </MenuItem>
                         </TextField>
                         <Tooltip
@@ -163,6 +181,7 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                             label='Nstep'
                             type='number'
                             value={nstep}
+                            inputProps={{ min: 1 }}
                             onChange={(e) => setNstep(Number(e.target.value))}
                             helperText='Number of re-initializations'
                         />
@@ -194,7 +213,9 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                                     label='Jacobian'
                                     select
                                     value={jacobian}
-                                    onChange={(e) => setJacobian(Number(e.target.value))}
+                                    onChange={(e) =>
+                                        setJacobian(Number(e.target.value))
+                                    }
                                     helperText='Direct calculation of jac'>
                                     <MenuItem value={0}>Off</MenuItem>
                                     <MenuItem value={1}>On</MenuItem>
@@ -214,7 +235,9 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                                     label='Hessian'
                                     select
                                     value={hessian}
-                                    onChange={(e) => setHessian(Number(e.target.value))}
+                                    onChange={(e) =>
+                                        setHessian(Number(e.target.value))
+                                    }
                                     helperText='Direct calculation of Hess'>
                                     <MenuItem value={0}>Off</MenuItem>
                                     <MenuItem value={1}>On</MenuItem>
@@ -234,7 +257,9 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                                     label='TAU'
                                     type='number'
                                     value={tau}
-                                    onChange={(e) => setTau(Number(e.target.value))}
+                                    onChange={(e) =>
+                                        setTau(Number(e.target.value))
+                                    }
                                     helperText='Enter a floating-point value for the TAU parameter'
                                 />
                                 <Tooltip
@@ -252,7 +277,9 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                                     label='Mode'
                                     select
                                     value={mode}
-                                    onChange={(e) => setMode(Number(e.target.value))}
+                                    onChange={(e) =>
+                                        setMode(Number(e.target.value))
+                                    }
                                     helperText='Trainning Mode: Indirect, Direct, Semidirect '>
                                     <MenuItem value={1}>Indirect</MenuItem>
                                     <MenuItem value={2}>Direct</MenuItem>
@@ -273,7 +300,9 @@ const HmodModal = ({ open, handleClose, handleSave, initialValues, setHmodOption
                                     label='Bootstrap'
                                     select
                                     value={bootstrap}
-                                    onChange={(e) => setBootstrap(Number(e.target.value))}
+                                    onChange={(e) =>
+                                        setBootstrap(Number(e.target.value))
+                                    }
                                     helperText='Set Bootstrap On or Off'>
                                     <MenuItem value={0}>On</MenuItem>
                                     <MenuItem value={1}>Off</MenuItem>

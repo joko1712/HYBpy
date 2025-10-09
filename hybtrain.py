@@ -29,6 +29,7 @@ import h5py
 from savetrainednn import saveNN
 import logging
 from hybodesolver_neuralode import hybodesolver_neuralode
+from scipy.stats import t as t_dist
 
 def default_fobj(w):
     raise NotImplementedError(
@@ -39,6 +40,26 @@ def save_model_to_h5(model, file_path):
     with h5py.File(file_path, 'w') as h5file:
         for key, value in state_dict.items():
             h5file.create_dataset(key, data=value.cpu().numpy())
+
+def make_mask(file, target_split, kfolds_idx=None):
+    mask = []
+
+    k = (kfolds_idx - 1) if kfolds_idx is not None else None
+
+    for i in range(1, file['nbatch'] + 1):
+        lab = file[i]['istrain']
+
+        if isinstance(lab, list) or isinstance(lab, np.ndarray):
+            if k is None:
+                sel = (lab[0] == target_split)
+            else:
+                sel = (0 <= k < len(lab)) and (lab[k] == target_split)
+        else:
+            sel = (lab == target_split)
+
+        mask.append(1 if sel else 0)
+
+    return np.array(mask, dtype=int)
 
 
 def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir, run_id, thread=None):
@@ -58,13 +79,12 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir, run_id, thr
     if projhyb is None:
         raise ValueError("at least 1 input required for HYBTRAIN( projhyb)")
 
-    # Check that nensemble is less than or equal to nstep
-    if projhyb['nensemble'] > projhyb['nstep']:
-        raise ValueError("Too many aggregation parameters; nensemble <= nstep")
-
-    # Check that nensemble is greater than 0
+    
     if projhyb['nensemble'] <= 0:
         raise ValueError("nensemble must be at least 1")
+
+    if projhyb['kfolds'] < projhyb['nensemble']:
+        raise ValueError("kfolds must be >= nensemble")
 
     # Check that nstep is greater than 0
     if projhyb['nstep'] <= 0:
@@ -187,9 +207,9 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir, run_id, thr
     if projhyb['method'] == 1:
         print("   Optimiser:              Trust Region Reflective")
         options = {
-            'xtol': 1e-08, #1e-10
-            'gtol': 1e-08,
-            'ftol': 1e-08,
+            'xtol': 1e-10, #1e-10
+            'gtol': 1e-10,
+            'ftol': 1e-10,
             'verbose': projhyb['display'],
             'max_nfev': projhyb['niter'],
             'method': 'trf',
@@ -299,11 +319,11 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir, run_id, thr
             weights = [ 0.46595111,  0.10995199,  0.15210865,  0.13458372,  0.10450351, -0.05684199,  0.3605971,  -1.14533527,
             1.08100574, 0.49413338, -0.6545019,   1.12397129, -0.78435885, -2.40410101, -0.28280282,  0.24305272, -0.02864941,  0.88284648]
         
-        weights= [-2.08210402e+01, -2.92648655e+01, -2.99617932e+00, -3.92740113e-01, 3.46148463e-01,
+            weights= [-2.08210402e+01, -2.92648655e+01, -2.99617932e+00, -3.92740113e-01, 3.46148463e-01,
             2.67545926e+00,  3.71076656e-01, -3.89435816e-01, 2.17389612e-02, -5.50932823e+00,  2.70377037e+00,  9.69186093e-04,
             -8.27198878e+00,  9.77532981e-01, -1.80689401e+00,  2.58970797e-01, -2.80444098e+00, -9.70044794e-01]
 
-        weights = np.array(weights)
+            weights = np.array(weights)
         '''
     
         ann.set_weights(weights)
@@ -339,21 +359,34 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir, run_id, thr
     
     bestWeights = None
     bestPerformance = float('inf')
+    all_weights = []  
+    val_errors = []
+
 
     for istep in range(1, projhyb['nstep']+1):
-        print("TESTING")
-        for i in range(1, file['nbatch'] + 1):
-            istrain = file[i]["istrain"]
-            projhyb['istrain'] = [0] * file['nbatch']
-            projhyb['istrain'][i - 1] = istrain
+        for kfold in range(1, projhyb['kfolds']+1):
+            projhyb['currentfold'] = kfold - 1 
 
-        if projhyb['bootstrap'] == 1:
-            ind = sorted(np.random.permutation(projhyb['ntrain'])[:nboot])
-            projhyb['istrain'][projhyb['itr']] = 0
-            for idx in ind:
-                projhyb['istrain'][projhyb['itr'][idx]] = 1
+            print(f"\n--- Training step {istep}, Fold {kfold} ---")
+            for i in range(1, file['nbatch'] + 1):
+                print(f"Batch {i}: istrain = {file[i]['istrain']}")
+                istrain = file[i]["istrain"]
+                projhyb['istrain'] = [0] * file['nbatch']
+                projhyb['istrain'][i - 1] = istrain
+
+            for i in range(1, file['nbatch'] + 1):
+                istrain = file[i]["istrain"]
+                projhyb['istrain'] = [0] * file['nbatch']
+                projhyb['istrain'][i - 1] = istrain
+
+            if projhyb['bootstrap'] == 1:
+                ind = sorted(np.random.permutation(projhyb['ntrain'])[:nboot])
+                projhyb['istrain'][projhyb['itr']] = 0
+                for idx in ind:
+                    projhyb['istrain'][projhyb['itr'][idx]] = 1
+            
+            
         
-        if istep > 1:
             ann = mlpnetcreate(projhyb, projhyb['mlm']['neuron'])
             projhyb['mlm']['fundata'] = ann
             weights, ann = ann.get_weights()
@@ -362,207 +395,227 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir, run_id, thr
             with open("filetest.json", "w") as f:
                 json.dump(convert_numpy(weights), f)
                 json.dump("weights", f)
+        
+            if projhyb['jacobian'] == 1:
+                options['jac'] = evaluator.jac_func
+                if projhyb['method'] == 3:
+                    options['minimizer_kwargs'] = {
+                        'method': 'L-BFGS-B',
+                        'jac': evaluator.jac_func,
+                        'options': {'maxiter': 100}
+                    }
 
-        print(
-            'ITER  RESNORM    [C]train   [C]valid   [C]test   [R]train   [R]valid   [R]test    AICc       NW   CPU')
+            if projhyb['hessian'] == 1:
+                options['hess'] = evaluator.hess_func
 
-    
-        if projhyb['jacobian'] == 1:
-            options['jac'] = evaluator.jac_func
-            if projhyb['method'] == 3:
-                options['minimizer_kwargs'] = {
-                    'method': 'L-BFGS-B',
-                    'jac': evaluator.jac_func,
-                    'options': {'maxiter': 100}
-                }
+            '''
 
-        if projhyb['hessian'] == 1:
-            options['hess'] = evaluator.hess_func
+                [-20.8210221361445, -29.2648787002075, -2.99616485291983, -0.391873434528431, 0.345529228671208, 2.67547768790112, 0.370737593202186, -5.50984481311063, -8.27238985127028, -0.388445614425761, 2.70463125251191, 0.976706416952729, 0.0217403921016785, 0.000969372025403460, -1.80689629911906, 0.259146859752498, -2.80553530793061, -0.970047111391006]
 
-        '''
+                            #transporse the weights when the layer.w is 3x3
+                    
+                    if layer.w.shape == torch.Size([3, 3]):
+                        with torch.no_grad():
+                            layer.w.copy_(layer.w.t().clone())
+                    
+                w = [-1.30284588e-03, -1.14245236e-02, -7.91831059e-04,  4.40199659e-03,
+                        1.72756969e-03, -5.00282668e-03, -2.01651446e-03, -3.93168300e-03,
+                        9.56139266e-04, -1.25006042e-03, -1.57937766e-03, -2.50723996e-03,
+                        1.62134778e-03, -1.16238460e-02, -1.66073496e-04,  5.14919755e-03,
+                        2.14947514e-03,  1.17489032e-04, -2.03476453e-03,  1.54795275e-01,
+                        1.70781475e-01,  4.07317944e-05,  1.00251807e+00,  9.94084879e-02,
+                        6.72249841e-06,  4.22301199e-02]
 
-            [-20.8210221361445, -29.2648787002075, -2.99616485291983, -0.391873434528431, 0.345529228671208, 2.67547768790112, 0.370737593202186, -5.50984481311063, -8.27238985127028, -0.388445614425761, 2.70463125251191, 0.976706416952729, 0.0217403921016785, 0.000969372025403460, -1.80689629911906, 0.259146859752498, -2.80553530793061, -0.970047111391006]
+                w = [ 1.51872094e-03, -1.59585915e-03, -7.12253433e-04,  1.24342755e-04,
+                        7.74540120e-04,  1.99441788e-02, -1.26969915e-02, -3.67767926e-03,
+                        -1.40537984e-03, -5.17297002e-03, -1.85277002e-03,  1.74874954e-03,
+                        6.56016046e-04, -1.54538042e-04, -5.62466811e-04,  2.64828828e-02,
+                        -1.29078782e-02, -2.86998296e-03, -3.28937350e-03, -1.46798282e-02,
+                        1.08838826e-02,  8.35603951e-03,  4.62468320e-03, -4.93299581e-03,
+                        -3.38708910e-02,  9.56367378e-03, -8.93223669e-03, -3.34692422e-03,
+                        5.63855163e-04,  2.80681532e-03,  2.34064976e-03, -4.90464784e-03,
+                        -2.41182354e-03,  1.33099790e-03,  5.88513180e-03,  4.52984615e-03,
+                        -4.60275981e-03, -1.85567481e-03, 4.55726909e-04,  2.12187582e-03,
+                        -3.07892454e-03,  3.05248249e-03,  1.20104149e-03, -3.40335053e-04,
+                        -1.44833498e-03,  1.40478742e-03, -1.47642337e-03, -6.05061645e-04,
+                        1.23577693e-04,  6.19980360e-04,  9.93972677e-06, -1.17452681e-04,
+                        -3.83150019e-06,  9.81991234e-05,  1.88650875e-04, -2.61882162e-08,
+                        -5.74176106e-07,  4.48708336e-07,-1.96318907e-07,  5.34379366e-07,
+                        -9.05059523e-04, -3.78891547e-03,  9.28477323e-04, -1.22795051e-03,
+                        5.03147974e-03, -1.02264114e-02, -1.03661777e-02, -3.96977224e-03,
+                        4.06746594e-03,  1.40531047e-02, -1.66942884e-02,  8.71160820e-03,
+                        -1.79788117e-02,  1.99990204e-02, -9.71130284e-03, -1.26890938e-03,
+                        8.88607362e-03, -3.87793796e-03,  5.82036485e-03, -1.08326037e-02,
+                        6.17182015e-03, -1.52597979e-02,  1.01063687e-02, -1.36405502e-02,
+                        1.84950105e-02,  8.53358615e-05,  3.37067528e-05,  3.55832699e-05,
+                        -8.44830702e-05,  4.73012733e-05, -2.19510522e-04,  1.01640910e-03,
+                        4.29801868e-02,  4.68624654e-05,  2.67207005e-05, -2.18452390e-02,
+                        8.78507425e-06, -1.62294776e-04,  5.69775024e-04, -1.32757487e-02,
+                        6.36695478e-05, -1.50478056e-05,  1.04180612e-02, -4.69567708e-05,
+                        -1.05798717e-05, -4.99704584e-05,  2.04628426e-03, -1.88611539e-05,
+                        5.00014177e-05, -2.44433960e-02, -2.20355572e-05,  9.94252867e-05,
+                        -2.14544245e-04, -2.20562387e-03, -2.46881624e-05,  3.35512951e-05,
+                        -2.15364604e-03,  5.72864861e-06,  1.70329603e-06, -1.20269089e-04,
+                        -2.59561229e-02,  5.50277599e-05,  6.37817347e-05,  4.35776302e-02,
+                        4.96333638e-05,  1.54874169e-01,  1.70770553e-01,  3.46536551e-05,
+                        1.00330855e+00,  9.96498529e-02,  6.14672585e-06,  4.25715988e-02]
 
-                        #transporse the weights when the layer.w is 3x3
-                
-                if layer.w.shape == torch.Size([3, 3]):
-                    with torch.no_grad():
-                        layer.w.copy_(layer.w.t().clone())
-                
-            w = [-1.30284588e-03, -1.14245236e-02, -7.91831059e-04,  4.40199659e-03,
-                    1.72756969e-03, -5.00282668e-03, -2.01651446e-03, -3.93168300e-03,
-                    9.56139266e-04, -1.25006042e-03, -1.57937766e-03, -2.50723996e-03,
-                    1.62134778e-03, -1.16238460e-02, -1.66073496e-04,  5.14919755e-03,
-                    2.14947514e-03,  1.17489032e-04, -2.03476453e-03,  1.54795275e-01,
-                    1.70781475e-01,  4.07317944e-05,  1.00251807e+00,  9.94084879e-02,
-                    6.72249841e-06,  4.22301199e-02]
+                w =  [9.84452500e-04, 3.50165149e-05, 1.15788796e-02, 2.94717984e-04,
+                        2.61447847e-04, 3.10083638e-01, 9.53791945e-02, 3.72253961e-01]
 
-            w = [ 1.51872094e-03, -1.59585915e-03, -7.12253433e-04,  1.24342755e-04,
-                    7.74540120e-04,  1.99441788e-02, -1.26969915e-02, -3.67767926e-03,
-                    -1.40537984e-03, -5.17297002e-03, -1.85277002e-03,  1.74874954e-03,
-                    6.56016046e-04, -1.54538042e-04, -5.62466811e-04,  2.64828828e-02,
-                    -1.29078782e-02, -2.86998296e-03, -3.28937350e-03, -1.46798282e-02,
-                    1.08838826e-02,  8.35603951e-03,  4.62468320e-03, -4.93299581e-03,
-                    -3.38708910e-02,  9.56367378e-03, -8.93223669e-03, -3.34692422e-03,
-                    5.63855163e-04,  2.80681532e-03,  2.34064976e-03, -4.90464784e-03,
-                    -2.41182354e-03,  1.33099790e-03,  5.88513180e-03,  4.52984615e-03,
-                    -4.60275981e-03, -1.85567481e-03, 4.55726909e-04,  2.12187582e-03,
-                    -3.07892454e-03,  3.05248249e-03,  1.20104149e-03, -3.40335053e-04,
-                    -1.44833498e-03,  1.40478742e-03, -1.47642337e-03, -6.05061645e-04,
-                    1.23577693e-04,  6.19980360e-04,  9.93972677e-06, -1.17452681e-04,
-                    -3.83150019e-06,  9.81991234e-05,  1.88650875e-04, -2.61882162e-08,
-                    -5.74176106e-07,  4.48708336e-07,-1.96318907e-07,  5.34379366e-07,
-                    -9.05059523e-04, -3.78891547e-03,  9.28477323e-04, -1.22795051e-03,
-                    5.03147974e-03, -1.02264114e-02, -1.03661777e-02, -3.96977224e-03,
-                    4.06746594e-03,  1.40531047e-02, -1.66942884e-02,  8.71160820e-03,
-                    -1.79788117e-02,  1.99990204e-02, -9.71130284e-03, -1.26890938e-03,
-                    8.88607362e-03, -3.87793796e-03,  5.82036485e-03, -1.08326037e-02,
-                    6.17182015e-03, -1.52597979e-02,  1.01063687e-02, -1.36405502e-02,
-                    1.84950105e-02,  8.53358615e-05,  3.37067528e-05,  3.55832699e-05,
-                    -8.44830702e-05,  4.73012733e-05, -2.19510522e-04,  1.01640910e-03,
-                    4.29801868e-02,  4.68624654e-05,  2.67207005e-05, -2.18452390e-02,
-                    8.78507425e-06, -1.62294776e-04,  5.69775024e-04, -1.32757487e-02,
-                    6.36695478e-05, -1.50478056e-05,  1.04180612e-02, -4.69567708e-05,
-                    -1.05798717e-05, -4.99704584e-05,  2.04628426e-03, -1.88611539e-05,
-                    5.00014177e-05, -2.44433960e-02, -2.20355572e-05,  9.94252867e-05,
-                    -2.14544245e-04, -2.20562387e-03, -2.46881624e-05,  3.35512951e-05,
-                    -2.15364604e-03,  5.72864861e-06,  1.70329603e-06, -1.20269089e-04,
-                    -2.59561229e-02,  5.50277599e-05,  6.37817347e-05,  4.35776302e-02,
-                    4.96333638e-05,  1.54874169e-01,  1.70770553e-01,  3.46536551e-05,
-                    1.00330855e+00,  9.96498529e-02,  6.14672585e-06,  4.25715988e-02]
 
-            w =  [9.84452500e-04, 3.50165149e-05, 1.15788796e-02, 2.94717984e-04,
+                optimized_weights = w   
+
+                w =  [9.84452500e-04, 3.50165149e-05, 1.15788796e-02, 2.94717984e-04,
                     2.61447847e-04, 3.10083638e-01, 9.53791945e-02, 3.72253961e-01]
 
+                trainedWeights = w
+            '''
 
-            optimized_weights = w   
+            if trainedWeights == None:
 
-            w =  [9.84452500e-04, 3.50165149e-05, 1.15788796e-02, 2.94717984e-04,
-                2.61447847e-04, 3.10083638e-01, 9.53791945e-02, 3.72253961e-01]
+                simulation = 0
+        
+                if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
+                    #result = least_squares(evaluator.fobj_func, x0=weights, **options)
+                    #print("result", result.x)
+                    #optimized_weights = result.x
 
-            trainedWeights = w
-        '''
+                    result = least_squares(evaluator.fobj_func, x0=weights, **options)
 
-        if trainedWeights == None:
+                    optimized_weights = evaluator.get_best_weights()
 
-            simulation = 0
-    
-            if projhyb["method"] == 1:  # LEVENBERG-MARQUARDT
-                result = least_squares(evaluator.fobj_func, x0=weights, **options)
-                print("result", result.x)
-                optimized_weights = result.x
+                    #all_weights.append(optimized_weights.copy())
+                    all_weights.append(result.x.copy())
+                    val_errors.append(evaluator.best_val_loss)
 
-
-            elif projhyb["method"] == 2:  # QUASI-NEWTON
-
-                if options.get('method', None) == 'trust-constr':
-                    result = minimize(evaluator.fobj_func, x0=weights, hess=None, **options)
-                else:
-                    result = minimize(evaluator.fobj_func, x0=weights, **options)
-                
-                optimized_weights = result.x
-                print("result", result.x)
+                    evaluator.restartEvaluator()
 
 
-            elif projhyb["method"] == 3:  # Dual ANNEALING
-                # Dual Annealing does not support jac or hess
-                # valid_da_options = {'maxiter', 'initial_temp', 'restart_temp_ratio', 'visit', 'accept', 'maxfun', 'seed', 'no_local_search', 'callback', 'x0'}
-                valid_options = {'maxiter', 'minimizer_kwargs'}
-                d_A_options = {k: v for k, v in options.items() if k in valid_options}
+                elif projhyb["method"] == 2:  # QUASI-NEWTON
 
-                result = dual_annealing(evaluator.fobj_func, bounds=bounds, **d_A_options)
-                optimized_weights = result.x
+                    if options.get('method', None) == 'trust-constr':
+                        result = minimize(evaluator.fobj_func, x0=weights, hess=None, **options)
+                    else:
+                        result = minimize(evaluator.fobj_func, x0=weights, **options)
+                    
+                    #optimized_weights = result.x
+                    optimized_weights = evaluator.get_best_weights()
 
-            elif projhyb["method"] == 4:  # ADAM method
-                manual_optimizer = ManualAdamOptimizer(ann, lr=0.01, weight_decay=1e-5)
-                fobj_history = []
-                gradient_norms = []
 
-                weights = ann.get_weights_solo()
+                elif projhyb["method"] == 3:  # Dual ANNEALING
+                    # Dual Annealing does not support jac or hess
+                    # valid_da_options = {'maxiter', 'initial_temp', 'restart_temp_ratio', 'visit', 'accept', 'maxfun', 'seed', 'no_local_search', 'callback', 'x0'}
+                    valid_options = {'maxiter', 'minimizer_kwargs'}
+                    d_A_options = {k: v for k, v in options.items() if k in valid_options}
 
-                refresh_rate = max(1, int(num_epochs * 0.002))
+                    result = dual_annealing(evaluator.fobj_func, bounds=bounds, **d_A_options)
+                    #optimized_weights = result.x
+                    optimized_weights = evaluator.get_best_weights()
 
-                for epoch in range(num_epochs):
-                    manual_optimizer.zero_grad()
+                elif projhyb["method"] == 4:  # ADAM method
+                    manual_optimizer = ManualAdamOptimizer(ann, lr=0.01, weight_decay=1e-5)
+                    fobj_history = []
+                    gradient_norms = []
 
                     weights = ann.get_weights_solo()
-                    fobjs, gradient = evaluator.evaluate_adam(weights)
 
-                    grad_norm = np.linalg.norm(gradient)
-                    obj_value = np.mean(fobjs ** 2)
+                    refresh_rate = max(1, int(num_epochs * 0.002))
 
-                    if np.isnan(grad_norm) or grad_norm > 1e10:
-                        raise ValueError(f"Gradient norm is invalid at epoch {epoch + 1}: {grad_norm}")
+                    for epoch in range(num_epochs):
+                        manual_optimizer.zero_grad()
 
-                    manual_optimizer.step(gradient)
-                    manual_optimizer.step_scheduler(obj_value)
+                        weights = ann.get_weights_solo()
+                        fobjs, gradient = evaluator.evaluate_adam(weights)
 
-                    fobj_history.append(obj_value)
-                    gradient_norms.append(grad_norm)
+                        grad_norm = np.linalg.norm(gradient)
+                        obj_value = np.mean(fobjs ** 2)
 
-                    if epoch % refresh_rate == 0:
-                        print(f"Epoch {epoch}: Loss={obj_value:.6f}, GradNorm={grad_norm:.6f}")
+                        if np.isnan(grad_norm) or grad_norm > 1e10:
+                            raise ValueError(f"Gradient norm is invalid at epoch {epoch + 1}: {grad_norm}")
 
-                optimized_weights = ann.get_weights_solo()
+                        manual_optimizer.step(gradient)
+                        manual_optimizer.step_scheduler(obj_value)
 
-            elif projhyb["method"] == 5:
-                print("   Optimiser:              ADAM with Neural ODE solver")
+                        fobj_history.append(obj_value)
+                        gradient_norms.append(grad_norm)
 
-                y0 = file[1]["y"][0]
-                if isinstance(y0, list):
-                    y0_tensor = torch.tensor(y0, dtype=torch.float32)
-                else:
-                    y0_tensor = torch.tensor([y0], dtype=torch.float32)
+                        if epoch % refresh_rate == 0:
+                            print(f"Epoch {epoch}: Loss={obj_value:.6f}, GradNorm={grad_norm:.6f}")
 
-                initial_state = y0_tensor.unsqueeze(1) if y0_tensor.ndim == 1 else y0_tensor.T
+                    optimized_weights = ann.get_weights_solo()
 
-                time_array = torch.tensor(file[1]["time"], dtype=torch.float32)
+                elif projhyb["method"] == 5:
+                    print("   Optimiser:              ADAM with Neural ODE solver")
 
-                target_traj_list = []
-                for i in range(len(time_array)):
-                    y_val = file[1]["y"][i]
-                    if isinstance(y_val, list):
-                        target_traj_list.append(y_val)
+                    y0 = file[1]["y"][0]
+                    if isinstance(y0, list):
+                        y0_tensor = torch.tensor(y0, dtype=torch.float32)
                     else:
-                        target_traj_list.append([y_val])
-                target_traj = torch.tensor(target_traj_list, dtype=torch.float32)
+                        y0_tensor = torch.tensor([y0], dtype=torch.float32)
 
-                optimizer = torch.optim.Adam(ann.parameters(), lr=1e-3)
-                num_epochs = projhyb.get("niter", 100)
+                    initial_state = y0_tensor.unsqueeze(1) if y0_tensor.ndim == 1 else y0_tensor.T
 
-                for epoch in range(num_epochs):
-                    optimizer.zero_grad()
-                    pred_traj = hybodesolver_neuralode(ann, initial_state, time_array)
-                    loss = torch.mean((pred_traj - target_traj) ** 2)
-                    loss.backward()
-                    optimizer.step()
+                    time_array = torch.tensor(file[1]["time"], dtype=torch.float32)
 
-                    if epoch % 10 == 0:
-                        print(f"Epoch {epoch + 1}/{num_epochs} | Loss: {loss.item():.6f}")
+                    target_traj_list = []
+                    for i in range(len(time_array)):
+                        y_val = file[1]["y"][i]
+                        if isinstance(y_val, list):
+                            target_traj_list.append(y_val)
+                        else:
+                            target_traj_list.append([y_val])
+                    target_traj = torch.tensor(target_traj_list, dtype=torch.float32)
 
-                optimized_weights = ann.get_weights_solo()
-        else:
-            
-            simulation = 1
+                    optimizer = torch.optim.Adam(ann.parameters(), lr=1e-3)
+                    num_epochs = projhyb.get("niter", 100)
 
-            trainedWeights = np.array(trainedWeights)
+                    for epoch in range(num_epochs):
+                        optimizer.zero_grad()
+                        pred_traj = hybodesolver_neuralode(ann, initial_state, time_array)
+                        loss = torch.mean((pred_traj - target_traj) ** 2)
+                        loss.backward()
+                        optimizer.step()
 
-            ann.set_weights(trainedWeights)
-            
-            optimized_weights, _ = ann.get_weights()
+                        if epoch % 10 == 0:
+                            print(f"Epoch {epoch + 1}/{num_epochs} | Loss: {loss.item():.6f}")
+
+                    optimized_weights = ann.get_weights_solo()
+            else:
+                
+                simulation = 1
+
+                trainedWeights = np.array(trainedWeights)
+
+                ann.set_weights(trainedWeights)
+                
+                optimized_weights, _ = ann.get_weights()
+
+        
+        weights_matrix = np.stack(all_weights, axis=0)
+        mean_weights = np.mean(weights_matrix, axis=0)
 
 
-        fobj_value = evaluator.fobj_func(optimized_weights)
-        fobj_norm = np.linalg.norm(fobj_value)
+
+
+        fobj_value = evaluator.fobj_func(mean_weights)  
+        fobj_norm  = np.linalg.norm(fobj_value)
 
 
         if bestPerformance == None:
             bestPerformance = fobj_norm
-            bestWeights = optimized_weights
+            bestWeights = mean_weights
 
         if bestPerformance > fobj_norm:
             bestPerformance = fobj_norm
-            bestWeights = optimized_weights
+            bestWeights = mean_weights
+
+    val_errors = np.array(val_errors)
+    all_weights = np.array(all_weights, dtype=object)
+
+    sorted_indices = np.argsort(val_errors)
+    top_n_indices = sorted_indices[:projhyb['nensemble']]
+    top_n_weights = [all_weights[i] for i in top_n_indices]
 
     model_path = os.path.join(temp_dir, "trained_model.h5")
     save_model_to_h5(ann, model_path)
@@ -570,10 +623,9 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir, run_id, thr
     newHmodFile = os.path.join(temp_dir, "Newhmod.hmod")
     saveNN(model_path, projhyb["inputs"], projhyb["outputs"], hmod, newHmodFile, bestWeights, ann)
 
-    testing = teststate(ann, user_id, projhyb, file, bestWeights, temp_dir, simulation, projhyb['method'])
+    testing = teststate(ann, user_id, projhyb, file, top_n_weights, temp_dir, simulation, projhyb['method'], evaluator)
 
-    plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)    
-
+    plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)
 
     return projhyb, bestWeights, testing, newHmodFile
 
@@ -591,12 +643,10 @@ def convert_numpy(obj):
 #   INDIRECT
 ####
 
-def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
+def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1, mask_type=None):
 
 # LOAD THE WEIGHTS into the ann
     ann.set_weights(w)
-    #ann.print_weights_and_biases()
-
 
     # ires = 11 
     ns = projhyb["nspecies"]
@@ -613,18 +663,28 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
         
     nres = len(isres)
     
-    npall = sum(file[i+1]["np"] for i in range(file["nbatch"]) if file[i+1]["istrain"] == 1)
+    current_fold = projhyb.get("currentfold", 0)  # Default to 0 if not set
+
+    npall = sum(
+        file[i + 1]["np"]
+        for i in range(file["nbatch"])
+        if isinstance(file[i + 1]["istrain"], list) and file[i + 1]["istrain"][current_fold] == 1
+    )
 
     sresall = np.zeros(npall * nres)
 
     sjacall = np.zeros((npall * nres, nw))
 
+    if mask_type == "train":
+        nM = 1
+    elif mask_type == "val":
+        nM = 2
 
 
     COUNT = 0
     for l in range(file["nbatch"]):
         l = l + 1
-        if file[l]["istrain"] == 1:
+        if file[l]["istrain"][projhyb['currentfold']] == nM:
             tb = file[l]["time"]
 
             Y = file[l]["y"]
@@ -668,7 +728,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 
                 state_tensor = state_tensor.to(dtype=torch.float32)
                 state_adjusted = state_tensor[0:nres]
-                Ystate = Y_select - state_adjusted.numpy()
+                Ystate = Y_select - state_adjusted.numpy()                
                 
                 sresall[COUNT:COUNT + nres] = Ystate / sY[i, isresY].numpy()
 
@@ -713,6 +773,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 ####
 
 def resfun_semidirect_jac(ann, w, istrain, projhyb, file, method=1):
+    
 
     ann.set_weights(w)
     #ann.print_weights_and_biases()
@@ -924,7 +985,7 @@ class ManualAdamOptimizer:
     def step_scheduler(self, loss_value):
         self.scheduler.step(loss_value)
 
-
+'''
 class IndirectFunctionEvaluator:
     def __init__(self, ann, projhyb, file, evaluation_function):
         self.ann = ann
@@ -978,6 +1039,80 @@ class IndirectFunctionEvaluator:
             raise
 
         return residuals, gradient
+'''
+
+class IndirectFunctionEvaluator:
+    def __init__(self, ann, projhyb, file, evaluation_function):
+        self.ann = ann
+        self.projhyb = projhyb
+        self.file = file
+        self.evaluation_function = evaluation_function
+
+        self.last_weights = None
+        self.last_fobj = None
+        self.last_jac = None
+
+        self.fobj_history = []
+        self.jac_norm_history = []
+
+        self.best_val_loss = float('inf')
+        self.best_val_weights = None
+        self.val_loss_history = []
+
+    def evaluate(self, weights):
+        if np.array_equal(weights, self.last_weights):
+            return self.last_fobj, self.last_jac
+        else:
+            train_mask = make_mask(self.file, 1, self.projhyb['kfolds'])
+
+            self.last_fobj, self.last_jac = self.evaluation_function(
+                self.ann, weights, train_mask, self.projhyb, self.file, self.projhyb['method'], mask_type='train'
+            )
+            self.last_weights = weights
+
+            self.fobj_history.append(self.last_fobj)
+            self.jac_norm_history.append(np.linalg.norm(self.last_jac))
+
+            self.check_validation_loss(weights)
+
+            return self.last_fobj, self.last_jac
+
+    def evaluate_adam(self, weights):
+        residuals, jacobian = self.evaluation_function(
+            self.ann, weights, self.projhyb['istrain'], self.projhyb, self.file, self.projhyb['method']
+        )
+
+        residuals = residuals.astype(np.float32, copy=False)
+        jacobian = jacobian.astype(np.float32, copy=False)
+
+        gradient = jacobian.T @ residuals
+
+        self.last_weights = np.copy(weights)
+        self.last_fobj = residuals
+        self.last_jac = jacobian
+        self.last_gradient = gradient
+
+        self.fobj_history.append(np.linalg.norm(residuals))
+        self.jac_norm_history.append(np.linalg.norm(gradient))
+
+        self.check_validation_loss(weights)
+
+        return residuals, gradient
+
+    def check_validation_loss(self, weights):
+        val_mask = make_mask(self.file, 2, self.projhyb['kfolds'])  
+        val_residuals, _ = self.evaluation_function(
+            self.ann, weights, val_mask, self.projhyb, self.file, self.projhyb['method'], mask_type='val'
+        )
+        val_loss = np.linalg.norm(val_residuals)
+        self.val_loss_history.append(val_loss)
+
+        if not np.isnan(val_loss) and val_loss < self.best_val_loss:
+            self.best_val_loss = val_loss
+            self.best_val_weights = np.copy(weights)
+
+    def get_best_weights(self):
+        return self.best_val_weights if self.best_val_weights is not None else self.last_weights
 
     def fobj_func(self, weights):
         fobj, _ = self.evaluate(weights)
@@ -998,6 +1133,16 @@ class IndirectFunctionEvaluator:
         weights_numpy = weights_tensor.detach().cpu().numpy()
         _, jac = self.evaluate(weights_numpy)
         return torch.tensor(jac, dtype=torch.float32, requires_grad=True)
+
+    def restartEvaluator(self):
+        self.last_weights = None
+        self.last_fobj = None
+        self.last_jac = None
+        self.fobj_history = []
+        self.jac_norm_history = []
+        self.best_val_loss = float('inf')
+        self.best_val_weights = None
+        self.val_loss_history = []
 
 ### MOVE THIS OUT
 
@@ -1027,140 +1172,111 @@ def plot_optimization_results(fobj_values, jacobian_matrix):
 
     plt.tight_layout()
 
-def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
-    dictState = {}
-    w = np.array(w)
-
-    # Load the weights into the ann
-    ann.set_weights(w)
-    #ann.print_weights_and_biases()
-
-    ns = projhyb["nspecies"]
-    nt = ns + projhyb["ncompartment"]
-    nw = projhyb["mlm"]["nw"]
-    
-    isres = [i for i in range(1, ns + 1) if projhyb["species"][str(i)]["isres"] == 1]
-    isresY = [i - 1 for i in isres]
-    
-    nres = len(isres)
-
-    npall = sum(file[i+1]["np"] for i in range(file["nbatch"]) if isinstance(file[i+1], dict) and file[i+1]["istrain"] == 1)
-
-    sresall = np.zeros(npall * nres)
-    sjacall = np.zeros((npall * nres, nw))
-
-    COUNT = 0
+def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method=1, evaluator=None):
     if simulation == 1:
-        for l in range(file["nbatch"]):
-            l = l + 1
-            if not isinstance(file[l], dict):
-                continue
 
-            if file[l]["istrain"] not in [1, 3]:
-                continue
+        dictState = {}
+        w = np.array(weights)
 
-            tb = file[l]["time"]
-            Y = np.array(file[l]["y"]).astype(np.float64)
-            Y = torch.from_numpy(Y)
+        # Load the weights into the ann
+        ann.set_weights(w)
+        #ann.print_weights_and_biases()
 
-            batch = str(l)
-
-            sY = np.array(file[l]["sy"]).astype(np.float64)
-            sY = torch.from_numpy(sY)
-
-            state = np.array(file[l]["y"][0])
-            state = state[0:ns+1]
-            Sw = np.zeros((nt, nw))
-
-            for i in range(1, file[l]["np"]):
-                statedict = file[l]["key_value_array"][i-1]
-
-                dict_items_list = list(statedict.items())
-                statedict =  dict(dict_items_list[ns:len(dict_items_list)])
-
-                batch_data = file[l]
-                _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, statedict, None, None, w, batch_data, projhyb)
-                if l not in dictState:
-                    dictState[l] = {}
-                    dictState[l][0] = file[l]["y"][0]
-                dictState[l][i] = state
-
-            break
-
-        for i in range(projhyb["nspecies"]):
-            actual_test = []
-            predicted_test = []
-            err = []
-
-            # Collect data for plotting from the processed batch
-            if l in dictState:
-                for t in range(1, file[l]["np"]):
-                    actual_test.append(np.array(file[l]["y"][t-1][i]))
-                    if t in dictState[l]:
-                        predicted_test.append(dictState[l][t-1][i])
-                        err.append(file[l]["sy"][t-1][i])
-
-            actual_test = np.array(actual_test, dtype=np.float64)
-            predicted_test = np.array(predicted_test, dtype=np.float64)
-            err = np.array(err, dtype=np.float64)
+        ns = projhyb["nspecies"]
+        nt = ns + projhyb["ncompartment"]
+        nw = projhyb["mlm"]["nw"]
         
-            # Plot time series
-            x = file[l]["time"][:-1]
+        isres = [i for i in range(1, ns + 1) if projhyb["species"][str(i)]["isres"] == 1]
+        isresY = [i - 1 for i in isres]
+        
+        nres = len(isres)
 
-            fig, ax = plt.subplots(figsize=(10, 6))
-            #ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
-            ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
+        npall = sum(file[i+1]["np"] for i in range(file["nbatch"]) if isinstance(file[i+1], dict) and file[i+1]["istrain"] == 1)
 
-            plt.xlabel('Time (s)')
-            plt.ylabel('Concentration')
-            plt.title(f"Specie {projhyb['species'][str(i+1)]['id']}", verticalalignment='bottom', fontsize=16, fontweight='bold')
-            plt.legend()
+        sresall = np.zeros(npall * nres)
+        sjacall = np.zeros((npall * nres, nw))
 
-            temp = os.path.join(temp_dir, 'plots')
-            user_dir = os.path.join(temp, user_id)
-            date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
-            os.makedirs(date_dir, exist_ok=True)
+        COUNT = 0
+        if simulation == 1:
+            for l in range(file["nbatch"]):
+                l = l + 1
+                if not isinstance(file[l], dict):
+                    continue
+
+                if file[l]["istrain"] not in [1, 3]:
+                    continue
+
+                tb = file[l]["time"]
+                Y = np.array(file[l]["y"]).astype(np.float64)
+                Y = torch.from_numpy(Y)
+
+                batch = str(l)
+
+                sY = np.array(file[l]["sy"]).astype(np.float64)
+                sY = torch.from_numpy(sY)
+
+                state = np.array(file[l]["y"][0])
+                state = state[0:ns+1]
+                Sw = np.zeros((nt, nw))
+
+                for i in range(1, file[l]["np"]):
+                    statedict = file[l]["key_value_array"][i-1]
+
+                    dict_items_list = list(statedict.items())
+                    statedict =  dict(dict_items_list[ns:len(dict_items_list)])
+
+                    batch_data = file[l]
+                    _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, statedict, None, None, w, batch_data, projhyb)
+                    if l not in dictState:
+                        dictState[l] = {}
+                        dictState[l][0] = file[l]["y"][0]
+                    dictState[l][i] = state
+
+                break
+
+            for i in range(projhyb["nspecies"]):
+                actual_test = []
+                predicted_test = []
+                err = []
+
+                # Collect data for plotting from the processed batch
+                if l in dictState:
+                    for t in range(1, file[l]["np"]):
+                        actual_test.append(np.array(file[l]["y"][t-1][i]))
+                        if t in dictState[l]:
+                            predicted_test.append(dictState[l][t-1][i])
+                            err.append(file[l]["sy"][t-1][i])
+
+                actual_test = np.array(actual_test, dtype=np.float64)
+                predicted_test = np.array(predicted_test, dtype=np.float64)
+                err = np.array(err, dtype=np.float64)
             
-            plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
-            plt.savefig(plot_filename, dpi=300)
-            plt.close(fig)
+                # Plot time series
+                x = file[l]["time"][:-1]
 
-        return {"Simulated_Model": True}
+                fig, ax = plt.subplots(figsize=(10, 6))
+                #ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
+                ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
+
+                plt.xlabel('Time (s)')
+                plt.ylabel('Concentration')
+                plt.title(f"Specie {projhyb['species'][str(i+1)]['id']}", verticalalignment='bottom', fontsize=16, fontweight='bold')
+                plt.legend()
+
+                temp = os.path.join(temp_dir, 'plots')
+                user_dir = os.path.join(temp, user_id)
+                date_dir = os.path.join(user_dir,time.strftime("%Y%m%d%H%M"))
+                os.makedirs(date_dir, exist_ok=True)
+                
+                plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
+                plt.savefig(plot_filename, dpi=300)
+                plt.close(fig)
+
+            return {"Simulated_Model": True}
 
         
     else:
-        for l in range(file["nbatch"]):
-            l = l + 1
-            if not isinstance(file[l], dict):
-                continue
-            tb = file[l]["time"]
-            Y = np.array(file[l]["y"]).astype(np.float64)
-            Y = torch.from_numpy(Y)
-            
-            batch = str(l)
-
-            sY = np.array(file[l]["sy"]).astype(np.float64)
-            sY = torch.from_numpy(sY)
-            
-            state = np.array(file[l]["y"][0])
-
-            state = state[0:ns+1]
-            Sw = np.zeros((nt, nw))
-
-
-            for i in range(1, file[l]["np"]):
-                statedict = file[l]["key_value_array"][i-1]
-
-                dict_items_list = list(statedict.items())
-                statedict =  dict(dict_items_list[ns:len(dict_items_list)])
-
-                batch_data = file[l]
-                _, state, Sw, hess = hybodesolver(ann, odesfun, control_function, projhyb["fun_event"], tb[i-1], tb[i], state, statedict, None, None, w, batch_data, projhyb)
-
-                if l not in dictState:
-                    dictState[l] = {}
-                    dictState[l][0] = file[l]["y"][0]
-                dictState[l][i] = state
+        is_single_model = (projhyb.get("kfolds", 1) == 1 and len(weights) == 1)
 
         overall_metrics = {
             'mse_train': [],
@@ -1168,151 +1284,187 @@ def teststate(ann, user_id, projhyb, file, w, temp_dir, simulation, method=1):
             'r2_train': [],
             'r2_test': []
         }
-        print("ranfe", projhyb['mlm']['nx'])
-        print("Species", projhyb['species'])
+
+        ensemble_predictions = {}  
+
+        for k, w in enumerate(weights):
+            clean_w = np.array(w, dtype=np.float32)
+            ann.set_weights(clean_w)
+            dictState = {}
+
+            ns = projhyb["nspecies"]
+            nt = ns + projhyb["ncompartment"]
+            nw = projhyb["mlm"]["nw"]
+            isres = [i for i in range(1, ns + 1) if projhyb["species"][str(i)]["isres"] == 1]
+            isresY = [i - 1 for i in isres]
+            nres = len(isres)
+
+            train_batches = [i for i in file if isinstance(file[i], dict) and file[i]["istrain"][k] == 1]
+            val_batches   = [i for i in file if isinstance(file[i], dict) and file[i]["istrain"][k] == 2]
+            test_batches  = [i for i in file if isinstance(file[i], dict) and file[i]["istrain"][k] == 3]
+
+            for l in range(1, file["nbatch"] + 1):
+                if not isinstance(file[l], dict): continue
+
+                tb = file[l]["time"]
+                state = np.array(file[l]["y"][0])[0:ns+1]
+                Sw = np.zeros((nt, nw))
+
+                for i in range(1, file[l]["np"]):
+                    statedict = dict(list(file[l]["key_value_array"][i-1].items())[ns:])
+                    _, state, Sw, hess = hybodesolver(
+                        ann, odesfun, control_function, projhyb["fun_event"],
+                        tb[i-1], tb[i], state, statedict, None, None,
+                        np.array(w), file[l], projhyb
+                    )
+                    if l not in dictState:
+                        dictState[l] = {}
+                        dictState[l][0] = file[l]["y"][0]
+                    dictState[l][i] = state
+
+            for i in range(projhyb["nspecies"]):
+                for batch in test_batches:
+                    for t_idx in range(1, file[batch]["np"]):
+                        time_idx = t_idx - 1
+                        try:
+                            predicted_value = float(dictState[batch][t_idx - 1][i])
+                        except Exception as e:
+                            print(f"[Warning] Could not cast prediction to float at batch {batch}, t={t_idx}, species={i+1}: {e}")
+                            continue
+
+                        species_id = projhyb["species"][str(i+1)]["id"]
+                        if species_id not in ensemble_predictions:
+                            ensemble_predictions[species_id] = {}
+                        if batch not in ensemble_predictions[species_id]:
+                            ensemble_predictions[species_id][batch] = {}
+                        if time_idx not in ensemble_predictions[species_id][batch]:
+                            ensemble_predictions[species_id][batch][time_idx] = []
+
+                        ensemble_predictions[species_id][batch][time_idx].append(predicted_value)
+
+
+                actual_train, actual_test = [], []
+                predicted_train, predicted_test = [], []
+                err = []
+
+                for batch in train_batches + val_batches:
+                    for t_idx in range(1, file[batch]["np"]):
+                        actual_train.append(file[batch]["y"][t_idx - 1][i])
+                        predicted_train.append(dictState[batch][t_idx - 1][i])
+
+                for batch in test_batches:
+                    for t_idx in range(1, file[batch]["np"]):
+                        actual_test.append(file[batch]["y"][t_idx - 1][i])
+                        predicted_test.append(dictState[batch][t_idx - 1][i])
+                        err.append(file[batch]["sy"][t_idx - 1][i])
+
+                actual_train = np.array(actual_train)
+                predicted_train = np.array(predicted_train)
+                actual_test = np.array(actual_test)
+                predicted_test = np.array(predicted_test)
+                err = np.array(err)
+
+                if actual_train.shape != predicted_train.shape or actual_test.shape != predicted_test.shape:
+                    print(f"[Ensemble {k}] Shape mismatch for species {i+1}")
+                    continue
+
+                mse_train = mean_squared_error(actual_train, predicted_train)
+                mse_test = mean_squared_error(actual_test, predicted_test)
+                r2_train = r2_score(actual_train, predicted_train)
+                r2_test = r2_score(actual_test, predicted_test)
+
+                overall_metrics["mse_train"].append(mse_train)
+                overall_metrics["mse_test"].append(mse_test)
+                overall_metrics["r2_train"].append(r2_train)
+                overall_metrics["r2_test"].append(r2_test)
+
+        temp = os.path.join(temp_dir, 'plots')
+        user_dir = os.path.join(temp, user_id)
+        date_dir = os.path.join(user_dir, time.strftime("%Y%m%d%H%M"))
+        os.makedirs(date_dir, exist_ok=True)
+
         for i in range(projhyb["nspecies"]):
-            actual_train = []
-            actual_test = []
-            predicted_train = []
-            predicted_test = []
-            err = []
-
-            train_batches = [batch for batch, data in file.items() if isinstance(data, dict) and data["istrain"] == 1]
-            test_batches = [batch for batch, data in file.items() if isinstance(data, dict) and data["istrain"] == 3]
-
-            for batch in train_batches:
-                for t in range(1, file[batch]["np"]):
-                    actual_train.append(np.array(file[batch]["y"][t-1][i]))
-                    if batch in dictState and t in dictState[batch]:
-                        predicted_train.append(dictState[batch][t-1][i])
-                    else:
-                        print(f"Missing prediction for train batch {batch}, time {t}")
-
-            for batch in test_batches:
-                for t in range(1, file[batch]["np"]):
-                    actual_test.append(np.array(file[batch]["y"][t-1][i]))
-                    if batch in dictState and t in dictState[batch]:
-                        predicted_test.append(dictState[batch][t-1][i])
-                        err.append(file[batch]["sy"][t-1][i])
-                    else:
-                        print(f"Missing prediction for test batch {batch}, time {t}")
-
-            actual_train = np.array(actual_train, dtype=np.float64)
-            actual_test = np.array(actual_test, dtype=np.float64)
-            predicted_train = np.array(predicted_train, dtype=np.float64)
-            predicted_test = np.array(predicted_test, dtype=np.float64)
-            err = np.array(err, dtype=np.float64)
-          
-
-            if actual_train.shape != predicted_train.shape:
-                print(f"Shape mismatch for training data: actual_train {actual_train.shape}, predicted_train {predicted_train.shape}")
-                continue
-
-            if actual_test.shape != predicted_test.shape:
-                print(f"Shape mismatch for test data: actual_test {actual_test.shape}, predicted_test {predicted_test.shape}")
-                continue
-
-            mse_train = mean_squared_error(actual_train, predicted_train)
-            mse_test = mean_squared_error(actual_test, predicted_test)
-            r2_train = r2_score(actual_train, predicted_train)
-            r2_test = r2_score(actual_test, predicted_test)
-
-            overall_metrics['mse_train'].append(mse_train)
-            overall_metrics['mse_test'].append(mse_test)
-            overall_metrics['r2_train'].append(r2_train)
-            overall_metrics['r2_test'].append(r2_test)
-
-            print(f'Training MSE: {mse_train}')
-            print(f'Test MSE: {mse_test}')
-            print(f'Training R²: {r2_train}')
-            print(f'Test R²: {r2_test}')
-
-            mse_train = abs(mse_train)
-            mse_test = abs(mse_test)
-            r2_test = abs(r2_test)
-            r2_train = abs(r2_train)
-
-            textstr = '\n'.join((
-                f'Training MSE: {mse_train:.4f}',
-                f'Training R²: {r2_train:.4f}',
-                f'Test MSE: {mse_test:.4f}',
-                f'Test R²: {r2_test:.4f}',
-            )) 
-            
-            
-            residuals = actual_test - predicted_test
-            stderr = np.std(residuals, ddof=1)
-
-            n = len(predicted_test)
-            if n > 1:
-                t_score = stats.t.ppf(1 - 0.025, df=n - 1)  
-            else:
-                t_score = 2
-
-            ci = t_score * stderr / np.sqrt(n)
-
-            lower_bound = predicted_test - ci
-            upper_bound = predicted_test + ci
-
-            lower_bound = np.clip(lower_bound, a_min=0, a_max=None)
-
-            x = file[train_batches[0]]["time"][:-1]
-            
-            fig, ax = plt.subplots(figsize=(10, 6))
-            ax.errorbar(x, actual_test[:len(x)], err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
-            ax.plot(x, predicted_test[:len(x)], label="Predicted", color='red', linewidth=1)
-            ax.fill_between(x, lower_bound[:len(x)], upper_bound[:len(x)], color='gray', label="Confidence Interval", alpha=0.5)
-
-            plt.xlabel('Time (s)')
-            plt.ylabel('Concentration')
-            plt.title(f"Specie {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
-
-            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            #plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10, verticalalignment='top', bbox=props)
-            
-            plt.legend()
-            temp = os.path.join(temp_dir, 'plots')
-            user_dir = os.path.join(temp, user_id)
-            date_dir = os.path.join(user_dir, time.strftime("%Y%m%d"))
-            os.makedirs(date_dir, exist_ok=True)
-            
-            '''
-            time_series_plot_filename = os.path.join(date_dir, f'metabolite_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
-            plt.savefig(time_series_plot_filename, dpi=300)
-            plt.close(fig)
-            '''
-            
             species_id = projhyb["species"][str(i+1)]["id"]
+            batch = list(ensemble_predictions[species_id].keys())[0]
+            x = file[batch]["time"][:-1]
 
-            time_series_plot_filename = os.path.join(
-                date_dir, f'metabolite_{species_id}.png'
-            )
-            plt.savefig(time_series_plot_filename, dpi=300)
+            y_true = []
+            y_mean = []
+            y_ci = []
+
+            for t_idx in sorted(ensemble_predictions[species_id][batch].keys()):
+                preds = np.array(ensemble_predictions[species_id][batch][t_idx])
+                mean_pred = np.mean(preds)
+                std_pred = np.std(preds, ddof=1)
+
+                n_preds = len(preds)
+                t_score_val = t_dist.ppf(1 - 0.025, df=n_preds - 1) if n_preds > 1 else 2.0
+                ci = t_score_val * std_pred / np.sqrt(float(n_preds))
+
+                y_mean.append(mean_pred)
+                y_ci.append(ci)
+                y_true.append(file[batch]["y"][t_idx][i])
+
+            y_mean = np.array(y_mean)
+            y_ci = np.array(y_ci)
+            y_true = np.array(y_true)
+            lower_bound = np.clip(y_mean - y_ci, 0, None)
+            upper_bound = y_mean + y_ci
 
             fig, ax = plt.subplots(figsize=(10, 6))
-            ax.scatter(predicted_train, actual_train, color='blue', label='Train', alpha=0.5)
-            ax.scatter(predicted_test, actual_test, color='red', label='Test', alpha=0.5)
-            maxValue = max(max(predicted_test), max(actual_test), max(predicted_train), max(actual_train))
-            ax.plot([0, maxValue], [0, maxValue], 'r--', color='gray', label='Ideal', alpha=0.25)
-            plt.xlabel('Observed')
-            plt.ylabel('Predicted')
-            plt.title(f"Predicted vs Observed for Metabolite {projhyb['species'][str(i+1)]['id']} ", verticalalignment='bottom', fontsize=16, fontweight='bold')
-            plt.legend()
+            ax.errorbar(x, y_true, err[:len(x)], fmt='o', linewidth=1, capsize=6, label="Observed data", color='green', alpha=0.5)
             
-            '''
-            predicted_vs_actual_plot_filename = os.path.join(date_dir, f'predicted_vs_observed_{projhyb["species"][str(i+1)]["id"]}_{uuid.uuid4().hex}.png')
-            plt.savefig(predicted_vs_actual_plot_filename, dpi=300)
+            ax.fill_between(x, lower_bound, upper_bound, color='gray', alpha=0.3, label='95% CI')
+
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Value')
+            if is_single_model:
+                ax.plot(x, y_mean, label="Model Prediction", color='red')
+                ax.set_title(f"{species_id}")
+            else:
+                ax.plot(x, y_mean, label="Ensemble Mean", color='red')
+                ax.set_title(f"{species_id}")
+            ax.legend()
+            ax.grid(True, linestyle='--', alpha=0.3)
+
+            plt.savefig(os.path.join(date_dir, f'Plot_{species_id}.png'), dpi=300)
             plt.close(fig)
-            '''
 
-            predicted_vs_actual_plot_filename = os.path.join(
-                date_dir, f'predicted_vs_observed_{species_id}.png'
-            )
-            plt.savefig(predicted_vs_actual_plot_filename, dpi=300)
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.scatter(predicted_train, actual_train, color='blue', label='Train + Val', alpha=0.5)
+            ax.scatter(predicted_test, actual_test, color='red', label='Test', alpha=0.5)
+
+            max_val = max(np.max(predicted_test), np.max(actual_test), np.max(predicted_train), np.max(actual_train))
+            ax.plot([0, max_val], [0, max_val], 'r--', color='gray', label='Ideal', alpha=0.25)
+
+            ax.set_xlabel('Observed')
+            ax.set_ylabel('Predicted')
+            if is_single_model:
+                ax.set_title(f"Predicted vs Observed for {species_id}")
+            else:
+                ax.set_title(f"Predicted vs Observed for {species_id} (Ensemble)")
+            ax.legend()
+            ax.grid(True, linestyle='--', alpha=0.3)
+
+            plt.savefig(os.path.join(date_dir, f'ParatyPlot_{species_id}.png'), dpi=300)
             plt.close(fig)
 
 
-            print("DONE!!!!!")
+        '''
+        save_path=os.path.join(temp_dir, "train_val_error.png")
+        train_errors = [np.linalg.norm(r) if isinstance(r, np.ndarray) else r for r in evaluator.fobj_history]
+        val_errors = evaluator.val_loss_history
+
+        plt.figure(figsize=(8,5))
+        plt.plot(train_errors, label="Training Error")
+        plt.plot(val_errors, label="Validation Error")
+        plt.xlabel("Iteration")
+        plt.ylabel("Error (L2 norm)")
+        plt.title("Training vs Validation Error")
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+        '''
 
         overall_mse_train = np.mean(overall_metrics['mse_train'])
         overall_mse_test = np.mean(overall_metrics['mse_test'])

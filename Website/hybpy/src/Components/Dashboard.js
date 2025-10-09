@@ -37,6 +37,9 @@ import MenuItem from "@mui/material/MenuItem";
 import Checkbox from "@mui/material/Checkbox";
 import ListItemText from "@mui/material/ListItemText";
 import Button from "@mui/material/Button";
+import { handleContactUsClick } from "./ContactUs";
+import EmailIcon from '@mui/icons-material/Email';
+
 
 const drawerWidth = 200;
 
@@ -194,10 +197,10 @@ export default function Dashboard() {
 
 
             if (data.status === "simulation in progress") {
-                    setRunInProgress("Simulation in progress...");
+                    setRunInProgress("Simulation in progress... We will email you when the task is completed.");
                 }
                 else if (data.status === "training in progress") {
-                    setRunInProgress("Training in progress...");
+                    setRunInProgress("Training in progress... We will email you when the task is completed.");
                 }
                 else if (data.status === "error") {
                     setRunInProgress("Task failed");
@@ -375,6 +378,20 @@ export default function Dashboard() {
                                                     Stop Current Run
                                                 </Button>
                                             )}
+                                            {runs.length > 0 && runs[0].status === "completed" && (
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    sx={{ mt: 2 }}
+                                                    onClick={() => {
+                                                        navigate("/historical", {
+                                                            state: { selectedRunId: runs[0].id },
+                                                        });
+                                                    }}
+                                                >
+                                                    View Details of Completed Run
+                                                </Button>
+                                            )}
                                         </>
                                     )
                                         :
@@ -401,6 +418,21 @@ export default function Dashboard() {
                                                         Stop Current Run
                                                     </Button>
                                                 )}
+                                                {runs.length > 0 && runs[0].status === "completed" && (
+                                                    <Button
+                                                        variant="contained"
+                                                        color="primary"
+                                                        sx={{ mt: 2 }}
+                                                        onClick={() => {
+                                                            navigate("/historical", {
+                                                                state: { selectedRunId: runs[0].id },
+                                                            });
+                                                        }}
+                                                    >
+                                                        View Details of Completed Run
+                                                    </Button>
+                                                )}
+
                                             </>
                                         ) : (
                                             <Typography>
@@ -608,20 +640,39 @@ export default function Dashboard() {
                                 alignItems: "center",
                                 transition: "width 0.3s ease, left 0.3s ease",
                             }}>
-                            <Typography
-                                variant='body2'
-                                align='center'
-                                sx={{ flexGrow: 1 }}>
-                                &copy; {new Date().getFullYear()} Faculdade de
-                                Ciências e Tecnologia Universidade NOVA de
-                                Lisboa. All rights reserved.
-                            </Typography>
-                            <img
-                                src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                                width='75'
-                                alt='FCT Logo'
-                                style={{ marginLeft: "auto" }}
-                            />
+                            <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+
+                                <Typography
+                                    variant='body2'
+                                    align='center'
+                                    sx={{ flexGrow: 1 }}>
+                                    &copy; {new Date().getFullYear()} NOVA School of Science and Technology, Universidade NOVA de Lisboa. All rights
+                                    reserved.
+                                </Typography>
+
+                                <Button
+                                    color="inherit"
+                                    variant="text"
+                                    onClick={handleContactUsClick}
+                                    style={{ marginLeft: "1em", textTransform: "none", paddingRight: "2em" }}
+                                    startIcon={<EmailIcon />}
+                                >
+                                    Contact Us
+                                </Button>
+                            </div>
+
+                            <a
+                                href="https://www.fct.unl.pt/en"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <img
+                                src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
+                                width="75px"
+                                alt="FCT Logo"
+                                style={{ marginLeft: "1em" }}
+                                />
+                            </a>
                         </Box>
                     </Box>
                 </Box>

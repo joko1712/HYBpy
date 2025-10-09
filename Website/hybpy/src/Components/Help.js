@@ -51,6 +51,10 @@ import step4a from "../Image/Guide Print/Step4a.png";
 import step4b from "../Image/Guide Print/Step4b.png";
 import step41b from "../Image/Guide Print/Step4.1b.png";
 import step42b from "../Image/Guide Print/Step4.2b.png";
+import { handleContactUsClick } from "./ContactUs";
+import EmailIcon from '@mui/icons-material/Email';
+
+
 
 const drawerWidth = 200;
 
@@ -106,13 +110,13 @@ export default function LandingPage() {
 
         if (fileType === "csv") {
             url =
-                "https://my-flask-app-246502218926.us-central1.run.app/get-template-csv";
+                "https://api.hybpy.com/get-template-csv";
         } else if (fileType === "hmod") {
             url =
-                "https://my-flask-app-246502218926.us-central1.run.app/get-template-hmod-download";
+                "https://api.hybpy.com/get-template-hmod-download";
         } else if (fileType === "xlsx") {
             url =
-                "https://my-flask-app-246502218926.us-central1.run.app/get-template-xlsx";
+                "https://api.hybpy.com/get-template-xlsx";
         }
 
         if (templateType === 3) {
@@ -1043,18 +1047,40 @@ export default function LandingPage() {
                             width: "100%",
                             marginTop: "auto",
                         }}>
-                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de
-                            Ciências e Tecnologia Universidade NOVA de Lisboa
-                            2024. All rights reserved.
-                        </p>
+                        
+                        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                            <p style={{ margin: 0, textAlign: "center" }}>
+                            &copy; {new Date().getFullYear()} NOVA School of Science and Technology,
+                            Universidade NOVA de Lisboa. All rights reserved.
+                            </p>
 
-                        <img
-                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='75px'
-                            alt='FCT Logo'
-                            style={{ marginLeft: "auto" }}
-                        />
+                            <Button
+                            color="inherit"
+                            variant="text"
+                            onClick={handleContactUsClick}
+                            style={{
+                                marginTop: "0.5em",
+                                alignSelf: "center",
+                                textTransform: "none",
+                            }}
+                            startIcon={<EmailIcon />}
+                            >
+                            Contact Us
+                            </Button>
+                        </div>
+
+                        <a
+                            href="https://www.fct.unl.pt/en"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <img
+                            src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
+                            width="75px"
+                            alt="FCT Logo"
+                            style={{ marginLeft: "1em" }}
+                            />
+                        </a>
                     </footer>
                 </Box>
             </Box>

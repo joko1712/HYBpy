@@ -596,8 +596,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1):
 # LOAD THE WEIGHTS into the ann
     ann.set_weights(w)
     #ann.print_weights_and_biases()
-    if not istrain:
-        istrain = projhyb["istrain"]
+
 
     # ires = 11 
     ns = projhyb["nspecies"]

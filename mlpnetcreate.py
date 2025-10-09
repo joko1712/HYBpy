@@ -21,6 +21,8 @@ def mlpnetcreate(projhyb, neuron):
         layer_types = ['relu'] * H
     elif neuron == "3":
         layer_types = ['lstm'] * H
+    else:
+        raise ValueError("Unsupported neuron type")
 
     ann = CustomMLP(layer_sizes, layer_types)
 

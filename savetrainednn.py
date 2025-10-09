@@ -3,6 +3,7 @@ import h5py
 import torch
 import torch.nn as nn
 import re
+from customMLP import TanhLayer, ReLULayer, LSTMLayer
 
 
 def saveNN(modloc, inputs, hybout, orfile, nfile, orderedweights, ann):
@@ -26,9 +27,20 @@ def saveNN(modloc, inputs, hybout, orfile, nfile, orderedweights, ann):
 
     for layer in range(nlayers):
         H.append([])
-        layer_weights = model.layers[layer].w.data.cpu().numpy().flatten()
-        layer_biases = model.layers[layer].b.data.cpu().numpy().flatten()
-        nH = len(layer_biases)
+        if hasattr(model.layers[layer], 'w') and hasattr(model.layers[layer], 'b'):
+            layer_weights = model.layers[layer].w.data.cpu().numpy().flatten()
+            layer_biases  = model.layers[layer].b.data.cpu().numpy().flatten()
+            nH = len(layer_biases)
+        elif isinstance(model.layers[layer], LSTMLayer):
+            layer_weights = []
+            for param in model.layers[layer].lstm.parameters():
+                layer_weights.append(param.data.cpu().numpy().flatten())
+            layer_weights = np.concatenate(layer_weights)
+            layer_biases = np.zeros(1)
+            nH = model.layers[layer].hidden_size
+        else:
+            raise ValueError(f"Unknown layer type at index {layer}")
+
         
         
         if layer == 0:

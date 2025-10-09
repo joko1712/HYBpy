@@ -32,6 +32,8 @@ import {
     Tooltip,
     tooltipClasses,
     Checkbox,
+    Slider,
+    TextField,
 } from "@mui/material";
 import * as XLSX from "xlsx";
 import {
@@ -147,8 +149,8 @@ function FileUpload() {
     const [selectedHeaders, setSelectedHeaders] = useState([]);
     const [headerModalConfig, setHeaderModalConfig] = useState({
         headers: [],
-        onSave: () => { },
-        handleClose: () => { },
+        onSave: () => {},
+        handleClose: () => {},
     });
     const [mlmModalOpen, setMlmModalOpen] = useState(false);
     const [speciesOptions, setSpeciesOptions] = useState([]);
@@ -157,6 +159,10 @@ function FileUpload() {
     const [compartmentOptions, setCompartmentOptions] = useState([]);
 
     const [mlmOptions, setMlmOptions] = useState({});
+
+    const [kfolds, setKfolds] = useState(1);
+    const [splitRatio, setSplitRatio] = useState(0.66);
+    const [nensemble, setNensemble] = useState(1);
 
     const handleMlmModalSave = (options) => {
         setMlmModalOpen(false);
@@ -307,30 +313,39 @@ function FileUpload() {
 
         if (selectedHeaders.length > 0 && !controlExists) {
             let controlSection = `% control---------------------------\n`;
-            controlSection += `${uniquePrefixes.values().next().value
-                }.ncontrol=${selectedHeaders.length};\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.ncontrol=${selectedHeaders.length};\n`;
 
             selectedHeaders.forEach((header, index) => {
                 let maxHeaderValue = Math.max(
                     ...batchData.map((row) => row[header])
                 );
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).id= '${header}';\n`;
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).val= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).min= 0;\n`;
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).max= ${maxHeaderValue};\n`;
-                controlSection += `${uniquePrefixes.values().next().value
-                    }.control(${index + 1}).constant= 1;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).id= '${header}';\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).val= 0;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).min= 0;\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).max= ${maxHeaderValue};\n`;
+                controlSection += `${
+                    uniquePrefixes.values().next().value
+                }.control(${index + 1}).constant= 1;\n`;
             });
 
-            controlSection += `${uniquePrefixes.values().next().value
-                }.fun_control=@control_function_${uniquePrefixes.values().next().value
-                };\n`;
-            controlSection += `${uniquePrefixes.values().next().value
-                }.fun_event=[];\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.fun_control=@control_function_${
+                uniquePrefixes.values().next().value
+            };\n`;
+            controlSection += `${
+                uniquePrefixes.values().next().value
+            }.fun_event=[];\n`;
 
             updatedContent += `\n${controlSection}`;
             controlExists = true;
@@ -369,82 +384,113 @@ function FileUpload() {
             const mlmOptions = await openMlmModal();
             if (Object.keys(mlmOptions).length > 0) {
                 let mlmSection = `% % MLM - Machine Learning Model --------------------------------------------\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.id = 'mlpnet';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.nx = ${mlmOptions.nx};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.id = 'mlpnet';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.nx = ${mlmOptions.nx};\n`;
 
                 mlmOptions.xOptions.forEach((x, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.x(${index + 1}).val= '${x.val}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.x(${index + 1}).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.x(${index + 1}).max= ${Math.max(
-                            ...batchData.map((row) => row[x.val])
-                        )};\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).val= '${x.val}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).min= 0;\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.x(${index + 1}).max= ${Math.max(
+                        ...batchData.map((row) => row[x.val])
+                    )};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.ny = ${mlmOptions.ny};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.ny = ${mlmOptions.ny};\n`;
 
                 mlmOptions.yOptions.forEach((y, index) => {
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.y(${index + 1}).id = '${y.id}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.y(${index + 1}).min= 0;\n`;
-                    mlmSection += `${uniquePrefixes.values().next().value
-                        }.mlm.y(${index + 1}).max= ${Math.max(
-                            ...batchData.map((row) => row[y.id])
-                        )};\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).id = '${y.id}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).min= 0;\n`;
+                    mlmSection += `${
+                        uniquePrefixes.values().next().value
+                    }.mlm.y(${index + 1}).max= ${Math.max(
+                        ...batchData.map((row) => row[y.id])
+                    )};\n`;
                 });
 
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.options={'hidden nodes', [1]};\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.layer=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.symbolic='full-symbolic';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.symbolic='semi-symbolic';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.datasource=3;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.datafun=@${uniquePrefixes.values().next().value};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.options={'hidden nodes', [1]};\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.layer=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.symbolic='full-symbolic';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.symbolic='semi-symbolic';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.datasource=3;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.datafun=@${uniquePrefixes.values().next().value};\n`;
 
                 mlmSection += `%training configuration\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.mode=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.method=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.jacobian=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.hessian=0;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.derivativecheck='off';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.niter=400;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.niteroptim=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.nstep=2;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.display='off';\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.bootstrap=0;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.nensemble=1;\n`;
-                mlmSection += `${uniquePrefixes.values().next().value
-                    }.crossval=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.mode=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.method=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.jacobian=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.hessian=0;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.derivativecheck='off';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.niter=400;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.niteroptim=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.nstep=2;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.display='off';\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.bootstrap=0;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.nensemble=1;\n`;
+                mlmSection += `${
+                    uniquePrefixes.values().next().value
+                }.crossval=1;\n`;
 
                 updatedContent += `\n${mlmSection}`;
                 mlmExists = true;
@@ -452,19 +498,31 @@ function FileUpload() {
         }
         let extractedMlmOptions = {};
         if (mlmExists) {
-                uniquePrefixes.forEach((prefix) => {
-                const nx = parseInt(extractValueNxNy(updatedContent, `${prefix}.mlm.nx`, "0"));
-                const ny = parseInt(extractValueNxNy(updatedContent, `${prefix}.mlm.ny`, "0"));
+            uniquePrefixes.forEach((prefix) => {
+                const nx = parseInt(
+                    extractValueNxNy(updatedContent, `${prefix}.mlm.nx`, "0")
+                );
+                const ny = parseInt(
+                    extractValueNxNy(updatedContent, `${prefix}.mlm.ny`, "0")
+                );
 
                 const xOptions = [];
                 for (let i = 1; i <= nx; i++) {
-                    const val = extractValue(updatedContent, `${prefix}.mlm.x(${i}).val`, "");
+                    const val = extractValue(
+                        updatedContent,
+                        `${prefix}.mlm.x(${i}).val`,
+                        ""
+                    );
                     if (val) xOptions.push({ val });
                 }
 
                 const yOptions = [];
                 for (let i = 1; i <= ny; i++) {
-                    const id = extractValue(updatedContent, `${prefix}.mlm.y(${i}).id`, "");
+                    const id = extractValue(
+                        updatedContent,
+                        `${prefix}.mlm.y(${i}).id`,
+                        ""
+                    );
                     if (id) yOptions.push({ id });
                 }
 
@@ -486,7 +544,8 @@ function FileUpload() {
             " Control exists: ",
             controlExists
         );
-        if (controlExists && configExists && mlmExists) return { updatedContent, extractedMlmOptions };
+        if (controlExists && configExists && mlmExists)
+            return { updatedContent, extractedMlmOptions };
     };
 
     const handleFileChange1 = async (event) => {
@@ -500,16 +559,17 @@ function FileUpload() {
             reader.onload = async function (e) {
                 const content = e.target.result;
                 console.log("File content loaded, ensuring HMOD sections...");
-                const { updatedContent, extractedMlmOptions } = await ensureHmodSections(
-                    content,
-                    file2Content,
-                    Object.keys(file2Content[0] || {}).filter(
-                        (key) => key !== "time"
-                    ),
-                    handleOpenHeaderModal,
-                    selectedHeaders,
-                    mlmOptions
-                );
+                const { updatedContent, extractedMlmOptions } =
+                    await ensureHmodSections(
+                        content,
+                        file2Content,
+                        Object.keys(file2Content[0] || {}).filter(
+                            (key) => key !== "time"
+                        ),
+                        handleOpenHeaderModal,
+                        selectedHeaders,
+                        mlmOptions
+                    );
 
                 if (updatedContent) {
                     console.log("Updated Content: ", updatedContent);
@@ -595,8 +655,20 @@ function FileUpload() {
                             `${prefix}.bootstrap`,
                             ""
                         ),
-                        nx: extractedMlmOptions.nx || extractValueNxNy(updatedContent, `${prefix}.mlm.nx`, ""),
-                        ny: extractedMlmOptions.ny || extractValueNxNy(updatedContent, `${prefix}.mlm.ny`, ""),
+                        nx:
+                            extractedMlmOptions.nx ||
+                            extractValueNxNy(
+                                updatedContent,
+                                `${prefix}.mlm.nx`,
+                                ""
+                            ),
+                        ny:
+                            extractedMlmOptions.ny ||
+                            extractValueNxNy(
+                                updatedContent,
+                                `${prefix}.mlm.ny`,
+                                ""
+                            ),
                     };
                 });
 
@@ -653,6 +725,8 @@ function FileUpload() {
             if (progress < 4) setProgress(4);
         } else if (event.target.value === "2") {
             if (progress < 5) setProgress(5);
+        } else if (event.target.value === "3") {
+            if (progress < 6) setProgress(6);
         }
     };
 
@@ -823,16 +897,17 @@ function FileUpload() {
                     reader.onload = async function (e) {
                         const content = e.target.result;
 
-                        const { updatedContent, extractedMlmOptions } = await ensureHmodSections(
-                            content,
-                            file2Content,
-                            Object.keys(file2Content[0] || {}).filter(
-                                (key) => key !== "time"
-                            ),
-                            handleOpenHeaderModal,
-                            selectedHeaders,
-                            mlmOptions
-                        );
+                        const { updatedContent, extractedMlmOptions } =
+                            await ensureHmodSections(
+                                content,
+                                file2Content,
+                                Object.keys(file2Content[0] || {}).filter(
+                                    (key) => key !== "time"
+                                ),
+                                handleOpenHeaderModal,
+                                selectedHeaders,
+                                mlmOptions
+                            );
 
                         setFile1Content(updatedContent);
 
@@ -917,8 +992,20 @@ function FileUpload() {
                                     `${prefix}.bootstrap`,
                                     ""
                                 ),
-                                nx: extractedMlmOptions.nx || extractValueNxNy(updatedContent, `${prefix}.mlm.nx`, ""),
-                                ny: extractedMlmOptions.ny || extractValueNxNy(updatedContent, `${prefix}.mlm.ny`, ""),
+                                nx:
+                                    extractedMlmOptions.nx ||
+                                    extractValueNxNy(
+                                        updatedContent,
+                                        `${prefix}.mlm.nx`,
+                                        ""
+                                    ),
+                                ny:
+                                    extractedMlmOptions.ny ||
+                                    extractValueNxNy(
+                                        updatedContent,
+                                        `${prefix}.mlm.ny`,
+                                        ""
+                                    ),
                             };
                         });
 
@@ -937,7 +1024,7 @@ function FileUpload() {
 
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
         <Tooltip {...props} classes={{ popper: className }} />
-    ))(({ }) => ({
+    ))(({}) => ({
         [`& .${tooltipClasses.tooltip}`]: {
             maxWidth: 200,
         },
@@ -981,14 +1068,17 @@ function FileUpload() {
         }
 
         // Ensure HMOD sections before upload
-        const { updatedContent, extractedMlmOptions } = await ensureHmodSections(
-            file1Content,
-            file2Content,
-            Object.keys(file2Content[0] || {}).filter((key) => key !== "time"),
-            handleOpenHeaderModal,
-            selectedHeaders,
-            mlmOptions
-        );
+        const { updatedContent, extractedMlmOptions } =
+            await ensureHmodSections(
+                file1Content,
+                file2Content,
+                Object.keys(file2Content[0] || {}).filter(
+                    (key) => key !== "time"
+                ),
+                handleOpenHeaderModal,
+                selectedHeaders,
+                mlmOptions
+            );
 
         if (updatedContent) {
             console.log("asdasdasdasdasasd: ", updatedContent);
@@ -1014,11 +1104,11 @@ function FileUpload() {
         const formData = new FormData();
         formData.append("file1", updatedFile);
         formData.append("file2", selectedFile2);
-        formData.append("mode", mode);
         formData.append("userId", auth.currentUser.uid);
         formData.append("description", description);
         formData.append("train_batches", Array.from(train_batches).join(","));
         formData.append("test_batches", Array.from(test_batches).join(","));
+        formData.append("val_batches", Array.from(val_batches).join(","));
         formData.append("user_id", auth.currentUser.uid);
 
         console.log("Form Data: ", hmodOptions);
@@ -1036,6 +1126,21 @@ function FileUpload() {
         formData.append("Outputs", JSON.stringify(mlmOptions.yOptions));
 
         formData.append("hiddenOptions", JSON.stringify(hmodOptions));
+
+        formData.append("mode", mode === "3" ? "2" : mode);
+        formData.append("Crossval", mode === "3" ? "1" : "0");
+
+        if (mode !== "1") {
+            formData.append("val_ratio", 1 - splitRatio);
+        }
+
+        if (mode === "3") {
+            formData.append("Kfolds", kfolds);
+            formData.append("Ensemble", nensemble);
+        } else {
+            formData.append("Kfolds", 1);
+            formData.append("Ensemble", 1);
+        }
 
         console.log("Form Data: ", formData);
 
@@ -1086,6 +1191,7 @@ function FileUpload() {
     const [availableBatches, setAvailableBatches] = useState([]);
     const [train_batches, setTrainBatches] = useState(new Set());
     const [test_batches, setTestBatches] = useState(new Set());
+    const [val_batches, setValBatches] = useState(new Set());
 
     useEffect(() => {
         const fetchAvailableBatches = async () => {
@@ -1125,6 +1231,18 @@ function FileUpload() {
         });
     };
 
+    const handleValBatchSelection = (batch) => {
+        setValBatches((prevSelectedBatches) => {
+            const newSelection = new Set(prevSelectedBatches);
+            if (newSelection.has(batch)) {
+                newSelection.delete(batch);
+            } else if (!train_batches.has(batch) && !test_batches.has(batch)) {
+                newSelection.add(batch);
+            }
+            return newSelection;
+        });
+    };
+
     const handleTestBatchSelection = (batch) => {
         setTestBatches((prevSelectedBatches) => {
             const newSelection = new Set(prevSelectedBatches);
@@ -1142,6 +1260,7 @@ function FileUpload() {
             return (
                 train_batches.size === 0 ||
                 test_batches.size === 0 ||
+                val_batches.size === 0 ||
                 description === ""
             );
         } else if (mode === "2") {
@@ -1722,10 +1841,14 @@ function FileUpload() {
                                             onChange={handleModeChange}
                                             disabled={progress < 3}>
                                             <MenuItem value={"1"}>
-                                                Manual
+                                                Manual Hold-Out Cross Validation
                                             </MenuItem>
                                             <MenuItem value={"2"}>
-                                                Automatic
+                                                Automatic Hold-Out Cross
+                                                Validation
+                                            </MenuItem>
+                                            <MenuItem value={"3"}>
+                                                K-Fold Cross Validation
                                             </MenuItem>
                                         </Select>
                                     </Paper>
@@ -1791,6 +1914,38 @@ function FileUpload() {
                                                     overflow: "auto",
                                                 }}>
                                                 <Typography variant='h6'>
+                                                    Select Validation Batches:{" "}
+                                                </Typography>
+                                                {availableBatches.map(
+                                                    (batch) => (
+                                                        <div key={batch}>
+                                                            <Checkbox
+                                                                checked={val_batches.has(
+                                                                    batch
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleValBatchSelection(
+                                                                        batch
+                                                                    )
+                                                                }
+                                                            />
+                                                            {batch}
+                                                        </div>
+                                                    )
+                                                )}
+                                            </Paper>
+                                        </Grid>
+
+                                        <Grid item xs={20}>
+                                            <Paper
+                                                sx={{
+                                                    p: 2,
+                                                    display: "flex",
+                                                    flexDirection: "row",
+                                                    marginBottom: 0.5,
+                                                    overflow: "auto",
+                                                }}>
+                                                <Typography variant='h6'>
                                                     Select Test Batches:{" "}
                                                 </Typography>
                                                 {availableBatches.map(
@@ -1840,32 +1995,342 @@ function FileUpload() {
                                         </Grid>
                                     </>
                                 )}
-
-                                {mode === "2" && progress >= 5 && (
-                                    <Grid
-                                        item
-                                        xs={12}
-                                        container
-                                        justifyContent='center'
-                                        alignItems='center'>
-                                        <CustomWidthTooltip
-                                            title='After clicking on the Upload Information button, the information will be uploaded and the run will be created.'
-                                            followCursor
-                                            arrow>
-                                            <Button
-                                                onClick={handleUpload}
-                                                variant='contained'
+                                {mode === "2" && progress >= 4 && (
+                                    <>
+                                        <Grid item xs={20}>
+                                            <Paper
                                                 sx={{
-                                                    mt: 2,
+                                                    p: 2,
                                                     display: "flex",
-                                                    width: "40%",
-                                                }}
-                                                disabled={description === ""}>
-                                                <PublishIcon fontSize='large' />
-                                                Start Training
-                                            </Button>
-                                        </CustomWidthTooltip>
-                                    </Grid>
+                                                    flexDirection: "row",
+                                                    marginBottom: -0.5,
+                                                    overflow: "auto",
+                                                }}>
+                                                <Typography variant='h6'>
+                                                    Available Batches:{" "}
+                                                    {availableBatches.join(
+                                                        ", "
+                                                    )}
+                                                </Typography>
+                                            </Paper>
+                                        </Grid>
+                                        <Grid item xs={20}>
+                                            <Paper
+                                                sx={{
+                                                    p: 2,
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    marginBottom: 2,
+                                                }}>
+                                                <Typography variant='h6'>
+                                                    Cross-Validation Settings
+                                                </Typography>
+
+                                                {/* Train/Val Split Ratio Input */}
+                                                <div
+                                                    style={{
+                                                        marginTop: 12,
+                                                    }}>
+                                                    <Typography variant='body1'>
+                                                        Train/Validation Split
+                                                        Ratio:
+                                                    </Typography>
+                                                    <TextField
+                                                        type='number'
+                                                        value={splitRatio}
+                                                        onChange={(e) => {
+                                                            const value =
+                                                                parseFloat(
+                                                                    e.target
+                                                                        .value
+                                                                );
+                                                            setSplitRatio(
+                                                                isNaN(value)
+                                                                    ? 0
+                                                                    : value
+                                                            );
+                                                        }}
+                                                        inputProps={{
+                                                            min: 0.1,
+                                                            max: 0.9,
+                                                            step: 0.05,
+                                                        }}
+                                                        error={
+                                                            splitRatio < 0.1 ||
+                                                            splitRatio > 0.9
+                                                        }
+                                                        helperText={
+                                                            splitRatio < 0.1 ||
+                                                            splitRatio > 0.9
+                                                                ? "Value must be between 0.1 and 0.9"
+                                                                : ""
+                                                        }
+                                                        sx={{
+                                                            width: 250,
+                                                            mt: 1,
+                                                        }}
+                                                        disabled={mode === "1"}
+                                                    />
+                                                </div>
+                                            </Paper>
+                                        </Grid>
+
+                                        <Grid item xs={20}>
+                                            <Paper
+                                                sx={{
+                                                    p: 2,
+                                                    display: "flex",
+                                                    flexDirection: "row",
+                                                    marginBottom: 0.5,
+                                                    overflow: "auto",
+                                                }}>
+                                                <Typography variant='h6'>
+                                                    Select Test Batches:{" "}
+                                                </Typography>
+                                                {availableBatches.map(
+                                                    (batch) => (
+                                                        <div key={batch}>
+                                                            <Checkbox
+                                                                checked={test_batches.has(
+                                                                    batch
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleTestBatchSelection(
+                                                                        batch
+                                                                    )
+                                                                }
+                                                            />
+                                                            {batch}
+                                                        </div>
+                                                    )
+                                                )}
+                                            </Paper>
+                                        </Grid>
+
+                                        <Grid
+                                            item
+                                            xs={12}
+                                            container
+                                            justifyContent='center'
+                                            alignItems='center'>
+                                            <CustomWidthTooltip
+                                                title='After clicking on the Upload Information button, the information will be uploaded and the run will be created.'
+                                                followCursor
+                                                arrow>
+                                                <Button
+                                                    onClick={handleUpload}
+                                                    variant='contained'
+                                                    sx={{
+                                                        mt: 2,
+                                                        display: "flex",
+                                                        width: "40%",
+                                                    }}
+                                                    disabled={
+                                                        description === "" ||
+                                                        splitRatio < 0.1 ||
+                                                        splitRatio > 0.9
+                                                    }>
+                                                    <PublishIcon fontSize='large' />
+                                                    Start Training
+                                                </Button>
+                                            </CustomWidthTooltip>
+                                        </Grid>
+                                    </>
+                                )}
+                                {mode === "3" && progress >= 4 && (
+                                    <>
+                                        <Grid item xs={20}>
+                                            <Paper
+                                                sx={{
+                                                    p: 2,
+                                                    display: "flex",
+                                                    flexDirection: "row",
+                                                    marginBottom: -0.5,
+                                                    overflow: "auto",
+                                                }}>
+                                                <Typography variant='h6'>
+                                                    Available Batches:{" "}
+                                                    {availableBatches.join(
+                                                        ", "
+                                                    )}
+                                                </Typography>
+                                            </Paper>
+                                        </Grid>
+                                        <Grid item xs={20}>
+                                            <Paper
+                                                sx={{
+                                                    p: 2,
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    marginBottom: 2,
+                                                }}>
+                                                <Typography variant='h6'>
+                                                    Cross-Validation Settings
+                                                </Typography>
+
+                                                {/* Train/Val Split Ratio Input */}
+                                                <div
+                                                    style={{
+                                                        marginTop: 12,
+                                                    }}>
+                                                    <Typography variant='body1'>
+                                                        Train/Validation Split
+                                                        Ratio:
+                                                    </Typography>
+                                                    <TextField
+                                                        type='number'
+                                                        value={splitRatio}
+                                                        onChange={(e) => {
+                                                            const value =
+                                                                parseFloat(
+                                                                    e.target
+                                                                        .value
+                                                                );
+                                                            setSplitRatio(
+                                                                isNaN(value)
+                                                                    ? 0
+                                                                    : value
+                                                            );
+                                                        }}
+                                                        inputProps={{
+                                                            min: 0.1,
+                                                            max: 0.9,
+                                                            step: 0.05,
+                                                        }}
+                                                        error={
+                                                            splitRatio < 0.1 ||
+                                                            splitRatio > 0.9
+                                                        }
+                                                        helperText={
+                                                            splitRatio < 0.1 ||
+                                                            splitRatio > 0.9
+                                                                ? "Value must be between 0.1 and 0.9"
+                                                                : ""
+                                                        }
+                                                        sx={{
+                                                            width: 250,
+                                                            mt: 1,
+                                                        }}
+                                                        disabled={mode === "1"}
+                                                    />
+                                                </div>
+
+                                                {/* K-Folds Input Only for mode 3 */}
+
+                                                <div
+                                                    style={{
+                                                        marginTop: 12,
+                                                    }}>
+                                                    <Typography variant='body1'>
+                                                        Number of Folds (k):
+                                                    </Typography>
+                                                    <TextField
+                                                        type='number'
+                                                        value={kfolds}
+                                                        onChange={(e) =>
+                                                            setKfolds(
+                                                                parseInt(
+                                                                    e.target
+                                                                        .value
+                                                                )
+                                                            )
+                                                        }
+                                                        inputProps={{
+                                                            min: 1,
+                                                        }}
+                                                        sx={{
+                                                            width: 100,
+                                                        }}
+                                                    />
+
+                                                    <Typography variant='body1'>
+                                                        Number of Ensembles:
+                                                    </Typography>
+
+                                                    <TextField
+                                                        type='number'
+                                                        value={nensemble}
+                                                        onChange={(e) =>
+                                                            setNensemble(
+                                                                parseInt(
+                                                                    e.target
+                                                                        .value
+                                                                )
+                                                            )
+                                                        }
+                                                        inputProps={{
+                                                            min: 1,
+                                                            max: kfolds,
+                                                        }}
+                                                        sx={{
+                                                            width: 100,
+                                                        }}
+                                                    />
+                                                </div>
+                                            </Paper>
+                                        </Grid>
+
+                                        <Grid item xs={20}>
+                                            <Paper
+                                                sx={{
+                                                    p: 2,
+                                                    display: "flex",
+                                                    flexDirection: "row",
+                                                    marginBottom: 0.5,
+                                                    overflow: "auto",
+                                                }}>
+                                                <Typography variant='h6'>
+                                                    Select Test Batches:{" "}
+                                                </Typography>
+                                                {availableBatches.map(
+                                                    (batch) => (
+                                                        <div key={batch}>
+                                                            <Checkbox
+                                                                checked={test_batches.has(
+                                                                    batch
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleTestBatchSelection(
+                                                                        batch
+                                                                    )
+                                                                }
+                                                            />
+                                                            {batch}
+                                                        </div>
+                                                    )
+                                                )}
+                                            </Paper>
+                                        </Grid>
+
+                                        <Grid
+                                            item
+                                            xs={12}
+                                            container
+                                            justifyContent='center'
+                                            alignItems='center'>
+                                            <CustomWidthTooltip
+                                                title='After clicking on the Upload Information button, the information will be uploaded and the run will be created.'
+                                                followCursor
+                                                arrow>
+                                                <Button
+                                                    onClick={handleUpload}
+                                                    variant='contained'
+                                                    sx={{
+                                                        mt: 2,
+                                                        display: "flex",
+                                                        width: "40%",
+                                                    }}
+                                                    disabled={
+                                                        description === "" ||
+                                                        splitRatio < 0.1 ||
+                                                        splitRatio > 0.9
+                                                    }>
+                                                    <PublishIcon fontSize='large' />
+                                                    Start Training
+                                                </Button>
+                                            </CustomWidthTooltip>
+                                        </Grid>
+                                    </>
                                 )}
                             </Grid>
                         </Grid>

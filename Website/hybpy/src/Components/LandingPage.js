@@ -75,7 +75,7 @@ const Drawer = styled(MuiDrawer, {
                 width: theme.spacing(9),
             },
         }),
-        textAlign: "center"
+        textAlign: "center",
     },
 }));
 
@@ -209,14 +209,14 @@ export default function LandingPage() {
                             }}
                         />
                         <Typography variant='subtitle1' gutterBottom>
-                            This tool is design to combine state-of-the-art
-                            machine learning algorithms with the reliability of
-                            mechanistic models within a unified structure and to
-                            simplify the construction and analyses of a hybrid
-                            model. This innovative approach offers a
-                            user-friendly interface that bridges the gap between
-                            complex hybrid modeling techniques and practical
-                            applications in bioprocesses engineering.
+                            HYBpy integrates deep learning algorithms with the
+                            robustness of mechanistic modelling into a unified
+                            hybrid modelling framework for bioprocess
+                            engineering. It streamlines the development and
+                            analysis of hybrid models for biological systems,
+                            providing an intuitive and user-friendly interface
+                            that bridges the gap between complex mechanistic
+                            models and machine learning.
                         </Typography>
                         <h2>What is Hybrid Modeling?</h2>
                         <Divider
@@ -226,14 +226,21 @@ export default function LandingPage() {
                             }}
                         />
                         <Typography variant='subtitle1' gutterBottom>
-                            Hybrid modeling is a cutting-edge approach that
-                            integrates the predictive power of machine learning
-                            algorithms (nonparametric model) with the
-                            foundational principles of mechanistic models
-                            (parametric model). This synergy allows for the
-                            creation of models that are not only highly accurate
-                            but also deeply insightful, providing a
-                            comprehensive understanding of bioprocesses and bio(chemical) systems.
+                            Hybrid modelling can be defined as the integration
+                            of mechanistic (parametric) models with machine
+                            learning methods—such as artificial neural networks
+                            (nonparametric models)—within a unified mathematical
+                            framework. This combination leverages the strengths
+                            of both approaches, enhancing prediction accuracy
+                            while reducing the amount of experimental data
+                            required for process modelling. HYBpy implements a
+                            generic hybrid modelling framework for biological
+                            systems that integrates deep neural networks with
+                            prior knowledge expressed through ordinary
+                            differential equations (ODEs) (Pinto et al., 2022).
+                            The ODEs system is typically derived from
+                            compartment material balance equations encoded in
+                            Systems Biology Markup Language (SBML).
                         </Typography>
                         <div
                             style={{
@@ -256,7 +263,17 @@ export default function LandingPage() {
                                 marginTop: "10px",
                             }}>
                             <Typography variant='caption'>
-                                Figure. Example of a typical structure for a hybrid model
+                                General deep hybrid model structure for
+                                biological systems José Pinto, Mykaella Mestre,
+                                J. Ramos, Rafael S. Costa, Gerald Striedner, Rui
+                                Oliveira, A general deep hybrid model for
+                                bioreactor systems: Combining first principles
+                                with deep neural networks, Computers & Chemical
+                                Engineering, Volume 165, 2022, 107952,
+                                <Link href='https://doi.org/10.1016/j.compchemeng.2022.107952'>
+                                    https://doi.org/10.1016/j.compchemeng.2022.107952
+                                </Link>
+                                .
                             </Typography>
                         </div>
                         <h2>Why HYBpy?</h2>
@@ -267,15 +284,18 @@ export default function LandingPage() {
                             }}
                         />
                         <Typography variant='subtitle1' gutterBottom>
-                            Despite the proven effectiveness of hybrid models in
-                            the process systems engineering field, their
-                            adoption has been limited. The primary barrier has
-                            been the lack of accessible tools that offer both
-                            the sophistication needed for advanced modeling and
-                            the simplicity required for widespread use. Our
-                            Python tool is the solution to this challenge,
-                            offering an open-source, user-friendly platform for
-                            analyzing, and simulating hybrid models.
+                            HYBpy streamlines the development of complex hybrid
+                            models for biological systems. Mechanistic models
+                            encoded in SBML can be seamlessly integrated with
+                            deep neural networks, creating powerful hybrid
+                            ensembles that can be trained using state-of-the-art
+                            deep learning algorithms. The resulting hybrid
+                            models are also encoded in SBML and can be deployed
+                            in public databases. By simplifying the
+                            implementation of hybrid modeling approaches for
+                            biological system modeling and optimization, HYBpy
+                            promotes the adoption of AI-driven methodologies in
+                            bioprocess engineering.
                         </Typography>
                         <h2>Features</h2>
                         <Divider
@@ -315,7 +335,6 @@ export default function LandingPage() {
                             sx={{
                                 my: 1,
                                 borderBottomWidth: 1,
-
                             }}
                         />
                         <div
@@ -324,7 +343,11 @@ export default function LandingPage() {
                                 justifyContent: "center",
                                 alignItems: "center",
                             }}>
-                            <Typography align="center" variant='h6' gutterBottom sx={{ maxWidth: "70%", }}>
+                            <Typography
+                                align='center'
+                                variant='h6'
+                                gutterBottom
+                                sx={{ maxWidth: "70%" }}>
                                 <b>
                                     Just proceed to the{" "}
                                     <Button
@@ -334,8 +357,8 @@ export default function LandingPage() {
                                         New Project
                                     </Button>{" "}
                                     tab to start using the tool. If you have any
-                                    questions or need assistance, please feel free
-                                    to{" "}
+                                    questions or need assistance, please feel
+                                    free to{" "}
                                     <Button
                                         color='inherit'
                                         variant='text'

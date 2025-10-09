@@ -71,23 +71,80 @@ def manual_label(data, projhyb):
 
     return data, projhyb
 
-
-def random_label(data, projhyb):
+def label_batches(data, projhyb, mode, use_validation=False, val_ratio=0.3, kfolds=1, manual_test_batches=None):
     all_batches = list(data.keys())
-    random.shuffle(all_batches)
-    split_idx = int(len(all_batches) * 2 / 3)
-    train_batches = all_batches[:split_idx]
-    test_batches = all_batches[split_idx:]
+    kfolds = int(kfolds) 
 
-    for batch in train_batches:
-        if batch in data:
-            data[batch]["istrain"] = 1
-    for batch in test_batches:
-        if batch in data:
-            data[batch]["istrain"] = 3
+    for b in all_batches:
+        data[b]["istrain"] = [0] * kfolds
 
-    projhyb["train_batches"] = train_batches
-    projhyb["test_batches"] = test_batches
+    shuffled = all_batches[:]
+    random.shuffle(shuffled)
+
+    if manual_test_batches:
+        global_test_batches = manual_test_batches
+        remaining_batches = [b for b in shuffled if b not in global_test_batches]
+    else:
+        if use_validation:
+            test_ratio = 1.0 - (1.0 - val_ratio)  
+            train_ratio = 1.0 - val_ratio - test_ratio
+            n = len(shuffled)
+            train_end = int(n * train_ratio)
+            val_end = train_end + int(n * val_ratio)
+            global_test_batches = shuffled[val_end:]
+            remaining_batches = shuffled[:val_end]
+        else:
+            split_idx = int(len(shuffled) * (1 - val_ratio))  
+            global_test_batches = shuffled[split_idx:]
+            remaining_batches = shuffled[:split_idx]
+
+    kfolds_train = []
+    kfolds_val = []
+    used_splits = set()
+
+    for k in range(kfolds):
+        while True:
+            rem_shuffled = remaining_batches[:]
+            random.shuffle(rem_shuffled)
+
+            if use_validation:
+                n = len(rem_shuffled)
+                train_end = int(n * (1 - val_ratio))
+                val_end = n 
+                train_batches = rem_shuffled[:train_end]
+                val_batches = rem_shuffled[train_end:val_end]
+            else:
+                train_batches = rem_shuffled
+                val_batches = []
+
+            split_signature = (tuple(sorted(train_batches)), tuple(sorted(val_batches)))
+            if split_signature not in used_splits:
+                used_splits.add(split_signature)
+                break
+
+        kfolds_train.append(train_batches)
+        kfolds_val.append(val_batches)
+
+        for b in train_batches:
+            data[b]["istrain"][k] = 1
+        for b in val_batches:
+            data[b]["istrain"][k] = 2
+        for b in global_test_batches:
+            data[b]["istrain"][k] = 3
+
+    for b in all_batches:
+        for k in range(kfolds):
+            if data[b]["istrain"][k] == 0:
+                if b in global_test_batches:
+                    data[b]["istrain"][k] = 3
+                else:
+                    data[b]["istrain"][k] = 1
+
+    projhyb["kfolds_splits"] = [
+        {"train": tr, "val": vl} for tr, vl in zip(kfolds_train, kfolds_val)
+    ]
+    projhyb["global_test_batches"] = global_test_batches
+    projhyb["nkfolds"] = kfolds
 
     return data, projhyb
 

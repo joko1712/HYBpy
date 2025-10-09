@@ -1,3 +1,4 @@
+CellGrowthModel3.time.tspan=0:1:24
 %--------------------------------------------------------------------------
 % hybrid model definition data structure
 
@@ -57,5 +58,61 @@ CellGrowthModel3.ruleAss(1).val="mumax*(1-X/Xmax)";
 % Events
 CellGrowthModel3.nevents=0;
 
+
+
+% control---------------------------
+CellGrowthModel3.ncontrol=1;
+CellGrowthModel3.control(1).id= 'Feed';
+CellGrowthModel3.control(1).val= 0;
+CellGrowthModel3.control(1).min= 0;
+CellGrowthModel3.control(1).max= 0.5;
+CellGrowthModel3.control(1).constant= 1;
+CellGrowthModel3.fun_control=@control_function_CellGrowthModel3;
+CellGrowthModel3.fun_event=[];
+
+% %model configuration
+CellGrowthModel3.time.min=0;
+CellGrowthModel3.time.max=24;
+CellGrowthModel3.time.id='t[h]';
+CellGrowthModel3.time.TAU=0.48;
+CellGrowthModel3.time.tspan=0:1:24;
+
+% % MLM - Machine Learning Model --------------------------------------------
+CellGrowthModel3.mlm.id = 'mlpnet';
+CellGrowthModel3.mlm.nx = 1;
+CellGrowthModel3.mlm.x(1).id = 'anninp1';
+CellGrowthModel3.mlm.x(1).val= 'X';
+CellGrowthModel3.mlm.x(1).min= 0;
+CellGrowthModel3.mlm.x(1).max= 46.7556911;
+CellGrowthModel3.mlm.ny = 2;
+CellGrowthModel3.mlm.y(1).id = 'mumax';
+CellGrowthModel3.mlm.y(1).val= 'rann1';
+CellGrowthModel3.mlm.y(1).min= 0;
+CellGrowthModel3.mlm.y(1).max= NaN;
+CellGrowthModel3.mlm.y(2).id = 'Xmax';
+CellGrowthModel3.mlm.y(2).val= 'rann2';
+CellGrowthModel3.mlm.y(2).min= 0;
+CellGrowthModel3.mlm.y(2).max= NaN;
+CellGrowthModel3.mlm.options={'hidden nodes', [3]};
+CellGrowthModel3.mlm.layer=1;
+CellGrowthModel3.mlm.xfun=str2func('autoA_hybmod_anninp');
+CellGrowthModel3.mlm.yfun=str2func('autoA_hybmod_rann');
+CellGrowthModel3.symbolic='full-symbolic';
+CellGrowthModel3.symbolic='semi-symbolic';
+CellGrowthModel3.datasource=3;
+CellGrowthModel3.datafun=@CellGrowthModel3;
+%training configuration
+CellGrowthModel3.mode=1;
+CellGrowthModel3.method=1;
+CellGrowthModel3.jacobian=1;
+CellGrowthModel3.hessian=0;
+CellGrowthModel3.derivativecheck='off';
+CellGrowthModel3.niter=400;
+CellGrowthModel3.niteroptim=1;
+CellGrowthModel3.nstep=1;
+CellGrowthModel3.display='off';
+CellGrowthModel3.bootstrap=0;
+CellGrowthModel3.nensemble=1;
+CellGrowthModel3.crossval=1;
 
 end

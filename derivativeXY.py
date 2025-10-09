@@ -1,4 +1,5 @@
 import numpy as np
+import sympy as sp
 from numpy import diff
 from sympy import diff, Matrix, symbols
 import torch
@@ -100,15 +101,24 @@ def numerical_diferentiation(x, y, values):
 
 
 def numerical_diferentiation_torch(x, y, values):
-    values_dict = values.copy()
-    values_dict_filtered = values.copy()
-    derivatives = []
-    
-    x = Matrix(x)
+    x = sp.Matrix(x)
 
     matrix = x.jacobian(y)
 
     return matrix
+
+def numerical_diferentiation_torch_fast(x, y, values):
+    x_matrix = sp.Matrix(x)
+    jacobian_matrix = x_matrix.jacobian(y)
+
+    all_symbols = sorted(jacobian_matrix.free_symbols, key=lambda s: s.name)
+    all_values = [values[str(sym)] for sym in all_symbols]
+
+    jacobian_func = sp.lambdify(all_symbols, jacobian_matrix, modules='numpy')
+
+    jacobian_evaluated = jacobian_func(*all_values)
+
+    return torch.from_numpy(np.array(jacobian_evaluated, dtype=np.float32))
 
 '''
 @functools.lru_cache(maxsize=None)

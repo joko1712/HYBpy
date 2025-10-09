@@ -73,7 +73,7 @@ CellGrowthModel.control(1).val= 0;
 CellGrowthModel.control(1).min= 0;
 CellGrowthModel.control(1).max= 0.5;
 CellGrowthModel.control(1).constant= 1;
-CellGrowthModel.fun_control=@control_function_CellGrowthModel;
+CellGrowthModel.fun_control=[];
 CellGrowthModel.fun_event=[];
 
 % %model configuration
@@ -87,17 +87,17 @@ CellGrowthModel.time.tspan=0:1:24;
 CellGrowthModel.mlm.id = 'mlpnet';
 CellGrowthModel.mlm.nx = 3;
 CellGrowthModel.mlm.x(1).id = 'anninp1';
-CellGrowthModel.mlm.x(1).val= 'X';
+CellGrowthModel.mlm.x(1).val= 'Feed';
 CellGrowthModel.mlm.x(1).min= 0;
-CellGrowthModel.mlm.x(1).max= 46.7556911;
+CellGrowthModel.mlm.x(1).max= 0.5;
 CellGrowthModel.mlm.x(2).id = 'anninp2';
-CellGrowthModel.mlm.x(2).val= 'V';
+CellGrowthModel.mlm.x(2).val= 'X';
 CellGrowthModel.mlm.x(2).min= 0;
-CellGrowthModel.mlm.x(2).max= 14.26339491;
+CellGrowthModel.mlm.x(2).max= 46.7556911;
 CellGrowthModel.mlm.x(3).id = 'anninp3';
-CellGrowthModel.mlm.x(3).val= 'Feed';
+CellGrowthModel.mlm.x(3).val= 'V';
 CellGrowthModel.mlm.x(3).min= 0;
-CellGrowthModel.mlm.x(3).max= 0.5;
+CellGrowthModel.mlm.x(3).max= 14.26339491;
 CellGrowthModel.mlm.ny = 2;
 CellGrowthModel.mlm.y(1).id = 'rX';
 CellGrowthModel.mlm.y(1).val= 'rann1';
@@ -107,7 +107,7 @@ CellGrowthModel.mlm.y(2).id = 'rV';
 CellGrowthModel.mlm.y(2).val= 'rann2';
 CellGrowthModel.mlm.y(2).min= 0;
 CellGrowthModel.mlm.y(2).max= NaN;
-CellGrowthModel.mlm.options={'hidden nodes', [1]};
+CellGrowthModel.mlm.options={'hidden nodes', [3]};
 CellGrowthModel.mlm.layer=1;
 CellGrowthModel.mlm.xfun=str2func('autoA_hybmod_anninp');
 CellGrowthModel.mlm.yfun=str2func('autoA_hybmod_rann');
@@ -123,10 +123,12 @@ CellGrowthModel.hessian=0;
 CellGrowthModel.derivativecheck='off';
 CellGrowthModel.niter=400;
 CellGrowthModel.niteroptim=1;
-CellGrowthModel.nstep=2;
+CellGrowthModel.nstep=1;
 CellGrowthModel.display='off';
 CellGrowthModel.bootstrap=0;
 CellGrowthModel.nensemble=1;
 CellGrowthModel.crossval=1;
+
+
 
 end

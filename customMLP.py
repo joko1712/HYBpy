@@ -22,7 +22,7 @@ class CustomMLP(nn.Module):
         self.layers.append(Linear(layer_sizes[-2], layer_sizes[-1]))
 
 
-        self.scale_weights(scaling_factor=0.001)
+        self.scale_weights(scaling_factor=0.1)
 
 
     def forward(self, x):
@@ -35,11 +35,16 @@ class CustomMLP(nn.Module):
 
 
     def scale_weights(self, scaling_factor):
-        with torch.no_grad():  
+        with torch.no_grad():
             for layer in self.layers:
-                for w in layer.w.data:
-                    w *= scaling_factor * torch.tensor(random.uniform(0.9, 1.1), dtype=torch.float32)
-                layer.b.data *= scaling_factor
+                if hasattr(layer, 'w') and hasattr(layer, 'b'):
+                    for w in layer.w.data:
+                        w *= scaling_factor * torch.tensor(random.uniform(0.9, 1.1), dtype=torch.float32)
+                    layer.b.data *= scaling_factor
+
+                elif isinstance(layer, LSTMLayer):
+                    for param in layer.lstm.parameters():
+                        param *= scaling_factor * torch.tensor(random.uniform(0.9, 1.1), dtype=param.dtype)
 
     
     def reinitialize_weights(self):
@@ -53,7 +58,7 @@ class CustomMLP(nn.Module):
             if hasattr(layer, 'b'):
                 nn.init.constant_(layer.b, 0)
 
-        self.scale_weights(scaling_factor=0.001)
+        self.scale_weights(scaling_factor=0.1)
 
         weights = []
         for layer in self.layers:
@@ -83,15 +88,14 @@ class CustomMLP(nn.Module):
                 layer.w.data = new_w_tensor
                 layer.b.data = new_b_tensor
         
-        '''
-        for layer in self.layers:
-            print("weights: ", layer.w)
-            print("biases: ", layer.b)
-            if layer.w.shape == torch.Size([3, 3]):
-                with torch.no_grad():
-                    transposed_w = layer.w.t().clone() 
-                    layer.w.copy_(transposed_w)  
-        '''
+            elif isinstance(layer, LSTMLayer):
+                for param in layer.lstm.parameters():
+                    num_params = param.numel()
+                    param_data = new_weights[start:start + num_params]
+                    param_tensor = torch.from_numpy(param_data).view_as(param).type_as(param)
+                    param.data.copy_(param_tensor)
+                    start += num_params
+
 
 
 
@@ -102,7 +106,7 @@ class CustomMLP(nn.Module):
                 print(f"Layer {i} weights (w): \n{layer.w.data}")
                 print(f"Layer {i} biases (b): \n{layer.b.data}\n")
 
-
+    '''
     def get_weights(self):
         weights = []
         for layer in self.layers:
@@ -111,99 +115,187 @@ class CustomMLP(nn.Module):
             weights.extend(w)
             weights.extend(b)
         return np.array(weights), self
+    '''
 
-    def backpropagate(self, x, ny):
-        activations = [x]
-
+    def get_weights(self):
+        weights = []
         for layer in self.layers:
+            if hasattr(layer, 'w') and hasattr(layer, 'b'):
+                weights.append(layer.w.data.cpu().numpy().flatten())
+                weights.append(layer.b.data.cpu().numpy().flatten())
+            elif isinstance(layer, LSTMLayer):
+                for param in layer.lstm.parameters():
+                    weights.append(param.data.cpu().numpy().flatten())
+        return np.concatenate(weights), self
+
+    def get_weights_solo(self):
+        weights = []
+        for layer in self.layers:
+            if hasattr(layer, 'w') and hasattr(layer, 'b'):
+                weights.append(layer.w.data.cpu().numpy().flatten())
+                weights.append(layer.b.data.cpu().numpy().flatten())
+            elif isinstance(layer, LSTMLayer):
+                for param in layer.lstm.parameters():
+                    weights.append(param.data.cpu().numpy().flatten())
+        return np.concatenate(weights)
+
+    def backpropagate(self, x, ny, target=None, loss_fn=None):
+        contains_lstm = any(isinstance(layer, LSTMLayer) for layer in self.layers)
+
+        if contains_lstm:
+            assert loss_fn is not None and target is not None, \
+                "Loss function and target required for LSTM backpropagation."
+            return self.backpropagate_lstm(x, target, loss_fn)
+        else:
+            activations = [x]
+
+            for layer in self.layers:
 
 
-            x = x.to(dtype=torch.float32)
+                x = x.to(dtype=torch.float32)
 
-            x = layer(x)
+                x = layer(x)
 
-            activations.append(x)
-            
-        # y = output
-        y = activations[-1]
+                activations.append(x)
+                
+            # y = output
+            y = activations[-1]
 
-        # x = input
-        x = activations[0]
+            # x = input
+            x = activations[0]
 
-        # h1 
-        tensorList = []
-        DrannDw = []
-        output_size = self.layers[-1].w.shape[0]
-        DrannDanninp = torch.eye(output_size, dtype=torch.float32)
+            # h1 
+            tensorList = []
+            DrannDw = []
+            output_size = self.layers[-1].w.shape[0]
+            DrannDanninp = torch.eye(output_size, dtype=torch.float32)
 
-        A1 = DrannDanninp
-        tensor_size = 0
-        '''
-        with open("back.txt", "a") as f:
-            f.write("activations\n")
-            f.write(str(activations))
-            f.write("\n")
-            f.write("y\n")
-            f.write(str(y))
-            f.write("\n")
-            f.write("x\n")
-            f.write(str(x))
-            f.write("\n")
-            f.write("")
-            f.write(str(range(len(self.layers))))
-            f.write("\n")
-        '''
-    
-        for i in reversed(range(len(self.layers))):
-
-            h1 = activations[i]
-            h1l = self.layers[i-1].derivative(h1)
-            h1l_reshaped = h1l.t()        
-
+            A1 = DrannDanninp
+            tensor_size = 0
             '''
-            1º valor i self.layers -1
-               A2 =  matriz identidade tamanho = n de outputs
-
-            2º valor i self.layers 
-                obter h1l  =  self.layers[i].derivative(h1)
-                A1 = -(torch.mm(A2, self.layers[i].w) * h1l.repeat(output_size, 1))
-
-            3º valor i self.layers
-                dydw = matriz em linha kron([input,1],A1).cat(kron([h1,1],A2)) 
-                dydx = A1 * self.layers[i].w
-
+            with open("back.txt", "a") as f:
+                f.write("activations\n")
+                f.write(str(activations))
+                f.write("\n")
+                f.write("y\n")
+                f.write(str(y))
+                f.write("\n")
+                f.write("x\n")
+                f.write(str(x))
+                f.write("\n")
+                f.write("")
+                f.write(str(range(len(self.layers))))
+                f.write("\n")
             '''
-            
-            h1_reshaped = torch.cat((h1.t(), torch.tensor([[1]], dtype=torch.float32)), dim=1)
-            
-            layer_dydw = torch.kron(h1_reshaped,A1)
+        
+            for i in reversed(range(len(self.layers))):
 
-            tensor_size = tensor_size + layer_dydw.shape[1] 
-            tensorList.insert(0, layer_dydw)
+                h1 = activations[i]
+                h1l = self.layers[i-1].derivative(h1)
+                h1l_reshaped = h1l.t()        
+
+                '''
+                1º valor i self.layers -1
+                A2 =  matriz identidade tamanho = n de outputs
+
+                2º valor i self.layers 
+                    obter h1l  =  self.layers[i].derivative(h1)
+                    A1 = -(torch.mm(A2, self.layers[i].w) * h1l.repeat(output_size, 1))
+
+                3º valor i self.layers
+                    dydw = matriz em linha kron([input,1],A1).cat(kron([h1,1],A2)) 
+                    dydx = A1 * self.layers[i].w
+
+                '''
+                
+                h1_reshaped = torch.cat((h1.t(), torch.tensor([[1]], dtype=torch.float32)), dim=1)
+                
+                layer_dydw = torch.kron(h1_reshaped,A1)
+
+                tensor_size = tensor_size + layer_dydw.shape[1] 
+                tensorList.insert(0, layer_dydw)
 
 
-            if i == 0:
-                break
+                if i == 0:
+                    break
 
-            A1 = -(torch.mm(DrannDanninp,self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
-
-
-            DrannDanninp = A1
-
-            h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]], dtype=torch.float32)), dim=1)
+                A1 = -(torch.mm(DrannDanninp,self.layers[i].w) * h1l_reshaped.repeat(output_size, 1))
 
 
+                DrannDanninp = A1
 
-        DrannDanninp = torch.mm(A1,self.layers[0].w)
+                h1l_reshaped = torch.cat((h1l_reshaped, torch.tensor([[1]], dtype=torch.float32)), dim=1)
 
 
-        DrannDw = tensorList
 
-        DrannDw = torch.cat(DrannDw, dim=1)
-        DrannDw = DrannDw.view(ny, tensor_size)
+            DrannDanninp = torch.mm(A1,self.layers[0].w)
 
+
+            DrannDw = tensorList
+
+            DrannDw = torch.cat(DrannDw, dim=1)
+            DrannDw = DrannDw.view(ny, tensor_size)
+
+
+            return y, DrannDanninp, DrannDw
+
+    def backpropagate_lstm(self, x, target, loss_fn):
+        x = x.detach().requires_grad_()
+        y = self.forward(x)
+
+        ny = y.shape[0]
+        grad_matrix = []
+
+        params = [p for p in self.parameters() if p.requires_grad]
+
+        for i in range(ny):
+            grad_outputs = torch.zeros_like(y)
+            grad_outputs[i] = 1.0
+
+            grads = torch.autograd.grad(
+                outputs=y,
+                inputs=params,
+                grad_outputs=grad_outputs,
+                retain_graph=True,
+                allow_unused=True
+            )
+
+            grad_list = [g.view(-1) for g in grads if g is not None]
+            grad_vector = torch.cat(grad_list)
+            grad_matrix.append(grad_vector)
+
+        DrannDw = torch.stack(grad_matrix) 
+
+        ny = y.shape[0]
+        nx = x.shape[0]
+        DrannDanninp = torch.zeros(ny, nx)
+
+        for i in range(ny):
+            grads = torch.autograd.grad(
+                y[i], x, retain_graph=True, allow_unused=True
+            )[0]
+            if grads is not None:
+                DrannDanninp[i] = grads.view(-1)
 
         return y, DrannDanninp, DrannDw
+
+
+
+class Linear(nn.Module):
+    def __init__(self, input_size, output_size):
+        self.input_size = input_size
+        self.output_size = output_size
+        super(Linear, self).__init__()
+        self.w = nn.Parameter(torch.Tensor(output_size, input_size))
+        self.b = nn.Parameter(torch.Tensor(output_size, 1))
+        nn.init.xavier_uniform_(self.w)
+        nn.init.zeros_(self.b) 
+
+    def forward(self, x):
+        return torch.mm(self.w, x) + self.b
+
+    def derivative(self, x):
+        return torch.ones_like(x) 
 
 class TanhLayer(nn.Module):
     def __init__(self, input_size, output_size):
@@ -239,40 +331,24 @@ class ReLULayer(nn.Module):
     def derivative(self, x):
         return (x > 0).double()
 
-
 class LSTMLayer(nn.Module):
-    def __init__(self, input_size, hidden_size, batch_first=True):
+    def __init__(self, input_size, hidden_size):
         super(LSTMLayer, self).__init__()
-        self.hidden_size = hidden_size
-        self.batch_first = batch_first
-        
-        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=batch_first)
-        
-        self.hidden = None
-        self.cell = None
-
-    def forward(self, x):
-        output, (hidden, cell) = self.lstm(x, (self.hidden, self.cell))
-
-        return output
-
-    def reset_state(self):
-        self.hidden = None
-        self.cell = None
-
-
-class Linear(nn.Module):
-    def __init__(self, input_size, output_size):
         self.input_size = input_size
-        self.output_size = output_size
-        super(Linear, self).__init__()
-        self.w = nn.Parameter(torch.Tensor(output_size, input_size))
-        self.b = nn.Parameter(torch.Tensor(output_size, 1))
-        nn.init.xavier_uniform_(self.w)
-        nn.init.zeros_(self.b) 
+        self.hidden_size = hidden_size
+        self.lstm = nn.LSTM(input_size, hidden_size)
 
     def forward(self, x):
-        return torch.mm(self.w, x) + self.b
+        if x.dim() != 2:
+            raise ValueError(f"LSTM expects 2D input (input_size, batch_size), got {x.shape}")
+        
+        x = x.t().unsqueeze(0) 
 
-    def derivative(self, x):
-        return torch.ones_like(x) 
+        output, (hn, cn) = self.lstm(x)
+        
+        return hn.squeeze(0).t() 
+
+
+
+# TODO: SiLU activation
+# TODO: Implement KAN NN based on: https://arxiv.org/pdf/2404.19756

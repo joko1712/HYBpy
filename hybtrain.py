@@ -669,13 +669,23 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1, mask_type=None
         
     nres = len(isres)
     
-    current_fold = projhyb.get("currentfold", 0)  # Default to 0 if not set
+    current_fold = projhyb.get("currentfold", 0)
+
+    if mask_type == "train":
+        target_label = 1
+    elif mask_type == "val":
+        target_label = 2
+    elif mask_type == "test":
+        target_label = 3
+    else:
+        target_label = 1 
 
     npall = sum(
         file[i + 1]["np"]
         for i in range(file["nbatch"])
-        if isinstance(file[i + 1]["istrain"], list) and file[i + 1]["istrain"][current_fold] == 1
-    )
+        if isinstance(file[i + 1]["istrain"], list)
+        and len(file[i + 1]["istrain"]) > current_fold
+        and file[i + 1]["istrain"][current_fold] == target_label)
 
     sresall = np.zeros(npall * nres)
 

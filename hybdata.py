@@ -1,5 +1,6 @@
 import json
 import re
+import numpy as np
 def hybdata(filename):
 
     with open(filename) as f:
@@ -98,24 +99,14 @@ def hybdata(filename):
 
         # Check if it is a tspan line and create the array for the json file
         if "tspan" in line:
-            x = line[line.find("=")+1:line.find(":")]
-
-            # Check if the y value is a single digit or a double digit ?? Maybe more if so loop
-            if line[line.find(":")+2].isnumeric():
-                y = line[line.find(":")+1:line.find(":")+3]
+            match = re.search(r"([\d\.\-eE]+)\s*:\s*([\d\.\-eE]+)\s*:\s*([\d\.\-eE]+)", line)
+            if match:
+                x, y, z = map(float, match.groups())
+                if y == 0:
+                    raise ValueError(f"Invalid tspan step size (0) in line: {line.strip()}")
+                listArray = list(np.arange(x, z + y, y))
             else:
-                y = line[line.find(":")+1]
-
-            # Check if the z value is a single digit or a double digit ?? Maybe more if so loop
-            if line[-3].isnumeric():
-                z = line[-3:len(line)]
-            else:
-                z = line[-2:len(line)]
-
-            line = line[line.find(".")+1:len(line)]
-
-            # tspan: [0,1,2,3,4,5,6,7,8,9,10]
-            listArray = list(range(int(x), int(z)+1, int(y)))
+                raise ValueError(f"Invalid tspan format: {line.strip()}")
 
         # Check if line is the number of species
         if "nspecies" in line:

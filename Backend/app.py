@@ -18,7 +18,9 @@ import time
 from threading import Thread
 import threading
 import traceback
-
+import numpy as np
+import torch
+import sympy as sp
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -122,17 +124,39 @@ def upload_plots_to_gcs(temp_dir, user_id, folder_id):
 
     return unique_plot_urls
 
-def ensure_json_serializable(data):
+def ensure_json_serializable(data, path="root"):
     if isinstance(data, (str, int, float, bool)) or data is None:
         return data
     elif isinstance(data, dict):
-        return {k: ensure_json_serializable(v) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [ensure_json_serializable(v) for v in data]
+        return {str(k): ensure_json_serializable(v, path=f"{path}.{k}") for k, v in data.items()}
+    elif isinstance(data, (list, tuple, set)):
+        return [ensure_json_serializable(v, path=f"{path}[{i}]") for i, v in enumerate(data)]
+    elif isinstance(data, np.ndarray):
+        return ensure_json_serializable(data.tolist(), path=path)
+    elif isinstance(data, np.generic):
+        return ensure_json_serializable(data.item(), path=path)
+    elif torch and isinstance(data, torch.Tensor):
+        return ensure_json_serializable(data.detach().cpu().numpy().tolist(), path=path)
     else:
-        return str(data)
+        print(f"❌ Non-serializable type at {path}: {type(data)} — {data}")
+        raise TypeError(f"Cannot serialize type {type(data)} at path {path}")
 
-
+def sanitize_projhyb(obj):
+    if isinstance(obj, dict):
+        return {str(k): sanitize_projhyb(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_projhyb(v) for v in obj]
+    elif isinstance(obj, np.generic):
+        return obj.item()
+    elif isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
+        return None
+    elif isinstance(obj, sp.Basic): 
+        return str(obj)
+    elif callable(obj):
+        return None
+    elif hasattr(obj, '__module__') and 'torch' in obj.__module__:
+        return None 
+    return obj
 
 @app.route("/ping", methods=["GET"])
 def ping():
@@ -172,10 +196,14 @@ def upload_file():
         Outputs = request.form.get('Outputs')
 
         Crossval = request.form.get('Crossval')
-        Ensemble = request.form.get('Ensemble')
-        Kfolds = request.form.get('Kfolds')
+        Ensemble = int(request.form.get('Ensemble'))
+        Kfolds = int(request.form.get('Kfolds'))
 
-        split_ratio = float(request.form.get("split_ratio", 0.5))
+        split_ratio_str = request.form.get("split_ratio", "").strip()
+        try:
+            split_ratio = float(split_ratio_str)
+        except ValueError:
+            split_ratio = 0.66
 
         trained_weights = request.form.get('trained_weights')
         logging.debug("trained_weights: %s", trained_weights)
@@ -305,22 +333,18 @@ def upload_file():
             val_batches = list(map(int, val_batches))
             for batch in train_batches:
                 if int(batch) in data:
-                    data[int(batch)]["istrain"] = 1
+                   data[int(batch)]["istrain"] = [1]  
             for batch in val_batches:
                 if int(batch) in data:
-                    data[int(batch)]["istrain"] = 2
+                   data[int(batch)]["istrain"] = [2]
             for batch in test_batches:
                 if int(batch) in data:
-                    data[int(batch)]["istrain"] = 3
+                   data[int(batch)]["istrain"] = [3]
 
             all_batches = set(data.keys())
             for batch in all_batches:
                 if int(batch) not in train_batches and int(batch) not in test_batches and int(batch) not in val_batches:
-                    data[int(batch)]["istrain"] = 0
-
-            projhyb["train_batches"] = train_batches
-            projhyb["test_batches"] = test_batches
-            projhyb["val_batches"] = val_batches
+                    data[int(batch)]["istrain"] = [0]
 
         if mode == "2" or mode == "3":
             test_batches = list(map(int, test_batches))
@@ -342,9 +366,11 @@ def upload_file():
         count = len(data)
         data["nbatch"] = count
 
+        projhyb['kfolds'] = int(Kfolds)
+        projhyb['nensemble'] = int(Ensemble)
+        projhyb["test_batches"] = test_batches
         projhyb["crossval"] = Crossval
-        projhyb["nensemble"] = Ensemble
-        projhyb['kfolds'] = Kfolds
+        projhyb["split_ratio"] = split_ratio
 
         data_json_path = os.path.join(temp_dir, "data.json")
         with open(data_json_path, "w") as write_file:
@@ -447,8 +473,9 @@ def background_training(projhyb, data, user_id, trained_weights, file1_path, tem
 
         response_data = {
             "message": "Files processed successfully",
-            "projhyb": ensure_json_serializable(projhyb),
-            "trainData": ensure_json_serializable(trainData),
+            #"projhyb": sanitize_projhyb(projhyb),
+            #"trainData": ensure_json_serializable(trainData),
+            "trainData": json.dumps(ensure_json_serializable(trainData), default=str),
             "metrics": metrics,
             "new_hmod_url": new_hmod_url,
             "new_hmod": new_hmod_filename,

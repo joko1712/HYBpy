@@ -410,7 +410,10 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir, run_id, thr
 
             '''
 
-                [-20.8210221361445, -29.2648787002075, -2.99616485291983, -0.391873434528431, 0.345529228671208, 2.67547768790112, 0.370737593202186, -5.50984481311063, -8.27238985127028, -0.388445614425761, 2.70463125251191, 0.976706416952729, 0.0217403921016785, 0.000969372025403460, -1.80689629911906, 0.259146859752498, -2.80553530793061, -0.970047111391006]
+                [-20.8210221361445, -29.2648787002075, -2.99616485291983, -0.391873434528431, 0.345529228671208, 
+                2.67547768790112, 0.370737593202186, -5.50984481311063, -8.27238985127028, -0.388445614425761, 
+                2.70463125251191, 0.976706416952729, 0.0217403921016785, 0.000969372025403460, -1.80689629911906, 
+                0.259146859752498, -2.80553530793061, -0.970047111391006]
 
                             #transporse the weights when the layer.w is 3x3
                     
@@ -627,7 +630,10 @@ def hybtrain(projhyb, file, user_id, trainedWeights, hmod, temp_dir, run_id, thr
 
     plot_optimization_results(evaluator.fobj_history, evaluator.jac_norm_history)
 
-    return projhyb, bestWeights, testing, newHmodFile
+    top_n_weights = [w.tolist() if isinstance(w, np.ndarray) else w for w in top_n_weights]
+
+    print("projhyb", projhyb)
+    return projhyb, top_n_weights, testing, newHmodFile
 
 
 def convert_numpy(obj):

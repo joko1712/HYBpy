@@ -8,6 +8,8 @@ import time
 from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, add_state_and_time_to_data
+import numpy as np
+import sympy as sp
 
 start_time = time.time()
 user_id = "local_user"
@@ -16,9 +18,9 @@ run_id = str(uuid.uuid4())
 trained_weights = None
 
 # Model 1
-file1_path = "Backend/Files/Workshop/CellGrowthModel1.hmod"
-file2_path = "Backend/Files/Workshop/CellGrowth.csv"
-temp_dir = "Backend/Files/Workshop/CellGrowthModel1"
+#file1_path = "Backend/Files/Workshop/CellGrowthModel1.hmod"
+#file2_path = "Backend/Files/Workshop/CellGrowth.csv"
+#temp_dir = "Backend/Files/Workshop/CellGrowthModel1"
 
 # Model 2
 #file1_path = "Backend/Files/Workshop/CellGrowthModel2.hmod"
@@ -26,9 +28,9 @@ temp_dir = "Backend/Files/Workshop/CellGrowthModel1"
 #temp_dir = "Backend/Files/Workshop/CellGrowthModel2"
 
 # Model 3
-#file1_path = "Backend/Files/Workshop/CellGrowthModel3.hmod"
-#file2_path = "Backend/Files/Workshop/CellGrowth.csv"
-#temp_dir = "Backend/Files/Workshop/CellGrowthModel3"
+file1_path = "Backend/Files/Workshop/CellGrowthModel3.hmod"
+file2_path = "Backend/Files/Workshop/CellGrowth.csv"
+temp_dir = "Backend/Files/Workshop/CellGrowthModel3"
 
 # CHO
 #file1_path = "Backend/Files/CHO/CHOsimplenew.hmod"
@@ -46,7 +48,7 @@ temp_dir = "Backend/Files/Workshop/CellGrowthModel1"
 #temp_dir = "Backend/Files/ParkAndRamirez"
 
 # RUN Manual Hold-Out Cross Validation:
-
+'''
 train_batches = [1,2,3,4,5,6,7,8,9,10,11,13,14]
 test_batches = [15]
 val_batches = [12]
@@ -56,6 +58,7 @@ Kfolds = 1
 nensemble = 1
 split_ratio = 0.5
 Crossval = "1"
+'''
 
 # RUN Automatic Hold-Out Cross Validation
 '''
@@ -65,24 +68,24 @@ val_batches = []
 
 
 mode = "2"
-Kfolds = 1
+Kfolds = 2
 nensemble = 1
-split_ratio = 0.5
+split_ratio = 0.66
 Crossval = "1"
 '''
 
 # RUN K-Fold Cross Validation
-'''
-test_batches = [13,14,15]
+
+test_batches = [15]
 train_batches = []
 val_batches = []
 
 mode = "3"
-Kfolds = 5
-nensemble = 3
-split_ratio = 0.5
+Kfolds = 2
+nensemble = 1
+split_ratio = 0.7
 Crossval = "1"
-'''
+
 
 projhyb = hybdata(file1_path)
 
@@ -179,6 +182,32 @@ with open(projhyb_json_path, "w") as write_file:
 projhyb, bestWeights, testing, newHmodFile = hybtrain(
     projhyb, data, user_id, trained_weights, file1_path, temp_dir, run_id
 )
+
+def sanitize_projhyb(obj):
+    if isinstance(obj, dict):
+        return {str(k): sanitize_projhyb(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_projhyb(v) for v in obj]
+    elif isinstance(obj, np.generic):
+        return obj.item()
+    elif isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
+        return None
+    elif isinstance(obj, sp.Basic):  # Symbol, Add, etc.
+        return str(obj)
+    elif callable(obj):
+        return None
+    elif hasattr(obj, '__module__') and 'torch' in obj.__module__:
+        return None  # strip torch models, tensors, etc.
+    return obj
+
+projhyb = sanitize_projhyb(projhyb)
+
+try:
+    json.dumps(projhyb)
+except TypeError as e:
+    print("❌ projhyb contains unserializable types:", e)
+    projhyb = sanitize_projhyb(projhyb)
+    print("✅ projhyb sanitized.")
 
 endTime = time.time()
 

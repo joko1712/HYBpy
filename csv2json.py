@@ -164,7 +164,7 @@ def add_state_and_time_to_data(data, projhyb):
                 sd_values = [float(val) for key, val in time_data.items() if key.startswith("sd")]
                 sy_matrix.append(sd_values)
                 
-                time_list.append(int(time_key))
+                time_list.append(float(time_key))
                 
                 key_value_dict = {}
                 for key, val in time_data.items():

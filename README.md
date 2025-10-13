@@ -33,6 +33,8 @@ cd HYBpy
 
 ---
 
+## Option A — Using Python Virtual Environment (venv)
+
 ### Step 2: Create a Virtual Environment
 
 To avoid conflicts with other Python projects and their dependencies, it's best practice to create a dedicated **virtual environment**. This isolates the project's required packages.
@@ -98,6 +100,53 @@ Once you are finished working on the project, you should deactivate the virtual 
 ```bash
 deactivate
 ```
+
+---
+
+## Option B — Using Conda Environment
+
+### Step 2: Create a Conda Environment
+
+If you prefer Conda (Anaconda or Miniconda), you can create an isolated environment with Python 3.10 or later:
+
+```bash
+conda create -n hybpy python=3.10
+```
+
+### Step 3: Activate the Conda Environment
+
+Activate the newly created Conda environment:
+
+```bash
+conda activate hybpy
+```
+
+### Step 4: Install Required Packages
+
+Install the necessary packages using Conda and pip:
+
+```bash
+conda install numpy scipy matplotlib scikit-learn pandas h5py pytorch -c pytorch
+pip install torchdiffeq
+```
+
+### Step 5: Run the tool
+
+After installing the dependencies, you can run the tool using the following command:
+
+```bash
+python run_hybtrain_local.py
+```
+
+### Step 6: Deactivate the Conda Environment
+
+When you are done working, you can deactivate the Conda environment:
+
+```bash
+conda deactivate
+```
+
+---
 
 ## ⸎ Developed at
 

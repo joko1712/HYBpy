@@ -19,6 +19,7 @@ const HmodModal = ({
     initialValues,
     setHmodOptions,
     disableMethod5,
+    //data
 }) => {
     const [hiddenNodes, setHiddenNodes] = useState(
         initialValues ? initialValues.hiddenNodes : ""
@@ -38,7 +39,7 @@ const HmodModal = ({
     const [niter, setNiter] = useState(
         initialValues ? initialValues.niter : 400
     );
-    const [nstep, setNstep] = useState(initialValues ? initialValues.nstep : 2);
+    const [nstep, setNstep] = useState(initialValues ? initialValues.nstep : 1);
     const [bootstrap, setBootstrap] = useState(
         initialValues ? initialValues.bootstrap : 0
     );
@@ -79,6 +80,17 @@ const HmodModal = ({
             setBootstrap(initialValues.bootstrap);
         }
     }, [initialValues]);
+    /*
+    useEffect(() => {
+        if (!data || data.length === 0) return;
+
+        const firstNonZero = data.find((row) => Number(row.time) > 0);
+        if (firstNonZero) {
+        const tauValue = Number(firstNonZero.time);
+        if (!isNaN(tauValue)) setTau(tauValue);
+        }
+    }, [data]);
+    */
 
     return (
         <Dialog
@@ -166,6 +178,7 @@ const HmodModal = ({
                             label='Niter'
                             type='number'
                             value={niter}
+                            inputProps={{ min: 1 }}
                             onChange={(e) => setNiter(Number(e.target.value))}
                             helperText='Number of integrations'
                         />

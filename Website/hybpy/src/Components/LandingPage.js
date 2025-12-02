@@ -29,8 +29,8 @@ import { useEffect } from "react";
 import logo from "../Image/HYBpyINVIS_logo.png";
 import hybrid from "../Image/hybridmodel.jpg";
 import { handleContactUsClick } from "./ContactUs";
-import EmailIcon from '@mui/icons-material/Email';
-
+import EmailIcon from "@mui/icons-material/Email";
+import { Link } from "@mui/material";
 
 const drawerWidth = 200;
 
@@ -82,7 +82,6 @@ const Drawer = styled(MuiDrawer, {
 const defaultTheme = createTheme();
 
 export default function LandingPage() {
-
     const navigateToUpload = () => {
         navigate("/");
     };
@@ -380,38 +379,41 @@ export default function LandingPage() {
                             width: "100%",
                             marginTop: "auto",
                         }}>
-                        
-                        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                flex: 1,
+                            }}>
                             <p style={{ margin: 0, textAlign: "center" }}>
-                            &copy; {new Date().getFullYear()} NOVA School of Science and Technology,
-                            Universidade NOVA de Lisboa. All rights reserved.
+                                &copy; {new Date().getFullYear()} NOVA School of
+                                Science and Technology, Universidade NOVA de
+                                Lisboa. All rights reserved.
                             </p>
 
                             <Button
-                            color="inherit"
-                            variant="text"
-                            onClick={handleContactUsClick}
-                            style={{
-                                marginTop: "0.5em",
-                                alignSelf: "center",
-                                textTransform: "none",
-                            }}
-                            startIcon={<EmailIcon />}
-                            >
-                            Contact Us
+                                color='inherit'
+                                variant='text'
+                                onClick={handleContactUsClick}
+                                style={{
+                                    marginTop: "0.5em",
+                                    alignSelf: "center",
+                                    textTransform: "none",
+                                }}
+                                startIcon={<EmailIcon />}>
+                                Contact Us
                             </Button>
                         </div>
 
                         <a
-                            href="https://www.fct.unl.pt/en"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
+                            href='https://www.fct.unl.pt/en'
+                            target='_blank'
+                            rel='noopener noreferrer'>
                             <img
-                            src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
-                            width="75px"
-                            alt="FCT Logo"
-                            style={{ marginLeft: "1em" }}
+                                src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                                width='75px'
+                                alt='FCT Logo'
+                                style={{ marginLeft: "1em" }}
                             />
                         </a>
                     </footer>

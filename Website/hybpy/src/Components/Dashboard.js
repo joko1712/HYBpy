@@ -38,8 +38,7 @@ import Checkbox from "@mui/material/Checkbox";
 import ListItemText from "@mui/material/ListItemText";
 import Button from "@mui/material/Button";
 import { handleContactUsClick } from "./ContactUs";
-import EmailIcon from '@mui/icons-material/Email';
-
+import EmailIcon from "@mui/icons-material/Email";
 
 const drawerWidth = 200;
 
@@ -125,33 +124,51 @@ export default function Dashboard() {
     };
 
     const getPlotTitle = (url) => {
-        const parts = url.split("/");
-        const fileName = parts[parts.length - 1];
+        if (!url) return "Unknown Plot";
+        const fileName = url.split("/").pop() || "";
+        const baseName = fileName.replace(/\.[^/.]+$/, "");
         if (url.includes("predicted_vs_observed")) {
-            const species = fileName.split("_")[3].toUpperCase();
-            return `PREDICTED VS OBSERVED - ${species}`;
-        } else {
-            const species = fileName.split("_")[1].toUpperCase();
-            return `${species}`;
+            const parts = fileName.split("_");
+            const species = parts[3]
+                ? parts[3].toUpperCase().replace(/\.[^/.]+$/, "")
+                : "UNKNOWN";
+            return `Predicted vs Observed – ${species}`;
         }
+        if (url.includes("Plot_") || url.includes("ParatyPlot_")) {
+            const parts = fileName.split("_");
+            const species = parts[1]
+                ? parts[1].toUpperCase().replace(/\.[^/.]+$/, "")
+                : baseName.toUpperCase();
+            return species;
+        }
+        const prettyName = baseName
+            .replace(/_/g, " ")
+            .replace(/\b([a-z])/g, (char) => char.toUpperCase());
+        return prettyName;
+    };
+
+    const getActivePlots = () => {
+        return runs[0]?.trained_weights
+            ? getFilteredPlotsSimulated()
+            : getFilteredPlots();
     };
 
     const handleOpenModal = (index) => {
-        const filteredPlots = getFilteredPlots();
+        const filteredPlots = getActivePlots();
         setCurrentPlotIndex(index);
         setSelectedPlot(filteredPlots[index]);
         setModalOpen(true);
     };
 
     const handleNextPlot = () => {
-        const filteredPlots = getFilteredPlots();
+        const filteredPlots = getActivePlots();
         const nextIndex = (currentPlotIndex + 1) % filteredPlots.length;
         setCurrentPlotIndex(nextIndex);
         setSelectedPlot(filteredPlots[nextIndex]);
     };
 
     const handlePrevPlot = () => {
-        const filteredPlots = getFilteredPlots();
+        const filteredPlots = getActivePlots();
         const prevIndex =
             (currentPlotIndex - 1 + filteredPlots.length) %
             filteredPlots.length;
@@ -162,10 +179,30 @@ export default function Dashboard() {
     const getFilteredPlots = () => {
         const plots = runs[0]?.plots || [];
         if (showMetabolites) {
-            return plots.filter((url) => url.includes("metabolite"));
+            return plots.filter((url) => url.includes("ParatyPlot_"));
         } else {
-            return plots.filter((url) => url.includes("predicted_vs_observed"));
+            return plots.filter(
+                (url) => url.includes("Plot_") && !url.includes("ParatyPlot_")
+            );
         }
+    };
+
+    const getFilteredPlotsSimulated = () => {
+        const plots = runs[0]?.plots || [];
+
+        return plots.filter((url) => {
+            const filename = url.split("/").pop()?.toLowerCase() || "";
+            return (
+                (filename.endsWith(".png") || filename.endsWith(".jpg")) &&
+                !filename.includes("plot_") &&
+                !filename.includes("paratyplot_") &&
+                !filename.includes("val_vs_train") &&
+                !filename.includes("loss") &&
+                !filename.includes("metrics") &&
+                !filename.includes("validation") &&
+                !filename.includes("predicted_vs_observed")
+            );
+        });
     };
 
     const handleCloseModal = () => {
@@ -175,9 +212,12 @@ export default function Dashboard() {
 
     const handleStopRun = async () => {
         try {
-            const response = await fetch(`https://api.hybpy.com/cancel-run?user_id=${userId}`, {
-            method: "POST",
-            });
+            const response = await fetch(
+                `https://api.hybpy.com/cancel-run?user_id=${userId}`,
+                {
+                    method: "POST",
+                }
+            );
 
             const result = await response.json();
             alert(result.message);
@@ -191,23 +231,24 @@ export default function Dashboard() {
 
     const checkRunStatus = async () => {
         try {
-            const response = await fetch(`https://api.hybpy.com/run-status?user_id=${userId}`);
+            const response = await fetch(
+                `https://api.hybpy.com/run-status?user_id=${userId}`
+            );
             const data = await response.json();
 
-
-
             if (data.status === "simulation in progress") {
-                    setRunInProgress("Simulation in progress... We will email you when the task is completed.");
-                }
-                else if (data.status === "training in progress") {
-                    setRunInProgress("Training in progress... We will email you when the task is completed.");
-                }
-                else if (data.status === "error") {
-                    setRunInProgress("Task failed");
-                }
-                else {
-                    setRunInProgress("Task completed");
-                }     
+                setRunInProgress(
+                    "Simulation in progress... We will email you when the task is completed."
+                );
+            } else if (data.status === "training in progress") {
+                setRunInProgress(
+                    "Training in progress... We will email you when the task is completed."
+                );
+            } else if (data.status === "error") {
+                setRunInProgress("Task failed");
+            } else {
+                setRunInProgress("Task completed");
+            }
         } catch (error) {
             console.error("Error checking run status:", error);
         }
@@ -241,14 +282,11 @@ export default function Dashboard() {
 
                 if (latestRun[0].status === "simulation in progress") {
                     setRunInProgress("Simulation in progress...");
-                }
-                else if (latestRun[0].status === "training in progress") {
+                } else if (latestRun[0].status === "training in progress") {
                     setRunInProgress("Training in progress...");
-                }
-                else if (latestRun[0].status === "error") {
+                } else if (latestRun[0].status === "error") {
                     setRunInProgress("Task failed");
-                }
-                else {
+                } else {
                     setRunInProgress("Task completed");
                 }
 
@@ -258,7 +296,7 @@ export default function Dashboard() {
 
         fetchLatestRun();
     }, [userId]);
-    
+
     const cancelButton = runInProgress === "Training in progress...";
 
     const navigate = useNavigate();
@@ -347,7 +385,9 @@ export default function Dashboard() {
                         hideScrollbar: { scrollbarWidth: "none" },
                     }}>
                     <Toolbar />
-                    <Container maxWidth='lg' sx={{ mt: 4, mb: 4, minHeight: "90%" }}>
+                    <Container
+                        maxWidth='lg'
+                        sx={{ mt: 4, mb: 4, minHeight: "90%" }}>
                         <Grid container spacing={3}>
                             {/* Recent Run Details */}
                             <Grid item xs={12}>
@@ -357,7 +397,8 @@ export default function Dashboard() {
                                         display: "flex",
                                         flexDirection: "column",
                                     }}>
-                                    {runs.length > 0 && runs[0].trained_weights ? (
+                                    {runs.length > 0 &&
+                                    runs[0].trained_weights ? (
                                         <>
                                             <Typography
                                                 variant='h4'
@@ -370,150 +411,280 @@ export default function Dashboard() {
                                             <Typography>{`Status: ${runInProgress}`}</Typography>
                                             {cancelButton && (
                                                 <Button
-                                                    variant="outlined"
-                                                    color="error"
+                                                    variant='outlined'
+                                                    color='error'
                                                     onClick={handleStopRun}
-                                                    sx={{ mt: 2 }}
-                                                >
+                                                    sx={{ mt: 2 }}>
                                                     Stop Current Run
                                                 </Button>
                                             )}
-                                            {runs.length > 0 && runs[0].status === "completed" && (
-                                                <Button
-                                                    variant="contained"
-                                                    color="primary"
-                                                    sx={{ mt: 2 }}
-                                                    onClick={() => {
-                                                        navigate("/historical", {
-                                                            state: { selectedRunId: runs[0].id },
-                                                        });
-                                                    }}
-                                                >
-                                                    View Details of Completed Run
-                                                </Button>
-                                            )}
-                                        </>
-                                    )
-                                        :
-                                        runs.length > 0 ? (
-                                            <>
-                                                <Typography
-                                                    variant='h4'
-                                                    gutterBottom>
-                                                    Hybrid Model Details
-                                                </Typography>
-                                                <Typography variant='h6'>{`Title: ${runs[0].description}`}</Typography>
-                                                <Typography>{`HMOD: ${runs[0].file1_name}`}</Typography>
-                                                <Typography>{`CSV: ${runs[0].file2_name}`}</Typography>
-
-                                                <Typography>{`Mode: ${mode}`}</Typography>
-                                                <Typography>{`Status: ${runInProgress}`}</Typography>
-                                                {cancelButton && (
+                                            {runs.length > 0 &&
+                                                runs[0].status ===
+                                                    "completed" && (
                                                     <Button
-                                                        variant="outlined"
-                                                        color="error"
-                                                        onClick={handleStopRun}
-                                                        sx={{ mt: 2 }}
-                                                    >
-                                                        Stop Current Run
-                                                    </Button>
-                                                )}
-                                                {runs.length > 0 && runs[0].status === "completed" && (
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
+                                                        variant='contained'
+                                                        color='primary'
                                                         sx={{ mt: 2 }}
                                                         onClick={() => {
-                                                            navigate("/historical", {
-                                                                state: { selectedRunId: runs[0].id },
-                                                            });
-                                                        }}
-                                                    >
-                                                        View Details of Completed Run
+                                                            navigate(
+                                                                "/historical",
+                                                                {
+                                                                    state: {
+                                                                        selectedRunId:
+                                                                            runs[0]
+                                                                                .id,
+                                                                    },
+                                                                }
+                                                            );
+                                                        }}>
+                                                        View Details of
+                                                        Completed Run
                                                     </Button>
                                                 )}
-
-                                            </>
-                                        ) : (
-                                            <Typography>
-                                                No recent run details
+                                        </>
+                                    ) : runs.length > 0 ? (
+                                        <>
+                                            <Typography
+                                                variant='h4'
+                                                gutterBottom>
+                                                Hybrid Model Details
                                             </Typography>
-                                        )}
-                                </Paper>
-                            </Grid>
-                            {/* Recent Runs */}
-                            <Grid item xs={12}>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                    }}>
-                                    <Button
-                                        variant='contained'
-                                        onClick={toggleShowMetabolites}
-                                        sx={{ mb: 2 }}>
-                                        {showMetabolites
-                                            ? "Show Predicted vs Observed Plots"
-                                            : "Show Metabolite Plots"}
-                                    </Button>
-                                    {getFilteredPlots().length > 0 ? (
-                                        <ImageList
-                                            cols={3}
-                                            gap={8}
-                                            sx={{ width: "100%" }}>
-                                            {getFilteredPlots()
-                                                .filter(
-                                                    (url) =>
-                                                        selectedPlots.length ===
-                                                        0 ||
-                                                        selectedPlots.includes(
-                                                            url
-                                                        )
-                                                )
-                                                .map((url, index) => {
-                                                    const filteredPlots =
-                                                        getFilteredPlots().filter(
-                                                            (url) =>
-                                                                selectedPlots.length ===
-                                                                0 ||
-                                                                selectedPlots.includes(
-                                                                    url
-                                                                )
-                                                        );
-                                                    const filteredIndex =
-                                                        filteredPlots.indexOf(
-                                                            url
-                                                        );
-                                                    return (
-                                                        <ImageListItem
-                                                            key={index}
-                                                            onClick={() =>
-                                                                handleOpenModal(
-                                                                    filteredIndex
-                                                                )
-                                                            }>
-                                                            <img
-                                                                src={url}
-                                                                alt={url}
-                                                                loading='lazy'
-                                                                style={{
-                                                                    width: "100%",
-                                                                    height: "auto",
-                                                                    cursor: "pointer",
-                                                                }}
-                                                            />
-                                                        </ImageListItem>
-                                                    );
-                                                })}
-                                        </ImageList>
+                                            <Typography variant='h6'>{`Title: ${runs[0].description}`}</Typography>
+                                            <Typography>{`HMOD: ${runs[0].file1_name}`}</Typography>
+                                            <Typography>{`CSV: ${runs[0].file2_name}`}</Typography>
+
+                                            <Typography>{`Mode: ${mode}`}</Typography>
+                                            <Typography>{`Status: ${runInProgress}`}</Typography>
+                                            {cancelButton && (
+                                                <Button
+                                                    variant='outlined'
+                                                    color='error'
+                                                    onClick={handleStopRun}
+                                                    sx={{ mt: 2 }}>
+                                                    Stop Current Run
+                                                </Button>
+                                            )}
+                                            {runs.length > 0 &&
+                                                runs[0].status ===
+                                                    "completed" && (
+                                                    <Button
+                                                        variant='contained'
+                                                        color='primary'
+                                                        sx={{ mt: 2 }}
+                                                        onClick={() => {
+                                                            navigate(
+                                                                "/historical",
+                                                                {
+                                                                    state: {
+                                                                        selectedRunId:
+                                                                            runs[0]
+                                                                                .id,
+                                                                    },
+                                                                }
+                                                            );
+                                                        }}>
+                                                        View Details of
+                                                        Completed Run
+                                                    </Button>
+                                                )}
+                                        </>
                                     ) : (
                                         <Typography>
-                                            No plots available
+                                            No recent run details
                                         </Typography>
                                     )}
                                 </Paper>
                             </Grid>
+                            {/* Recent Runs */}
+                            {runs[0]?.trained_weights ? (
+                                <>
+                                    <Grid item xs={12}>
+                                        <Paper
+                                            sx={{
+                                                p: 2,
+                                                display: "flex",
+                                                flexDirection: "column",
+                                            }}>
+                                            {getFilteredPlotsSimulated()
+                                                .length > 0 ? (
+                                                <ImageList
+                                                    cols={3}
+                                                    gap={8}
+                                                    sx={{ width: "100%" }}>
+                                                    {getFilteredPlotsSimulated()
+                                                        .filter(
+                                                            (url) =>
+                                                                selectedPlots.length ===
+                                                                    0 ||
+                                                                selectedPlots.includes(
+                                                                    url
+                                                                )
+                                                        )
+                                                        .map((url, index) => {
+                                                            const filteredPlots =
+                                                                getFilteredPlotsSimulated().filter(
+                                                                    (url) =>
+                                                                        selectedPlots.length ===
+                                                                            0 ||
+                                                                        selectedPlots.includes(
+                                                                            url
+                                                                        )
+                                                                );
+                                                            const filteredIndex =
+                                                                filteredPlots.indexOf(
+                                                                    url
+                                                                );
+                                                            return (
+                                                                <ImageListItem
+                                                                    key={index}
+                                                                    onClick={() =>
+                                                                        handleOpenModal(
+                                                                            filteredIndex
+                                                                        )
+                                                                    }>
+                                                                    <img
+                                                                        src={
+                                                                            url
+                                                                        }
+                                                                        alt={
+                                                                            url
+                                                                        }
+                                                                        loading='lazy'
+                                                                        style={{
+                                                                            width: "100%",
+                                                                            height: "auto",
+                                                                            cursor: "pointer",
+                                                                        }}
+                                                                    />
+                                                                </ImageListItem>
+                                                            );
+                                                        })}
+                                                </ImageList>
+                                            ) : (
+                                                <Typography>
+                                                    No plots available
+                                                </Typography>
+                                            )}
+                                        </Paper>
+                                    </Grid>
+                                </>
+                            ) : (
+                                <>
+                                    <Grid item xs={12}>
+                                        <Paper
+                                            sx={{
+                                                p: 2,
+                                                display: "flex",
+                                                flexDirection: "column",
+                                            }}>
+                                            <Button
+                                                variant='contained'
+                                                onClick={toggleShowMetabolites}
+                                                sx={{ mb: 2 }}>
+                                                {showMetabolites
+                                                    ? "Show time series plots"
+                                                    : "Show parity plots"}
+                                            </Button>
+                                            {getFilteredPlots().length > 0 ? (
+                                                <ImageList
+                                                    cols={3}
+                                                    gap={8}
+                                                    sx={{ width: "100%" }}>
+                                                    {getFilteredPlots()
+                                                        .filter(
+                                                            (url) =>
+                                                                selectedPlots.length ===
+                                                                    0 ||
+                                                                selectedPlots.includes(
+                                                                    url
+                                                                )
+                                                        )
+                                                        .map((url, index) => {
+                                                            const filteredPlots =
+                                                                getFilteredPlots().filter(
+                                                                    (url) =>
+                                                                        selectedPlots.length ===
+                                                                            0 ||
+                                                                        selectedPlots.includes(
+                                                                            url
+                                                                        )
+                                                                );
+                                                            const filteredIndex =
+                                                                filteredPlots.indexOf(
+                                                                    url
+                                                                );
+                                                            return (
+                                                                <ImageListItem
+                                                                    key={index}
+                                                                    onClick={() =>
+                                                                        handleOpenModal(
+                                                                            filteredIndex
+                                                                        )
+                                                                    }>
+                                                                    <img
+                                                                        src={
+                                                                            url
+                                                                        }
+                                                                        alt={
+                                                                            url
+                                                                        }
+                                                                        loading='lazy'
+                                                                        style={{
+                                                                            width: "100%",
+                                                                            height: "auto",
+                                                                            cursor: "pointer",
+                                                                        }}
+                                                                    />
+                                                                </ImageListItem>
+                                                            );
+                                                        })}
+                                                </ImageList>
+                                            ) : (
+                                                <Typography>
+                                                    No plots available
+                                                </Typography>
+                                            )}
+                                        </Paper>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Paper
+                                            sx={{
+                                                p: 2,
+                                                display: "flex",
+                                                flexDirection: "column",
+                                            }}>
+                                            <Typography variant='h6'>
+                                                Validation Vs Training Loss
+                                            </Typography>
+                                            {runs.length > 0 &&
+                                            Array.isArray(runs[0].plots) &&
+                                            runs[0].plots.some((url) =>
+                                                url.includes(
+                                                    "top_5_val_vs_train_folds_"
+                                                )
+                                            ) ? (
+                                                <img
+                                                    src={runs[0].plots.find(
+                                                        (url) =>
+                                                            url.includes(
+                                                                "top_5_val_vs_train_folds_"
+                                                            )
+                                                    )}
+                                                    alt='Validation vs Training Loss'
+                                                    style={{
+                                                        width: "90%",
+                                                        height: "auto",
+                                                    }}
+                                                />
+                                            ) : (
+                                                <Typography>
+                                                    No loss plot available
+                                                </Typography>
+                                            )}
+                                        </Paper>
+                                    </Grid>
+                                </>
+                            )}
                             <Grid item xs={12}>
                                 <Paper
                                     sx={{
@@ -532,31 +703,31 @@ export default function Dashboard() {
                                             selected.length === 0
                                                 ? "All Plots"
                                                 : selected
-                                                    .map(getPlotTitle)
-                                                    .join(", ")
+                                                      .map(getPlotTitle)
+                                                      .join(", ")
                                         }>
-                                        {getFilteredPlots().map(
-                                            (url, index) => {
-                                                const plotTitle =
-                                                    getPlotTitle(url);
-                                                return (
-                                                    <MenuItem
-                                                        key={index}
-                                                        value={url}>
-                                                        <Checkbox
-                                                            checked={
-                                                                selectedPlots.indexOf(
-                                                                    url
-                                                                ) > -1
-                                                            }
-                                                        />
-                                                        <ListItemText
-                                                            primary={plotTitle}
-                                                        />
-                                                    </MenuItem>
-                                                );
-                                            }
-                                        )}
+                                        {(runs[0]?.trained_weights
+                                            ? getFilteredPlotsSimulated()
+                                            : getFilteredPlots()
+                                        ).map((url, index) => {
+                                            const plotTitle = getPlotTitle(url);
+                                            return (
+                                                <MenuItem
+                                                    key={index}
+                                                    value={url}>
+                                                    <Checkbox
+                                                        checked={
+                                                            selectedPlots.indexOf(
+                                                                url
+                                                            ) > -1
+                                                        }
+                                                    />
+                                                    <ListItemText
+                                                        primary={plotTitle}
+                                                    />
+                                                </MenuItem>
+                                            );
+                                        })}
                                     </Select>
                                 </Paper>
                             </Grid>
@@ -622,7 +793,7 @@ export default function Dashboard() {
                             backgroundColor: (theme) => theme.palette.grey[100],
                         }}>
                         <Toolbar />
-                        <Container maxWidth='lg' ></Container>
+                        <Container maxWidth='lg'></Container>
 
                         <Box
                             component='footer'
@@ -640,37 +811,45 @@ export default function Dashboard() {
                                 alignItems: "center",
                                 transition: "width 0.3s ease, left 0.3s ease",
                             }}>
-                            <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    flex: 1,
+                                }}>
                                 <Typography
                                     variant='body2'
                                     align='center'
                                     sx={{ flexGrow: 1 }}>
-                                    &copy; {new Date().getFullYear()} NOVA School of Science and Technology, Universidade NOVA de Lisboa. All rights
+                                    &copy; {new Date().getFullYear()} NOVA
+                                    School of Science and Technology,
+                                    Universidade NOVA de Lisboa. All rights
                                     reserved.
                                 </Typography>
 
                                 <Button
-                                    color="inherit"
-                                    variant="text"
+                                    color='inherit'
+                                    variant='text'
                                     onClick={handleContactUsClick}
-                                    style={{ marginLeft: "1em", textTransform: "none", paddingRight: "2em" }}
-                                    startIcon={<EmailIcon />}
-                                >
+                                    style={{
+                                        marginLeft: "1em",
+                                        textTransform: "none",
+                                        paddingRight: "2em",
+                                    }}
+                                    startIcon={<EmailIcon />}>
                                     Contact Us
                                 </Button>
                             </div>
 
                             <a
-                                href="https://www.fct.unl.pt/en"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
+                                href='https://www.fct.unl.pt/en'
+                                target='_blank'
+                                rel='noopener noreferrer'>
                                 <img
-                                src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
-                                width="75px"
-                                alt="FCT Logo"
-                                style={{ marginLeft: "1em" }}
+                                    src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                                    width='75px'
+                                    alt='FCT Logo'
+                                    style={{ marginLeft: "1em" }}
                                 />
                             </a>
                         </Box>

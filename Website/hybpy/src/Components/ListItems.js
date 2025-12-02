@@ -59,21 +59,21 @@ export const mainListItems = (navigate, locationPath) => (
         </CustomListItemButton>
 
         <CustomListItemButton
-            onClick={() => navigate("/simulations")}
-            selected={locationPath === "/simulations"}>
-            <ListItemIcon>
-                <BatchPredictionIcon />
-            </ListItemIcon>
-            <ListItemText primary='Simulation' />
-        </CustomListItemButton>
-
-        <CustomListItemButton
             onClick={() => navigate("/results")}
             selected={locationPath === "/results"}>
             <ListItemIcon>
                 <QueryStatsIcon />
             </ListItemIcon>
             <ListItemText primary='Results' />
+        </CustomListItemButton>
+
+        <CustomListItemButton
+            onClick={() => navigate("/simulations")}
+            selected={locationPath === "/simulations"}>
+            <ListItemIcon>
+                <BatchPredictionIcon />
+            </ListItemIcon>
+            <ListItemText primary='Simulation' />
         </CustomListItemButton>
 
         <CustomListItemButton

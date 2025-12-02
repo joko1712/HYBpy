@@ -48,9 +48,7 @@ import {
 import BackupIcon from "@mui/icons-material/Backup";
 import BatchPredictionIcon from "@mui/icons-material/BatchPrediction";
 import { handleContactUsClick } from "./ContactUs";
-import EmailIcon from '@mui/icons-material/Email';
-
-
+import EmailIcon from "@mui/icons-material/Email";
 
 const drawerWidth = 200;
 
@@ -248,20 +246,17 @@ export default function OldRuns() {
             const file1Url = runToDelete.file1;
             const folderPath = file1Url.split("/").slice(4, -1).join("/");
 
-            const response = await fetch(
-                "https://api.hybpy.com/delete-run",
-                {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        run_id: runToDelete.id,
-                        folder_path: folderPath,
-                    }),
-                }
-            );
+            const response = await fetch("https://api.hybpy.com/delete-run", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    run_id: runToDelete.id,
+                    folder_path: folderPath,
+                }),
+            });
             const result = await response.json();
             console.log("Delete response:", result);
             if (response.ok) {
@@ -298,7 +293,6 @@ export default function OldRuns() {
             ? mappings[key][value]
             : value;
     };
-
 
     const filteredRuns = runs.filter((run) => {
         return (
@@ -414,6 +408,13 @@ export default function OldRuns() {
 
         fetchLatestRun();
     }, [userId]);
+
+    const metricLabels = {
+        r2_train: "R² (Train)",
+        r2_test: "R² (Test)",
+        mse_train: "WMSE (Train)",
+        mse_test: "WMSE (Test)",
+    };
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -578,6 +579,14 @@ export default function OldRuns() {
                                                         display: "flex",
                                                         flexDirection: "column",
                                                     }}>
+                                                    <IconButton
+                                                        style={{
+                                                            alignSelf:
+                                                                "flex-end",
+                                                        }}
+                                                        onClick={handleClose}>
+                                                        <CloseIcon fontSize='large' />
+                                                    </IconButton>
                                                     <Typography
                                                         id='modal-modal-title'
                                                         variant='h4'
@@ -604,32 +613,82 @@ export default function OldRuns() {
                                                     {/* Display Plots */}
                                                     <div>
                                                         {selectedRun.plots &&
-                                                            selectedRun.plots.map(
-                                                                (
-                                                                    plotUrl,
-                                                                    index
-                                                                ) => (
-                                                                    <img
-                                                                        key={
-                                                                            index
-                                                                        }
-                                                                        src={
-                                                                            plotUrl
-                                                                        }
-                                                                        alt={`Plot ${index}`}
-                                                                        style={{
-                                                                            width: "30%",
-                                                                            marginBottom: 10,
-                                                                            cursor: "pointer",
-                                                                        }}
-                                                                        onClick={() =>
-                                                                            handlePlotClick(
-                                                                                index
+                                                            [
+                                                                ...selectedRun.plots,
+                                                            ]
+                                                                .sort(
+                                                                    (a, b) => {
+                                                                        const priority =
+                                                                            (
+                                                                                url
+                                                                            ) => {
+                                                                                const lower =
+                                                                                    url.toLowerCase();
+                                                                                if (
+                                                                                    lower.includes(
+                                                                                        "top_"
+                                                                                    )
+                                                                                )
+                                                                                    return 0;
+                                                                                if (
+                                                                                    lower.includes(
+                                                                                        "plot_"
+                                                                                    ) &&
+                                                                                    !lower.includes(
+                                                                                        "paraty"
+                                                                                    )
+                                                                                )
+                                                                                    return 1;
+                                                                                if (
+                                                                                    lower.includes(
+                                                                                        "paratyplot_"
+                                                                                    )
+                                                                                )
+                                                                                    return 2;
+                                                                                if (
+                                                                                    lower.includes(
+                                                                                        "paraty_all"
+                                                                                    )
+                                                                                )
+                                                                                    return 3;
+                                                                                return 4;
+                                                                            };
+                                                                        return (
+                                                                            priority(
+                                                                                a
+                                                                            ) -
+                                                                            priority(
+                                                                                b
                                                                             )
-                                                                        }
-                                                                    />
+                                                                        );
+                                                                    }
                                                                 )
-                                                            )}
+                                                                .map(
+                                                                    (
+                                                                        plotUrl,
+                                                                        index
+                                                                    ) => (
+                                                                        <img
+                                                                            key={
+                                                                                index
+                                                                            }
+                                                                            src={
+                                                                                plotUrl
+                                                                            }
+                                                                            alt={`Plot ${index}`}
+                                                                            style={{
+                                                                                width: "30%",
+                                                                                marginBottom: 10,
+                                                                                cursor: "pointer",
+                                                                            }}
+                                                                            onClick={() =>
+                                                                                handlePlotClick(
+                                                                                    index
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                    )
+                                                                )}
                                                     </div>
 
                                                     {selectedRun.response_data ? (
@@ -658,27 +717,69 @@ export default function OldRuns() {
                                                                             </TableCell>
                                                                         </TableRow>
 
-                                                                        
-                                                                        {selectedRun.response_data.metrics ? (
-                                                                            ["r2_train", "r2_test", "mse_train", "mse_test"].map((key) => {
-                                                                                const value = selectedRun.response_data.metrics[key];
-                                                                                if (value === undefined) return null;
-                                                                                return (
-                                                                                    <TableRow key={key}>
-                                                                                        <TableCell component='th' scope='row'>
-                                                                                            {key}
-                                                                                        </TableCell>
-                                                                                        <TableCell>
-                                                                                            {typeof value === "number" ? value.toFixed(5) : value}
-                                                                                        </TableCell>
-                                                                                    </TableRow>
-                                                                                );
-                                                                            })
+                                                                        {selectedRun
+                                                                            .response_data
+                                                                            .metrics ? (
+                                                                            [
+                                                                                "r2_train",
+                                                                                "r2_test",
+                                                                                "mse_train",
+                                                                                "mse_test",
+                                                                            ].map(
+                                                                                (
+                                                                                    key
+                                                                                ) => {
+                                                                                    const value =
+                                                                                        selectedRun
+                                                                                            .response_data
+                                                                                            .metrics[
+                                                                                            key
+                                                                                        ];
+                                                                                    if (
+                                                                                        value ===
+                                                                                        undefined
+                                                                                    )
+                                                                                        return null;
+                                                                                    return (
+                                                                                        <TableRow
+                                                                                            key={
+                                                                                                key
+                                                                                            }>
+                                                                                            <TableCell
+                                                                                                component='th'
+                                                                                                scope='row'>
+                                                                                                {metricLabels[
+                                                                                                    key
+                                                                                                ] ??
+                                                                                                    key}
+                                                                                            </TableCell>
+                                                                                            <TableCell>
+                                                                                                {typeof value ===
+                                                                                                "number"
+                                                                                                    ? value.toFixed(
+                                                                                                          5
+                                                                                                      )
+                                                                                                    : value}
+                                                                                            </TableCell>
+                                                                                        </TableRow>
+                                                                                    );
+                                                                                }
+                                                                            )
                                                                         ) : (
                                                                             <TableRow>
-                                                                                <TableCell colSpan={2}>
-                                                                                    <Typography variant='body2' color='textSecondary'>
-                                                                                        No metrics available for this run.
+                                                                                <TableCell
+                                                                                    colSpan={
+                                                                                        2
+                                                                                    }>
+                                                                                    <Typography
+                                                                                        variant='body2'
+                                                                                        color='textSecondary'>
+                                                                                        No
+                                                                                        metrics
+                                                                                        available
+                                                                                        for
+                                                                                        this
+                                                                                        run.
                                                                                     </Typography>
                                                                                 </TableCell>
                                                                             </TableRow>
@@ -832,10 +933,17 @@ export default function OldRuns() {
                                                                                 Inputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Inputs ??
-                                                                                    "N/A"}
+                                                                                {Array.isArray(
+                                                                                    selectedRun.Inputs
+                                                                                )
+                                                                                    ? selectedRun.Inputs.join(
+                                                                                          ", "
+                                                                                      )
+                                                                                    : selectedRun.Inputs ??
+                                                                                      "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
+
                                                                         <TableRow>
                                                                             <TableCell
                                                                                 component='th'
@@ -843,8 +951,14 @@ export default function OldRuns() {
                                                                                 Outputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Outputs ??
-                                                                                    "N/A"}
+                                                                                {Array.isArray(
+                                                                                    selectedRun.Outputs
+                                                                                )
+                                                                                    ? selectedRun.Outputs.join(
+                                                                                          ", "
+                                                                                      )
+                                                                                    : selectedRun.Outputs ??
+                                                                                      "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
 
@@ -1086,38 +1200,41 @@ export default function OldRuns() {
                             width: "100%",
                             marginTop: "auto",
                         }}>
-                        
-                        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                flex: 1,
+                            }}>
                             <p style={{ margin: 0, textAlign: "center" }}>
-                            &copy; {new Date().getFullYear()} NOVA School of Science and Technology,
-                            Universidade NOVA de Lisboa. All rights reserved.
+                                &copy; {new Date().getFullYear()} NOVA School of
+                                Science and Technology, Universidade NOVA de
+                                Lisboa. All rights reserved.
                             </p>
 
                             <Button
-                            color="inherit"
-                            variant="text"
-                            onClick={handleContactUsClick}
-                            style={{
-                                marginTop: "0.5em",
-                                alignSelf: "center",
-                                textTransform: "none",
-                            }}
-                            startIcon={<EmailIcon />}
-                            >
-                            Contact Us
+                                color='inherit'
+                                variant='text'
+                                onClick={handleContactUsClick}
+                                style={{
+                                    marginTop: "0.5em",
+                                    alignSelf: "center",
+                                    textTransform: "none",
+                                }}
+                                startIcon={<EmailIcon />}>
+                                Contact Us
                             </Button>
                         </div>
 
                         <a
-                            href="https://www.fct.unl.pt/en"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
+                            href='https://www.fct.unl.pt/en'
+                            target='_blank'
+                            rel='noopener noreferrer'>
                             <img
-                            src="https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png"
-                            width="75px"
-                            alt="FCT Logo"
-                            style={{ marginLeft: "1em" }}
+                                src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                                width='75px'
+                                alt='FCT Logo'
+                                style={{ marginLeft: "1em" }}
                             />
                         </a>
                     </footer>

@@ -51,6 +51,8 @@ import TrainingModal from "./Modals/TrainingModal";
 import HmodModal from "./Modals/HmodModal";
 import MlmModal from "./Modals/MlmModal";
 import ControlModalSelection from "./Modals/ControlModalSelection";
+import { handleContactUsClick } from "./ContactUs";
+import EmailIcon from "@mui/icons-material/Email";
 
 const drawerWidth = 200;
 
@@ -559,9 +561,7 @@ function FileUpload() {
                     await ensureHmodSections(
                         content,
                         file2Content,
-                        Object.keys(file2Content[0] || {}).filter(
-                            (key) => key !== "time"
-                        ),
+                        Object.keys(file2Content[0] || {}),
                         handleOpenHeaderModal,
                         selectedHeaders,
                         mlmOptions
@@ -720,8 +720,11 @@ function FileUpload() {
         if (event.target.value === "1") {
             if (progress < 4) setProgress(4);
         } else if (event.target.value === "2") {
+            if (progress < 4) setProgress(4);
             if (progress < 5) setProgress(5);
         } else if (event.target.value === "3") {
+            if (progress < 4) setProgress(4);
+            if (progress < 5) setProgress(5);
             if (progress < 6) setProgress(6);
         }
     };
@@ -730,14 +733,11 @@ function FileUpload() {
         let url = "";
 
         if (fileType === "csv") {
-            url =
-                "https://my-flask-app-246502218926.us-central1.run.app/get-template-csv";
+            url = "https://api.hybpy.com/get-template-csv";
         } else if (fileType === "hmod") {
-            url =
-                "https://my-flask-app-246502218926.us-central1.run.app/get-template-hmod-download";
+            url = "https://api.hybpy.com/get-template-hmod-download";
         } else if (fileType === "xlsx") {
-            url =
-                "https://my-flask-app-246502218926.us-central1.run.app/get-template-xlsx";
+            url = "https://api.hybpy.com/get-template-xlsx";
         }
 
         if (templateType === 3) {
@@ -773,14 +773,11 @@ function FileUpload() {
 
     // Fetch the template HMOD and CSV files from the server
     const getTemplate = (templateType) => {
-        fetch(
-            "https://my-flask-app-246502218926.us-central1.run.app/get-template-csv",
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ template_type: templateType }),
-            }
-        )
+        fetch("https://api.hybpy.com/get-template-csv", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ template_type: templateType }),
+        })
             .then((response) => {
                 const disposition = response.headers.get("Content-Disposition");
                 const fileNameMatch =
@@ -850,14 +847,11 @@ function FileUpload() {
                 console.error("Error fetching template:", error);
             });
 
-        fetch(
-            "https://my-flask-app-246502218926.us-central1.run.app/get-template-hmod",
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ template_type: templateType }),
-            }
-        )
+        fetch("https://api.hybpy.com/get-template-hmod", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ template_type: templateType }),
+        })
             .then((response) => response.blob())
             .then((blob) => {
                 const reader = new FileReader();
@@ -867,9 +861,7 @@ function FileUpload() {
                     const updatedContent = ensureHmodSections(
                         fileContent,
                         file2Content,
-                        Object.keys(file2Content[0] || {}).filter(
-                            (key) => key !== "time"
-                        ),
+                        Object.keys(file2Content[0] || {}),
                         handleOpenHeaderModal,
                         selectedHeaders,
                         mlmOptions
@@ -897,9 +889,7 @@ function FileUpload() {
                             await ensureHmodSections(
                                 content,
                                 file2Content,
-                                Object.keys(file2Content[0] || {}).filter(
-                                    (key) => key !== "time"
-                                ),
+                                Object.keys(file2Content[0] || {}),
                                 handleOpenHeaderModal,
                                 selectedHeaders,
                                 mlmOptions
@@ -1032,8 +1022,8 @@ function FileUpload() {
             return;
         }
 
-        if (mode !== "1" && mode !== "2") {
-            alert("Please select a mode (1 or 2)!");
+        if (mode !== "1" && mode !== "2" && mode !== "3") {
+            alert("Please select a mode (1, 2, or 3)!");
             return;
         }
 
@@ -1068,9 +1058,7 @@ function FileUpload() {
             await ensureHmodSections(
                 file1Content,
                 file2Content,
-                Object.keys(file2Content[0] || {}).filter(
-                    (key) => key !== "time"
-                ),
+                Object.keys(file2Content[0] || {}),
                 handleOpenHeaderModal,
                 selectedHeaders,
                 mlmOptions
@@ -1126,9 +1114,7 @@ function FileUpload() {
         formData.append("mode", mode === "3" ? "2" : mode);
         formData.append("Crossval", mode === "3" ? "1" : "0");
 
-        if (mode !== "1") {
-            formData.append("val_ratio", 1 - splitRatio);
-        }
+        formData.append("split_ratio", splitRatio);
 
         if (mode === "3") {
             formData.append("Kfolds", kfolds);
@@ -1143,13 +1129,10 @@ function FileUpload() {
         setTrainingModalOpen(true);
 
         try {
-            const response = await fetch(
-                "https://my-flask-app-246502218926.us-central1.run.app/upload",
-                {
-                    method: "POST",
-                    body: formData,
-                }
-            );
+            const response = await fetch("https://api.hybpy.com/upload", {
+                method: "POST",
+                body: formData,
+            });
 
             const data = await response.json();
             setBackendResponse(JSON.stringify(data, null, 2));
@@ -1166,7 +1149,7 @@ function FileUpload() {
         const intervalId = setInterval(async () => {
             try {
                 const response = await fetch(
-                    `https://my-flask-app-246502218926.us-central1.run.app/run-status?user_id=${userId}`
+                    `https://api.hybpy.com/run-status?user_id=${userId}`
                 );
                 const data = await response.json();
                 if (data.status === "no_runs") {
@@ -1191,13 +1174,16 @@ function FileUpload() {
 
     useEffect(() => {
         const fetchAvailableBatches = async () => {
-            if (selectedFile2 && mode === "1") {
+            if (
+                selectedFile2 &&
+                (mode === "1" || mode === "2" || mode === "3")
+            ) {
                 try {
                     const formData = new FormData();
                     formData.append("file2", selectedFile2);
 
                     const response = await fetch(
-                        "https://my-flask-app-246502218926.us-central1.run.app/get-available-batches",
+                        "https://api.hybpy.com/get-available-batches",
                         {
                             method: "POST",
                             body: formData,
@@ -1421,7 +1407,7 @@ function FileUpload() {
                     <Container maxWidth='lg' sx={{}}>
                         <div style={{ overflow: "auto", marginTop: 20 }}>
                             <h2 style={{ float: "left", marginTop: 0 }}>
-                                New Hybrid Model
+                                New Hybrid Modelling Project
                             </h2>
                             <Button
                                 onClick={() => getTemplate(2)}
@@ -1879,7 +1865,7 @@ function FileUpload() {
                                                     overflow: "auto",
                                                 }}>
                                                 <Typography variant='h6'>
-                                                    Select Train Batches:{" "}
+                                                    Train:{" "}
                                                 </Typography>
                                                 {availableBatches.map(
                                                     (batch) => (
@@ -1910,7 +1896,7 @@ function FileUpload() {
                                                     overflow: "auto",
                                                 }}>
                                                 <Typography variant='h6'>
-                                                    Select Validation Batches:{" "}
+                                                    Validation:{" "}
                                                 </Typography>
                                                 {availableBatches.map(
                                                     (batch) => (
@@ -2225,7 +2211,7 @@ function FileUpload() {
                                                         value={kfolds}
                                                         onChange={(e) =>
                                                             setKfolds(
-                                                                parseInt(
+                                                                Number(
                                                                     e.target
                                                                         .value
                                                                 )
@@ -2248,7 +2234,7 @@ function FileUpload() {
                                                         value={nensemble}
                                                         onChange={(e) =>
                                                             setNensemble(
-                                                                parseInt(
+                                                                Number(
                                                                     e.target
                                                                         .value
                                                                 )
@@ -2341,18 +2327,43 @@ function FileUpload() {
                             width: "100%",
                             marginTop: "auto",
                         }}>
-                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de
-                            Ciências e Tecnologia Universidade NOVA de Lisboa
-                            2024. All rights reserved.
-                        </p>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                flex: 1,
+                            }}>
+                            <p style={{ margin: 0, textAlign: "center" }}>
+                                &copy; {new Date().getFullYear()} NOVA School of
+                                Science and Technology, Universidade NOVA de
+                                Lisboa. All rights reserved.
+                            </p>
 
-                        <img
-                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='75px'
-                            alt='FCT Logo'
-                            style={{ marginLeft: "auto" }}
-                        />
+                            <Button
+                                color='inherit'
+                                variant='text'
+                                onClick={handleContactUsClick}
+                                style={{
+                                    marginTop: "0.5em",
+                                    alignSelf: "center",
+                                    textTransform: "none",
+                                }}
+                                startIcon={<EmailIcon />}>
+                                Contact Us
+                            </Button>
+                        </div>
+
+                        <a
+                            href='https://www.fct.unl.pt/en'
+                            target='_blank'
+                            rel='noopener noreferrer'>
+                            <img
+                                src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                                width='75px'
+                                alt='FCT Logo'
+                                style={{ marginLeft: "1em" }}
+                            />
+                        </a>
                     </footer>
                 </Box>
             </Box>
@@ -2363,6 +2374,7 @@ function FileUpload() {
                 initialValues={initialValues}
                 setHmodOptions={setHmodOptions}
                 disableMethod5={mlmOptions.ny < mlmOptions.nx}
+                //data={batchData}
             />
             <TrainingModal
                 open={trainingModalOpen}

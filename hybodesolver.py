@@ -61,8 +61,8 @@ def hybodesolver(ann, odesfun, controlfun, eventfun, t0, tf, state, statedict, j
         values[key] = value
     
     if jac is not None:
-        jac = torch.tensor(jac, dtype=torch.float64)
-        jac = jac.to(dtype=torch.float32)
+        jac = torch.tensor(jac, dtype=torch.float32)
+        #jac = jac.to(dtype=torch.float32)
     fstate = fstate_func(projhyb, values)
 
     while t < tf:

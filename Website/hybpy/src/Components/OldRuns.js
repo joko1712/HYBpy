@@ -47,6 +47,8 @@ import {
 } from "@mui/material";
 import BackupIcon from "@mui/icons-material/Backup";
 import BatchPredictionIcon from "@mui/icons-material/BatchPrediction";
+import { handleContactUsClick } from "./ContactUs";
+import EmailIcon from "@mui/icons-material/Email";
 
 const drawerWidth = 200;
 
@@ -228,7 +230,7 @@ export default function OldRuns() {
 
     const fetchFileUrls = async (userId, runId) => {
         const response = await fetch(
-            `https://my-flask-app-246502218926.us-central1.run.app/get-file-urls?user_id=${userId}&run_id=${runId}`
+            `https://api.hybpy.com/get-file-urls?user_id=${userId}&run_id=${runId}`
         );
         const data = response.json();
         if (response.ok) {
@@ -244,20 +246,17 @@ export default function OldRuns() {
             const file1Url = runToDelete.file1;
             const folderPath = file1Url.split("/").slice(4, -1).join("/");
 
-            const response = await fetch(
-                "https://my-flask-app-246502218926.us-central1.run.app/delete-run",
-                {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        run_id: runToDelete.id,
-                        folder_path: folderPath,
-                    }),
-                }
-            );
+            const response = await fetch("https://api.hybpy.com/delete-run", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    run_id: runToDelete.id,
+                    folder_path: folderPath,
+                }),
+            });
             const result = await response.json();
             console.log("Delete response:", result);
             if (response.ok) {
@@ -295,33 +294,6 @@ export default function OldRuns() {
             : value;
     };
 
-    useEffect(() => {
-        const fetchLatestRun = async () => {
-            const runsCollectionRef = collection(db, "users", userId, "runs");
-            const q = query(
-                runsCollectionRef,
-                where("status", "==", "completed"),
-                where("userId", "==", userId),
-                orderBy("createdAt", "desc")
-            );
-            const querySnapshot = await getDocs(q);
-            const latestRun = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setRuns(latestRun);
-            if (latestRun.length > 0) {
-                if (latestRun[0].mode === "1") {
-                    setMode("Manual");
-                } else {
-                    setMode("Automatic");
-                }
-            }
-        };
-
-        fetchLatestRun();
-    }, [userId]);
-
     const filteredRuns = runs.filter((run) => {
         return (
             searchQuery === "" ||
@@ -343,6 +315,8 @@ export default function OldRuns() {
 
     const navigate = useNavigate();
     const location = useLocation();
+    const selectedRunIdFromState = location.state?.selectedRunId;
+
     const [open, setOpen] = React.useState(
         localStorage.getItem("drawerOpen") === "true"
     );
@@ -396,6 +370,50 @@ export default function OldRuns() {
         durationString += `${seconds}s`;
 
         return durationString;
+    };
+
+    useEffect(() => {
+        const fetchLatestRun = async () => {
+            const runsCollectionRef = collection(db, "users", userId, "runs");
+            const q = query(
+                runsCollectionRef,
+                where("status", "==", "completed"),
+                where("userId", "==", userId),
+                orderBy("createdAt", "desc")
+            );
+            const querySnapshot = await getDocs(q);
+            const latestRun = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setRuns(latestRun);
+            if (latestRun.length > 0) {
+                if (latestRun[0].mode === "1") {
+                    setMode("Manual");
+                } else {
+                    setMode("Automatic");
+                }
+
+                if (selectedRunIdFromState) {
+                    const matchedRun = latestRun.find(
+                        (run) => run.id === selectedRunIdFromState
+                    );
+                    if (matchedRun) {
+                        handleOpen(matchedRun);
+                        navigate(location.pathname, { replace: true });
+                    }
+                }
+            }
+        };
+
+        fetchLatestRun();
+    }, [userId]);
+
+    const metricLabels = {
+        r2_train: "R² (Train)",
+        r2_test: "R² (Test)",
+        mse_train: "WMSE (Train)",
+        mse_test: "WMSE (Test)",
     };
 
     return (
@@ -561,6 +579,14 @@ export default function OldRuns() {
                                                         display: "flex",
                                                         flexDirection: "column",
                                                     }}>
+                                                    <IconButton
+                                                        style={{
+                                                            alignSelf:
+                                                                "flex-end",
+                                                        }}
+                                                        onClick={handleClose}>
+                                                        <CloseIcon fontSize='large' />
+                                                    </IconButton>
                                                     <Typography
                                                         id='modal-modal-title'
                                                         variant='h4'
@@ -587,32 +613,82 @@ export default function OldRuns() {
                                                     {/* Display Plots */}
                                                     <div>
                                                         {selectedRun.plots &&
-                                                            selectedRun.plots.map(
-                                                                (
-                                                                    plotUrl,
-                                                                    index
-                                                                ) => (
-                                                                    <img
-                                                                        key={
-                                                                            index
-                                                                        }
-                                                                        src={
-                                                                            plotUrl
-                                                                        }
-                                                                        alt={`Plot ${index}`}
-                                                                        style={{
-                                                                            width: "30%",
-                                                                            marginBottom: 10,
-                                                                            cursor: "pointer",
-                                                                        }}
-                                                                        onClick={() =>
-                                                                            handlePlotClick(
-                                                                                index
+                                                            [
+                                                                ...selectedRun.plots,
+                                                            ]
+                                                                .sort(
+                                                                    (a, b) => {
+                                                                        const priority =
+                                                                            (
+                                                                                url
+                                                                            ) => {
+                                                                                const lower =
+                                                                                    url.toLowerCase();
+                                                                                if (
+                                                                                    lower.includes(
+                                                                                        "top_"
+                                                                                    )
+                                                                                )
+                                                                                    return 0;
+                                                                                if (
+                                                                                    lower.includes(
+                                                                                        "plot_"
+                                                                                    ) &&
+                                                                                    !lower.includes(
+                                                                                        "paraty"
+                                                                                    )
+                                                                                )
+                                                                                    return 1;
+                                                                                if (
+                                                                                    lower.includes(
+                                                                                        "paratyplot_"
+                                                                                    )
+                                                                                )
+                                                                                    return 2;
+                                                                                if (
+                                                                                    lower.includes(
+                                                                                        "paraty_all"
+                                                                                    )
+                                                                                )
+                                                                                    return 3;
+                                                                                return 4;
+                                                                            };
+                                                                        return (
+                                                                            priority(
+                                                                                a
+                                                                            ) -
+                                                                            priority(
+                                                                                b
                                                                             )
-                                                                        }
-                                                                    />
+                                                                        );
+                                                                    }
                                                                 )
-                                                            )}
+                                                                .map(
+                                                                    (
+                                                                        plotUrl,
+                                                                        index
+                                                                    ) => (
+                                                                        <img
+                                                                            key={
+                                                                                index
+                                                                            }
+                                                                            src={
+                                                                                plotUrl
+                                                                            }
+                                                                            alt={`Plot ${index}`}
+                                                                            style={{
+                                                                                width: "30%",
+                                                                                marginBottom: 10,
+                                                                                cursor: "pointer",
+                                                                            }}
+                                                                            onClick={() =>
+                                                                                handlePlotClick(
+                                                                                    index
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                    )
+                                                                )}
                                                     </div>
 
                                                     {selectedRun.response_data ? (
@@ -641,40 +717,53 @@ export default function OldRuns() {
                                                                             </TableCell>
                                                                         </TableRow>
 
-                                                                        {/* Display Metrics */}
                                                                         {selectedRun
                                                                             .response_data
                                                                             .metrics ? (
-                                                                            Object.entries(
-                                                                                selectedRun
-                                                                                    .response_data
-                                                                                    .metrics
-                                                                            ).map(
-                                                                                ([
-                                                                                    key,
-                                                                                    value,
-                                                                                ]) => (
-                                                                                    <TableRow
-                                                                                        key={
+                                                                            [
+                                                                                "r2_train",
+                                                                                "r2_test",
+                                                                                "mse_train",
+                                                                                "mse_test",
+                                                                            ].map(
+                                                                                (
+                                                                                    key
+                                                                                ) => {
+                                                                                    const value =
+                                                                                        selectedRun
+                                                                                            .response_data
+                                                                                            .metrics[
                                                                                             key
-                                                                                        }>
-                                                                                        <TableCell
-                                                                                            component='th'
-                                                                                            scope='row'>
-                                                                                            {
+                                                                                        ];
+                                                                                    if (
+                                                                                        value ===
+                                                                                        undefined
+                                                                                    )
+                                                                                        return null;
+                                                                                    return (
+                                                                                        <TableRow
+                                                                                            key={
                                                                                                 key
-                                                                                            }
-                                                                                        </TableCell>
-                                                                                        <TableCell>
-                                                                                            {typeof value ===
-                                                                                            "number"
-                                                                                                ? value.toFixed(
-                                                                                                      5
-                                                                                                  )
-                                                                                                : value}
-                                                                                        </TableCell>
-                                                                                    </TableRow>
-                                                                                )
+                                                                                            }>
+                                                                                            <TableCell
+                                                                                                component='th'
+                                                                                                scope='row'>
+                                                                                                {metricLabels[
+                                                                                                    key
+                                                                                                ] ??
+                                                                                                    key}
+                                                                                            </TableCell>
+                                                                                            <TableCell>
+                                                                                                {typeof value ===
+                                                                                                "number"
+                                                                                                    ? value.toFixed(
+                                                                                                          5
+                                                                                                      )
+                                                                                                    : value}
+                                                                                            </TableCell>
+                                                                                        </TableRow>
+                                                                                    );
+                                                                                }
                                                                             )
                                                                         ) : (
                                                                             <TableRow>
@@ -695,8 +784,6 @@ export default function OldRuns() {
                                                                                 </TableCell>
                                                                             </TableRow>
                                                                         )}
-
-                                                                        {/* Trained Weights */}
                                                                         <TableRow>
                                                                             <TableCell
                                                                                 component='th'
@@ -846,10 +933,17 @@ export default function OldRuns() {
                                                                                 Inputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Inputs ??
-                                                                                    "N/A"}
+                                                                                {Array.isArray(
+                                                                                    selectedRun.Inputs
+                                                                                )
+                                                                                    ? selectedRun.Inputs.join(
+                                                                                          ", "
+                                                                                      )
+                                                                                    : selectedRun.Inputs ??
+                                                                                      "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
+
                                                                         <TableRow>
                                                                             <TableCell
                                                                                 component='th'
@@ -857,8 +951,14 @@ export default function OldRuns() {
                                                                                 Outputs
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                {selectedRun.Outputs ??
-                                                                                    "N/A"}
+                                                                                {Array.isArray(
+                                                                                    selectedRun.Outputs
+                                                                                )
+                                                                                    ? selectedRun.Outputs.join(
+                                                                                          ", "
+                                                                                      )
+                                                                                    : selectedRun.Outputs ??
+                                                                                      "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
 
@@ -1100,18 +1200,43 @@ export default function OldRuns() {
                             width: "100%",
                             marginTop: "auto",
                         }}>
-                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de
-                            Ciências e Tecnologia Universidade NOVA de Lisboa
-                            2024. All rights reserved.
-                        </p>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                flex: 1,
+                            }}>
+                            <p style={{ margin: 0, textAlign: "center" }}>
+                                &copy; {new Date().getFullYear()} NOVA School of
+                                Science and Technology, Universidade NOVA de
+                                Lisboa. All rights reserved.
+                            </p>
 
-                        <img
-                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='75px'
-                            alt='FCT Logo'
-                            style={{ marginLeft: "auto" }}
-                        />
+                            <Button
+                                color='inherit'
+                                variant='text'
+                                onClick={handleContactUsClick}
+                                style={{
+                                    marginTop: "0.5em",
+                                    alignSelf: "center",
+                                    textTransform: "none",
+                                }}
+                                startIcon={<EmailIcon />}>
+                                Contact Us
+                            </Button>
+                        </div>
+
+                        <a
+                            href='https://www.fct.unl.pt/en'
+                            target='_blank'
+                            rel='noopener noreferrer'>
+                            <img
+                                src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                                width='75px'
+                                alt='FCT Logo'
+                                style={{ marginLeft: "1em" }}
+                            />
+                        </a>
                     </footer>
                 </Box>
             </Box>

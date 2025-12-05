@@ -52,6 +52,8 @@ import SimulationModal from "./Modals/SimulationModal";
 import HmodModal from "./Modals/HmodModal";
 import MlmModal from "./Modals/MlmModal";
 import ControlModalSelection from "./Modals/ControlModalSelection";
+import { handleContactUsClick } from "./ContactUs";
+import EmailIcon from "@mui/icons-material/Email";
 
 const drawerWidth = 200;
 
@@ -201,18 +203,15 @@ function Simulations() {
         );
 
         try {
-            const response = await fetch(
-                `https://my-flask-app-246502218926.us-central1.run.app/get-new-hmod`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        url: run.response_data.new_hmod_url,
-                    }),
-                }
-            );
+            const response = await fetch(`https://api.hybpy.com/get-new-hmod`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    url: run.response_data.new_hmod_url,
+                }),
+            });
 
             if (!response.ok) {
                 throw new Error(
@@ -766,6 +765,9 @@ function Simulations() {
                 separatedBatches.push(currentBatch);
             }
 
+            setTrainBatches(new Set([1]));
+            setTestBatches(new Set([2]));
+
             setFile2Content(data);
             setBatchData(separatedBatches);
         };
@@ -873,18 +875,21 @@ function Simulations() {
 
         formData.append("hiddenOptions", JSON.stringify(hmodOptions));
 
+        formData.append("Crossval", mode === "3" ? "1" : "0");
+        formData.append("split_ratio", 0.7);
+
+        formData.append("Kfolds", 1);
+        formData.append("Ensemble", 1);
+
         console.log("Form Data: ", formData);
 
         setSimulationModalOpen(true);
 
         try {
-            const response = await fetch(
-                "https://my-flask-app-246502218926.us-central1.run.app/upload",
-                {
-                    method: "POST",
-                    body: formData,
-                }
-            );
+            const response = await fetch("https://api.hybpy.com/upload", {
+                method: "POST",
+                body: formData,
+            });
 
             const data = await response.json();
             setBackendResponse(JSON.stringify(data, null, 2));
@@ -901,7 +906,7 @@ function Simulations() {
         const intervalId = setInterval(async () => {
             try {
                 const response = await fetch(
-                    `https://my-flask-app-246502218926.us-central1.run.app/run-status?user_id=${userId}`
+                    `https://api.hybpy.com/run-status?user_id=${userId}`
                 );
                 const data = await response.json();
                 if (data.status === "no_runs") {
@@ -931,7 +936,7 @@ function Simulations() {
                     formData.append("file2", selectedFile2);
 
                     const response = await fetch(
-                        "https://my-flask-app-246502218926.us-central1.run.app/get-available-batches",
+                        "https://api.hybpy.com/get-available-batches",
                         {
                             method: "POST",
                             body: formData,
@@ -1170,7 +1175,7 @@ function Simulations() {
                                         flexDirection: "column",
                                     }}>
                                     <Typography variant='h5'>
-                                        Step 2: Select a Previous Run
+                                        Step 2: Select Project
                                     </Typography>
                                     <Select
                                         fullWidth
@@ -1521,13 +1526,13 @@ function Simulations() {
                                             sx={{
                                                 mt: 2,
                                                 display: "flex",
-                                                width: "50%",
+                                                width: "40%",
                                             }}
                                             disabled={
                                                 !isStartTrainingEnabled()
                                             }>
                                             <PublishIcon fontSize='large' />
-                                            Start Simulation
+                                            Simulate Model
                                         </Button>
                                     </CustomWidthTooltip>
                                 </Grid>
@@ -1544,18 +1549,43 @@ function Simulations() {
                             width: "100%",
                             marginTop: "auto",
                         }}>
-                        <p style={{ margin: 0, textAlign: "center", flex: 1 }}>
-                            &copy; {new Date().getFullYear()} Faculdade de
-                            Ciências e Tecnologia Universidade NOVA de Lisboa
-                            2024. All rights reserved.
-                        </p>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                flex: 1,
+                            }}>
+                            <p style={{ margin: 0, textAlign: "center" }}>
+                                &copy; {new Date().getFullYear()} NOVA School of
+                                Science and Technology, Universidade NOVA de
+                                Lisboa. All rights reserved.
+                            </p>
 
-                        <img
-                            src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
-                            width='75px'
-                            alt='FCT Logo'
-                            style={{ marginLeft: "auto" }}
-                        />
+                            <Button
+                                color='inherit'
+                                variant='text'
+                                onClick={handleContactUsClick}
+                                style={{
+                                    marginTop: "0.5em",
+                                    alignSelf: "center",
+                                    textTransform: "none",
+                                }}
+                                startIcon={<EmailIcon />}>
+                                Contact Us
+                            </Button>
+                        </div>
+
+                        <a
+                            href='https://www.fct.unl.pt/en'
+                            target='_blank'
+                            rel='noopener noreferrer'>
+                            <img
+                                src='https://www.fct.unl.pt/sites/default/files/images/logo_nova_fct_pt_v.png'
+                                width='75px'
+                                alt='FCT Logo'
+                                style={{ marginLeft: "1em" }}
+                            />
+                        </a>
                     </footer>
                 </Box>
             </Box>

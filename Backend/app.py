@@ -21,21 +21,25 @@ import traceback
 import numpy as np
 import torch
 import sympy as sp
+from multiprocessing import Process
+from copy import deepcopy
+import zipfile
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from hybtrain import hybtrain
 from hybdata import hybdata
 from csv2json import label_batches, add_state_and_time_to_data
-
 import firebase_admin
 from firebase_admin import credentials, firestore, storage, auth
-
 from dotenv import load_dotenv
-load_dotenv()
 from odesfun import projhyb_cache
 
-cred = credentials.Certificate(os.path.join(os.path.dirname(__file__), 'hybpy-test-firebase-adminsdk-20qxj-fc73476cba.json'))
+
+load_dotenv()
+
+cred = credentials.Certificate(os.path.join(os.path.dirname(
+    __file__), 'hybpy-test-firebase-adminsdk-20qxj-fc73476cba.json'))
 firebase_admin.initialize_app(cred, {
     'storageBucket': os.getenv("STORAGE_BUCKET_NAME")
 })
@@ -51,26 +55,32 @@ socketio = SocketIO(app, cors_allowed_origins=[
 
 CORS(app, origins="*", supports_credentials=True)
 
+
 @app.after_request
 def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+    response.headers['Access-Control-Allow-Origin'] = request.headers.get(
+        'Origin', '*')
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
+
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
+
 
 @socketio.on('message')
 def handle_message(data):
     print('received message:', data)
     socketio.send('Message received: ' + data)
 
+
 @socketio.on('disconnect')
 def handle_disconnect():
     print('Client disconnected')
+
 
 def upload_file_to_storage(file_path, user_id, filename, folder_id):
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
@@ -84,45 +94,27 @@ def upload_file_to_storage(file_path, user_id, filename, folder_id):
     blob.make_public()
     return blob.public_url
 
-def upload_plots_to_gcs(temp_dir, user_id, folder_id):
-    plot_urls = []
-    temp = os.path.join(temp_dir, 'plots')
-    user_dir = os.path.join(temp, user_id)
-    date_dir = os.path.join(user_dir, time.strftime("%Y%m%d%H%M"))
-
+def upload_plots_to_gcs(temp_dir, user_id, folder_id, plots_dir=None):
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
 
-    for filename in glob.glob(os.path.join(date_dir, '*.png')):
-        blob = bucket.blob(f'{user_id}/plots/{folder_id}/{os.path.basename(filename)}')
-        blob.upload_from_filename(filename)
+    if plots_dir is None:
+        plots_dir = os.path.join(temp_dir, "plots", user_id, folder_id)
+
+    plot_urls = []
+    if not os.path.exists(plots_dir):
+        logging.warning(f"No plots directory found at: {plots_dir}")
+        return plot_urls
+
+    for filename in glob.glob(os.path.join(plots_dir, "*.png")):
+        blob = bucket.blob(
+            f"{user_id}/plots/{folder_id}/{os.path.basename(filename)}"
+        )
+        blob.upload_from_filename(filename, content_type="image/png")
         blob.make_public()
         plot_urls.append(blob.public_url)
 
-    all_blobs = list(bucket.list_blobs(prefix=f'{user_id}/plots/{folder_id}/'))
-    seen_files = {}
-    
-    for blob in all_blobs:
-        file_name = blob.name.split('/')[-1]
-        base_name = re.sub(r'_[0-9]+\.png$', '', file_name)
-        
-        if base_name in seen_files:
-            seen_files[base_name].append(blob)
-        else:
-            seen_files[base_name] = [blob]
-    
-    for base_name, blobs in seen_files.items():
-        if len(blobs) > 1:
-            blobs_to_delete = blobs[1:]  # Keep the first one, delete the rest
-            
-            for blob in blobs_to_delete:
-                try:
-                    blob.delete()
-                except Exception as e:
-                    logging.error(f"Error deleting blob: {blob.name}, error: {str(e)}")
+    return plot_urls
 
-    unique_plot_urls = [blob.public_url for blob_list in seen_files.values() for blob in blob_list]
-
-    return unique_plot_urls
 
 def ensure_json_serializable(data, path="root"):
     if isinstance(data, (str, int, float, bool)) or data is None:
@@ -141,6 +133,7 @@ def ensure_json_serializable(data, path="root"):
         print(f"❌ Non-serializable type at {path}: {type(data)} — {data}")
         raise TypeError(f"Cannot serialize type {type(data)} at path {path}")
 
+
 def sanitize_projhyb(obj):
     if isinstance(obj, dict):
         return {str(k): sanitize_projhyb(v) for k, v in obj.items()}
@@ -150,19 +143,21 @@ def sanitize_projhyb(obj):
         return obj.item()
     elif isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
         return None
-    elif isinstance(obj, sp.Basic): 
+    elif isinstance(obj, sp.Basic):
         return str(obj)
     elif callable(obj):
         return None
     elif hasattr(obj, '__module__') and 'torch' in obj.__module__:
-        return None 
+        return None
     return obj
+
 
 @app.route("/ping", methods=["GET"])
 def ping():
     return jsonify({"msg": "pong"}), 200
 
-@app.route('/upload', methods=['OPTIONS','POST'])
+
+@app.route('/upload', methods=['OPTIONS', 'POST'])
 @cross_origin()
 def upload_file():
     if request.method == 'OPTIONS':
@@ -170,7 +165,7 @@ def upload_file():
 
     run_ref = None
     try:
-        temp_dir = tempfile.mkdtemp() 
+        temp_dir = tempfile.mkdtemp()
         logging.debug("Form data received: %s", request.form)
 
         file1 = request.files.get('file1')
@@ -178,9 +173,12 @@ def upload_file():
         mode = request.form.get('mode')
         user_id = request.form.get('userId')
         description = request.form.get('description')
-        train_batches = request.form.get('train_batches').split(",") if request.form.get('train_batches') else []
-        test_batches = request.form.get('test_batches').split(",") if request.form.get('test_batches') else []
-        val_batches = request.form.get('val_batches').split(",") if request.form.get('val_batches') else []
+        train_batches = request.form.get('train_batches').split(
+            ",") if request.form.get('train_batches') else []
+        test_batches = request.form.get('test_batches').split(
+            ",") if request.form.get('test_batches') else []
+        val_batches = request.form.get('val_batches').split(
+            ",") if request.form.get('val_batches') else []
 
         HiddenNodes = request.form.get('HiddenNodes')
         Layer = request.form.get('Layer')
@@ -208,7 +206,8 @@ def upload_file():
         trained_weights = request.form.get('trained_weights')
         logging.debug("trained_weights: %s", trained_weights)
         if trained_weights:
-            trained_weights = trained_weights.strip('[]"').replace('\n', '').replace(' ', '')
+            trained_weights = trained_weights.strip(
+                '[]"').replace('\n', '').replace(' ', '')
             trained_weights = list(map(float, trained_weights.split(',')))
         else:
             trained_weights = None
@@ -216,7 +215,10 @@ def upload_file():
         if not file1 or not file2:
             return jsonify({"error": "Both files are required"}), 400
 
-        logging.debug("Files received: file1=%s, file2=%s", file1.filename, file2.filename)
+        execution_location = request.form.get("execution_location", "cloud")
+
+        logging.debug("Files received: file1=%s, file2=%s",
+                      file1.filename, file2.filename)
 
         # Save files to temporary directory
         file1_path = os.path.join(temp_dir, file1.filename)
@@ -227,8 +229,10 @@ def upload_file():
         folder_id = str(uuid.uuid4())
 
         # Upload files to storage
-        file1_url = upload_file_to_storage(file1_path, user_id, file1.filename, folder_id)
-        file2_url = upload_file_to_storage(file2_path, user_id, file2.filename, folder_id)
+        file1_url = upload_file_to_storage(
+            file1_path, user_id, file1.filename, folder_id)
+        file2_url = upload_file_to_storage(
+            file2_path, user_id, file2.filename, folder_id)
 
         if not file1_url or not file2_url:
             return jsonify({"error": "Failed to upload files to storage"}), 500
@@ -272,8 +276,10 @@ def upload_file():
                     "Ensemble": Ensemble,
                     "Kfolds": Kfolds
                 },
-                "status": "training in progress",
+                "status": "training in progress locally" if execution_location == "local" else "training in progress",
+                "folder_id": folder_id,
             })
+
         else:
             run_ref.set({
                 "userId": user_id,
@@ -333,13 +339,13 @@ def upload_file():
             val_batches = list(map(int, val_batches))
             for batch in train_batches:
                 if int(batch) in data:
-                   data[int(batch)]["istrain"] = [1]  
+                    data[int(batch)]["istrain"] = [1]
             for batch in val_batches:
                 if int(batch) in data:
-                   data[int(batch)]["istrain"] = [2]
+                    data[int(batch)]["istrain"] = [2]
             for batch in test_batches:
                 if int(batch) in data:
-                   data[int(batch)]["istrain"] = [3]
+                    data[int(batch)]["istrain"] = [3]
 
             all_batches = set(data.keys())
             for batch in all_batches:
@@ -361,10 +367,13 @@ def upload_file():
                 manual_test_batches=test_batches
             )
 
-
         data = add_state_and_time_to_data(data, projhyb)
         count = len(data)
         data["nbatch"] = count
+
+        plots_dir = os.path.join(temp_dir, 'plots', user_id, folder_id)
+        os.makedirs(plots_dir, exist_ok=True)
+        projhyb['plots_dir'] = plots_dir
 
         projhyb['kfolds'] = int(Kfolds)
         projhyb['nensemble'] = int(Ensemble)
@@ -433,17 +442,50 @@ def upload_file():
         })
 
         shutil.rmtree(temp_dir)
-        '''
+    
 
         thread = Thread(
             target=background_training,
-            args=(projhyb, data, user_id, trained_weights, file1_path, temp_dir, run_ref, folder_id)
+            args=(projhyb, data, user_id, trained_weights, file1_path, temp_dir, run_ref, folder_id),
         )
-        thread.do_run = True
+         thread.do_run = True
+
         thread.start()
         running_threads[run_ref.id] = thread
+        '''
 
-        return jsonify({"message": "Training started"}), 202
+        projhyb_for_local = sanitize_projhyb(deepcopy(projhyb))
+        data_for_local = ensure_json_serializable(deepcopy(data))
+        trained_weights_for_local = trained_weights
+        if execution_location == "cloud":
+            proc = Process(
+                target=background_training,
+                args=(projhyb, data, user_id, trained_weights,
+                      file1_path, temp_dir, run_ref, folder_id),
+            )
+
+            proc.start()
+            running_threads[run_ref.id] = proc
+
+            return jsonify({"message": "Training started"}), 202
+        else:
+            return jsonify({
+                "message": "Run created, awaiting local training",
+                "run_id": run_ref.id,
+                "user_id": user_id,
+                "file1_url": file1_url,
+                "file2_url": file2_url,
+                "mode": mode,
+                "train_batches": train_batches,
+                "test_batches": test_batches,
+                "val_batches": val_batches,
+                "Crossval": Crossval,
+                "Ensemble": Ensemble,
+                "Kfolds": Kfolds,
+                "split_ratio": split_ratio,
+                "trained_weights": trained_weights_for_local,
+                "folder_id": folder_id,
+            }), 200
     except Exception as e:
         logging.error("Error in upload_file: %s", str(e), exc_info=True)
         if run_ref:
@@ -452,10 +494,9 @@ def upload_file():
         return jsonify({"error": str(e)}), 500
 
 
-
 def background_training(projhyb, data, user_id, trained_weights, file1_path, temp_dir, run_ref, folder_id):
     t = threading.current_thread()
-    run_id = run_ref.id 
+    run_id = run_ref.id
     try:
         projhyb["run_id"] = run_id
 
@@ -469,19 +510,21 @@ def background_training(projhyb, data, user_id, trained_weights, file1_path, tem
             return
 
         new_hmod_filename = os.path.basename(newHmodFile)
-        new_hmod_url = upload_file_to_storage(newHmodFile, user_id, new_hmod_filename, folder_id)
+        new_hmod_url = upload_file_to_storage(
+            newHmodFile, user_id, new_hmod_filename, folder_id)
 
         response_data = {
             "message": "Files processed successfully",
-            #"projhyb": sanitize_projhyb(projhyb),
-            #"trainData": ensure_json_serializable(trainData),
+            # "projhyb": sanitize_projhyb(projhyb),
+            # "trainData": ensure_json_serializable(trainData),
             "trainData": json.dumps(ensure_json_serializable(trainData), default=str),
             "metrics": metrics,
             "new_hmod_url": new_hmod_url,
             "new_hmod": new_hmod_filename,
         }
 
-        plot_urls = upload_plots_to_gcs(temp_dir, user_id, folder_id)
+        plot_urls = upload_plots_to_gcs(
+            temp_dir, user_id, folder_id, projhyb.get('plots_dir'))
 
         run_ref.update({
             "response_data": response_data,
@@ -507,17 +550,117 @@ def background_training(projhyb, data, user_id, trained_weights, file1_path, tem
             email_response = requests.post(email_function_url, json=email_data)
             email_response.raise_for_status()
         except Exception as e:
-            logging.error("Email notification failed: %s", str(e), exc_info=True)
+            logging.error("Email notification failed: %s",
+                          str(e), exc_info=True)
             if run_id in projhyb_cache:
                 projhyb_cache.pop(run_id, None)
 
     except Exception as e:
-        logging.error("Error during background training: %s", str(e), exc_info=True)
+        logging.error("Error during background training: %s",
+                      str(e), exc_info=True)
         run_ref.update({"status": "error"})
 
     finally:
         running_threads.pop(run_id, None)
         shutil.rmtree(temp_dir)
+
+
+@app.route("/upload-local-results", methods=["POST"])
+def upload_local_results():
+    user_id = request.form["user_id"]
+    run_id = request.form["run_id"]
+    metrics_str = request.form.get("metrics", "{}")
+    new_hmod_file = request.files.get("file")
+    train_data_str = request.form.get("train_data", "{}")
+
+    run_ref = db.collection("users").document(
+        user_id).collection("runs").document(run_id)
+
+    run_data = run_ref.get().to_dict()
+    folder_id = run_data.get("folder_id")
+
+    # save temp file
+    tmp_dir = tempfile.mkdtemp()
+    tmp_path = os.path.join(tmp_dir, new_hmod_file.filename)
+    new_hmod_file.save(tmp_path)
+
+    new_hmod_url = upload_file_to_storage(
+        tmp_path, user_id, new_hmod_file.filename, folder_id
+    )
+
+    try:
+        metrics = json.loads(metrics_str or "{}")
+    except Exception:
+        metrics = {}
+
+    response_data = {
+        "message": "Files processed successfully",
+        "trainData": train_data_str,
+        "metrics": metrics,
+        "new_hmod_url": new_hmod_url,
+        "new_hmod": new_hmod_file.filename,
+    }
+
+
+    run_ref.update({
+        "status": "completed",
+        "finishedAt": firestore.SERVER_TIMESTAMP,
+        "metrics": metrics,
+        "new_hmod_url": new_hmod_url,
+        "new_hmod": new_hmod_file.filename,
+        "response_data": response_data,
+    })
+
+    return jsonify({"message": "Local results stored"}), 200
+
+@app.route("/upload-local-plots", methods=["POST"])
+def upload_local_plots():
+    try:
+        user_id = request.form["user_id"]
+        run_id = request.form["run_id"]
+        plots_zip = request.files.get("plots_zip")
+
+        if not plots_zip:
+            return jsonify({"error": "Missing plots_zip file"}), 400
+
+        run_ref = db.collection("users").document(
+            user_id
+        ).collection("runs").document(run_id)
+        run_data = run_ref.get().to_dict()
+
+        if not run_data:
+            return jsonify({"error": "Run not found"}), 404
+
+        folder_id = run_data.get("folder_id")
+        if not folder_id:
+            return jsonify({"error": "Missing folder_id on run"}), 400
+
+        tmp_dir = tempfile.mkdtemp()
+        zip_path = os.path.join(tmp_dir, plots_zip.filename)
+        plots_zip.save(zip_path)
+
+        extract_dir = os.path.join(tmp_dir, "plots")
+        os.makedirs(extract_dir, exist_ok=True)
+
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(extract_dir)
+
+        plot_urls = upload_plots_to_gcs(
+            temp_dir=tmp_dir,
+            user_id=user_id,
+            folder_id=folder_id,
+            plots_dir=extract_dir,
+        )
+
+        run_ref.update({"plots": plot_urls})
+
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+        return jsonify({"message": "Local plots stored", "count": len(plot_urls)}), 200
+
+    except Exception as e:
+        logging.error("Error in upload-local-plots: %s", str(e), exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
 def get_user_email(uid):
@@ -528,6 +671,7 @@ def get_user_email(uid):
         logging.error(f"Failed to fetch email for UID {uid}: {e}")
         return None
 
+
 @app.route("/cancel-run", methods=["POST"])
 @cross_origin()
 def cancel_run():
@@ -537,7 +681,8 @@ def cancel_run():
             return jsonify({"error": "Missing user_id"}), 400
 
         runs_ref = db.collection('users').document(user_id).collection('runs')
-        latest_run = runs_ref.order_by("createdAt", direction=firestore.Query.DESCENDING).limit(1).get()
+        latest_run = runs_ref.order_by(
+            "createdAt", direction=firestore.Query.DESCENDING).limit(1).get()
 
         if not latest_run:
             return jsonify({"error": "No active run found"}), 404
@@ -546,6 +691,8 @@ def cancel_run():
         run_id = run_doc.id
 
         runs_ref.document(run_id).update({"cancel_requested": True})
+
+        print("doc", runs_ref.document(run_id).get().to_dict())
 
         if run_id in running_threads:
             running_threads[run_id].do_run = False
@@ -558,8 +705,7 @@ def cancel_run():
         return jsonify({"error": str(e)}), 500
 
 
-
-@app.route("/get-available-batches", methods=['OPTIONS','POST'])
+@app.route("/get-available-batches", methods=['OPTIONS', 'POST'])
 @cross_origin()
 def get_available_batches():
     try:
@@ -600,8 +746,10 @@ def get_available_batches():
             shutil.rmtree(temp_dir)
             return jsonify({"message": "File not found"}), 400
     except Exception as e:
-        logging.error("Error in get_available_batches: %s", str(e), exc_info=True)
+        logging.error("Error in get_available_batches: %s",
+                      str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/run-status', methods=['OPTIONS', 'GET'])
 @cross_origin()
@@ -627,7 +775,8 @@ def run_status():
         logging.error("Error in run_status: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-template-hmod', methods=['OPTIONS','POST'])
+
+@app.route('/get-template-hmod', methods=['OPTIONS', 'POST'])
 @cross_origin()
 def get_template_hmod():
 
@@ -639,7 +788,8 @@ def get_template_hmod():
     try:
         template_type = request.json.get('template_type')
         if template_type == 1:
-            blob_hmod = bucket.blob("Template/CellGrowthModel/CellGrowthModel3.hmod")
+            blob_hmod = bucket.blob(
+                "Template/CellGrowthModel/CellGrowthModel3.hmod")
             hmod_file_path = "CellGrowthModel3.hmod"
         elif template_type == 2:
             blob_hmod = bucket.blob("Template/Hmod1/basic1.hmod")
@@ -657,7 +807,8 @@ def get_template_hmod():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-template-csv', methods=['OPTIONS','POST'])
+
+@app.route('/get-template-csv', methods=['OPTIONS', 'POST'])
 @cross_origin()
 def get_template_csv():
     if request.method == 'OPTIONS':
@@ -668,7 +819,8 @@ def get_template_csv():
     try:
         template_type = request.json.get('template_type')
         if template_type == 1:
-            blob_csv = bucket.blob("Template/CellGrowthModelCSV/CellGrowth.csv")
+            blob_csv = bucket.blob(
+                "Template/CellGrowthModelCSV/CellGrowth.csv")
             csv_file_path = "CellGrowth.csv"
         elif template_type == 2:
             blob_csv = bucket.blob("Template/Csv/basicmodel1data.csv")
@@ -686,7 +838,8 @@ def get_template_csv():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-template-xlsx', methods=['OPTIONS','POST'])
+
+@app.route('/get-template-xlsx', methods=['OPTIONS', 'POST'])
 @cross_origin()
 def get_template_xlsx():
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
@@ -694,7 +847,8 @@ def get_template_xlsx():
     try:
         template_type = request.json.get('template_type')
         if template_type == 3:
-            blob_xlsx = bucket.blob("Template/Csv/template_datafile_hybpy.xlsx")
+            blob_xlsx = bucket.blob(
+                "Template/Csv/template_datafile_hybpy.xlsx")
             xlsx_file_path = "template_datafile_hybpy.xlsx"
         else:
             return jsonify({"error": "Invalid template type"}), 400
@@ -708,7 +862,8 @@ def get_template_xlsx():
         logging.error("Error in get_template_xlsx: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-template-hmod-download', methods=['OPTIONS','POST'])
+
+@app.route('/get-template-hmod-download', methods=['OPTIONS', 'POST'])
 @cross_origin()
 def get_template_hmod_download():
     bucket = storage.bucket(os.getenv("STORAGE_BUCKET_NAME"))
@@ -730,7 +885,8 @@ def get_template_hmod_download():
         logging.error("Error in get_template_xlsx: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/delete-run', methods=['OPTIONS','DELETE'])
+
+@app.route('/delete-run', methods=['OPTIONS', 'DELETE'])
 @cross_origin()
 def delete_run():
     try:
@@ -756,7 +912,8 @@ def delete_run():
                 blob = bucket.blob(blob_path)
                 blob.delete()
             except Exception as e:
-                logging.error(f"Error deleting blob: {blob_path}, error: {str(e)}")
+                logging.error(
+                    f"Error deleting blob: {blob_path}, error: {str(e)}")
 
         folder_prefix = folder_path + '/'
         blobs = bucket.list_blobs(prefix=folder_prefix)
@@ -777,14 +934,16 @@ def delete_run():
         logging.error("Error deleting run: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-file-urls', methods=['OPTIONS','GET'])
+
+@app.route('/get-file-urls', methods=['OPTIONS', 'GET'])
 @cross_origin()
 def get_file_urls():
     user_id = request.args.get('user_id')
     run_id = request.args.get('run_id')
 
     try:
-        run_ref = db.collection('users').document(user_id).collection('runs').document(run_id)
+        run_ref = db.collection('users').document(
+            user_id).collection('runs').document(run_id)
         run_data = run_ref.get().to_dict()
 
         if not run_data:
@@ -803,7 +962,8 @@ def get_file_urls():
         logging.error("Error in get_file_urls: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route("/get-new-hmod", methods=['OPTIONS','POST'])
+
+@app.route("/get-new-hmod", methods=['OPTIONS', 'POST'])
 @cross_origin()
 def get_new_hmod():
     data = request.json
@@ -822,6 +982,7 @@ def get_new_hmod():
     except Exception as e:
         logging.error("Error in get_new_hmod: %s", str(e), exc_info=True)
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port=5000, ssl_context=(

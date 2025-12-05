@@ -2,7 +2,7 @@
 % hybrid model definition data structure
 
 %Timespan
-chass.tspan=0:1:100
+chass.tspan=0:1:50;
 
 % Species
 chass.nspecies=11;
@@ -254,22 +254,18 @@ chass.raterules(1).min=0;
 chass.raterules(1).max=10;
 chass.raterules(1).isres=0;
 
-% %model configuration
-chass.time.min=0;
-chass.time.max=300;
-chass.time.id='t[h]';
-chass.time.TAU=0.25;
-chass.time.tspan=0:3:300;
-
 % control---------------------------
-chass.ncontrol=1;
-chass.control(1).id= 'None';
-chass.control(1).val= 0;
-chass.control(1).min= 0;
-chass.control(1).max= 2;
-chass.control(1).constant = 0;
+chass.ncontrol=0;
 chass.fun_control=@control_function_chass;
 chass.fun_event=[];
+
+% %model configuration
+chass.time.min=0;
+chass.time.max=50;
+chass.time.id='t[h]';
+chass.time.TAU=0.25;
+chass.time.tspan=0:1:50;
+
 % 
 % % MLM - Machine Learning Model --------------------------------------------
 chass.mlm.id = 'mlpnet'; %'user-defined'; %'mlpnet' %mlp1H
@@ -347,61 +343,27 @@ chass.mlm.y(7).id = 'vm5';
 chass.mlm.y(7).val= 'rann7';
 chass.mlm.y(7).min= 0; 
 chass.mlm.y(7).max= 4;
-chass.mlm.options={'hidden nodes', [1]};
-chass.mlm.layer=1; %1-tanh 2-ReLu
+chass.mlm.options={'hidden nodes', [5 5]};
+chass.mlm.layer=1; 
 chass.mlm.xfun=str2func('autoA_hybmod_anninp'); %generated automatically
 chass.mlm.yfun=str2func('autoA_hybmod_rann'); %only used if 'user-defined'
 chass.symbolic='full-symbolic';
 chass.symbolic='semi-symbolic';
-
-%Model configuration
-
-chass.id='chass';
-
-chass.time.min=0;
-chass.time.max=100;
-chass.time.id='t[h]';
-chass.time.TAU=0.25;
-chass.time.tspan=0:1:100;
-
-chass.datasource=3; %1 - text file; 2- excel file; 3-userdefined function
+chass.datasource=3;
 chass.datafun=@chassdata;
-
 %training configuration
-chass.mode=1;%;    %1-indirect, 2-direct, 3-semidirect
-chass.method=1;    %1-lev-marquardt, 2-quasi-Newton   3- Simulated Annealing
-chass.jacobian=1;  %1-ON, 0- OFF   [ONLY FOR LEVENBERG-MARQUARDT]
-chass.hessian=0;   %1-ON  0- OFF   [only for quasi-Newton]
-chass.derivativecheck='off'; %'on' or 'off' [ONLY FOR LEVENBERG-MARQUARDT]
+chass.mode=1;   
+chass.method=1;  
+chass.jacobian=1; 
+chass.hessian=0;  
+chass.derivativecheck='off';
 chass.niter=100;
 chass.niteroptim=1;
-chass.nstep=2;
-chass.display=2;   %'off','Iter'
-chass.bootstrap=0; %1-do bootstrap; 0-no boostrapp
-chass.nensemble=1; %number of models to aggregate >=1; if >1 confidence intervals are computed
-chass.crossval=0;  %0 - no cross-validation; 1 - do crossvalidation
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+chass.nstep=1;
+chass.display='off;   
+chass.bootstrap=0; 
+chass.nensemble=1; 
+chass.crossval=1;
 
 
 end

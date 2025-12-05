@@ -13,62 +13,62 @@ import sympy as sp
 
 start_time = time.time()
 user_id = "local_user"
-    
+
 run_id = str(uuid.uuid4())
 trained_weights = None
 
 # Model 1
-#file1_path = "Backend/Files/Workshop/CellGrowthModel1.hmod"
-#file2_path = "Backend/Files/Workshop/CellGrowth.csv"
-#temp_dir = "Backend/Files/Workshop/CellGrowthModel1"
+# file1_path = "Backend/Files/Workshop/CellGrowthModel1.hmod"
+# file2_path = "Backend/Files/Workshop/CellGrowth.csv"
+# temp_dir = "Backend/Files/Workshop/CellGrowthModel1"
 
 # Model 2
-#file1_path = "Backend/Files/Workshop/CellGrowthModel2.hmod"
-#file2_path = "Backend/Files/Workshop/CellGrowth.csv"
-#temp_dir = "Backend/Files/Workshop/CellGrowthModel2"
+# file1_path = "Backend/Files/Workshop/CellGrowthModel2.hmod"
+# file2_path = "Backend/Files/Workshop/CellGrowth.csv"
+# temp_dir = "Backend/Files/Workshop/CellGrowthModel2"
 
 # Model 3
-file1_path = "Backend/Files/Workshop/CellGrowthModel3.hmod"
-file2_path = "Backend/Files/Workshop/CellGrowth.csv"
-temp_dir = "Backend/Files/Workshop/CellGrowthModel3"
+# file1_path = "Backend/Files/Workshop/CellGrowthModel3.hmod"
+# file2_path = "Backend/Files/Workshop/CellGrowth.csv"
+# temp_dir = "Backend/Files/Workshop/CellGrowthModel3"
 
 # CHO
-#file1_path = "Backend/Files/CHO/CHOsimplenew.hmod"
-#file2_path = "Backend/Files/CHO/CHOdata.csv"
-#temp_dir = "Backend/Files/CHO"
+# file1_path = "Backend/Files/CHO/CHOsimplenew.hmod"
+# file2_path = "Backend/Files/CHO/CHOdata.csv"
+# temp_dir = "Backend/Files/CHO"
 
-#Chassagnole
-#file1_path = "Backend/Files/Chassagnole/Chass1.hmod"
-#file2_path = "Backend/Files/Chassagnole/combined_chass_50.csv"
-#temp_dir = "Backend/Files/Chassagnole"
+# Chassagnole
+# file1_path = "Backend/Files/Chassagnole/Chass1.hmod"
+# file2_path = "Backend/Files/Chassagnole/combined_chass_50.csv"
+# temp_dir = "Backend/Files/Chassagnole"
 
-#ParkAndRamirez
-#file1_path = "Backend/Files/ParkAndRamirez/parkramstandard.hmod"
-#file2_path = "Backend/Files/ParkAndRamirez/PARK_COMBINED_PM_PT_S_X.csv"
-#temp_dir = "Backend/Files/ParkAndRamirez"
+# ParkAndRamirez
+file1_path = "Backend/Files/ParkAndRamirez/parkramstandard.hmod"
+file2_path = "Backend/Files/ParkAndRamirez/PARK_COMBINED_PM_PT_S_X.csv"
+temp_dir = "Backend/Files/ParkAndRamirez"
 
 # RUN Manual Hold-Out Cross Validation:
 '''
-train_batches = [1,2,3,4,5,6,7,8,9,10,11,13,14]
-test_batches = [15]
-val_batches = [12]
+train_batches = []
+test_batches = [13,14,15]
+val_batches = []
 
 mode = "1"
 Kfolds = 1
 nensemble = 1
-split_ratio = 0.5
+split_ratio = 0.66
 Crossval = "1"
 '''
 
 # RUN Automatic Hold-Out Cross Validation
 '''
 train_batches = []
-test_batches = [13,14,15]
+test_batches = [9]
 val_batches = []
 
 
 mode = "2"
-Kfolds = 2
+Kfolds = 1
 nensemble = 1
 split_ratio = 0.66
 Crossval = "1"
@@ -76,18 +76,38 @@ Crossval = "1"
 
 # RUN K-Fold Cross Validation
 
-test_batches = [15]
+test_batches = [13, 14, 15]
 train_batches = []
 val_batches = []
 
 mode = "3"
 Kfolds = 2
-nensemble = 1
-split_ratio = 0.7
+nensemble = 2
+split_ratio = 0.80
 Crossval = "1"
+
+# trained_weights = [-11.84145193, 0.48409648, -0.15599226, 0.20614948, -4.63165101, 0.13035737, 0.20741368, 3.32873214]
 
 
 projhyb = hybdata(file1_path)
+
+
+def sanitize_projhyb(obj):
+    if isinstance(obj, dict):
+        return {str(k): sanitize_projhyb(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_projhyb(v) for v in obj]
+    elif isinstance(obj, np.generic):
+        return obj.item()
+    elif isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
+        return None
+    elif isinstance(obj, sp.Basic):  # Symbol, Add, etc.
+        return str(obj)
+    elif callable(obj):
+        return None
+    elif hasattr(obj, '__module__') and 'torch' in obj.__module__:
+        return None  # strip torch models, tensors, etc.
+    return obj
 
 
 use_validation = True if Crossval == "1" else False
@@ -122,7 +142,7 @@ if mode == "1":
     val_batches = list(map(int, val_batches))
     for batch in train_batches:
         if int(batch) in data:
-            data[int(batch)]["istrain"] = [1]  
+            data[int(batch)]["istrain"] = [1]
 
     for batch in val_batches:
         if int(batch) in data:
@@ -151,7 +171,6 @@ if mode == "2" or mode == "3":
         kfolds=kfolds,
         manual_test_batches=test_batches
     )
-    
 
 
 data = add_state_and_time_to_data(data, projhyb)
@@ -178,27 +197,19 @@ projhyb_json_path = os.path.join(temp_dir, "projhyb.json")
 with open(projhyb_json_path, "w") as write_file:
     json.dump(projhyb, write_file)
 
+try:
+    projhyb, bestWeights, testing, newHmodFile = hybtrain(
+        projhyb, data, user_id, trained_weights, file1_path, temp_dir, run_id
+    )
+except TypeError as e:
+    print("❌ projhyb contains unserializable types:", e)
+    projhyb = sanitize_projhyb(projhyb)
+    print("✅ projhyb sanitized.")
+    endTime = time.time()
 
-projhyb, bestWeights, testing, newHmodFile = hybtrain(
-    projhyb, data, user_id, trained_weights, file1_path, temp_dir, run_id
-)
-
-def sanitize_projhyb(obj):
-    if isinstance(obj, dict):
-        return {str(k): sanitize_projhyb(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [sanitize_projhyb(v) for v in obj]
-    elif isinstance(obj, np.generic):
-        return obj.item()
-    elif isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
-        return None
-    elif isinstance(obj, sp.Basic):  # Symbol, Add, etc.
-        return str(obj)
-    elif callable(obj):
-        return None
-    elif hasattr(obj, '__module__') and 'torch' in obj.__module__:
-        return None  # strip torch models, tensors, etc.
-    return obj
+    print(f"⏱️ Training Time: {endTime - start_time:.2f} seconds")
+    print("\n✅ Training Complete")
+    print(f"Metrics: {testing}")
 
 projhyb = sanitize_projhyb(projhyb)
 

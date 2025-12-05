@@ -19,6 +19,7 @@ const HmodModal = ({
     initialValues,
     setHmodOptions,
     disableMethod5,
+    //data
 }) => {
     const [hiddenNodes, setHiddenNodes] = useState(
         initialValues ? initialValues.hiddenNodes : ""
@@ -38,7 +39,7 @@ const HmodModal = ({
     const [niter, setNiter] = useState(
         initialValues ? initialValues.niter : 400
     );
-    const [nstep, setNstep] = useState(initialValues ? initialValues.nstep : 2);
+    const [nstep, setNstep] = useState(initialValues ? initialValues.nstep : 1);
     const [bootstrap, setBootstrap] = useState(
         initialValues ? initialValues.bootstrap : 0
     );
@@ -79,6 +80,17 @@ const HmodModal = ({
             setBootstrap(initialValues.bootstrap);
         }
     }, [initialValues]);
+    /*
+    useEffect(() => {
+        if (!data || data.length === 0) return;
+
+        const firstNonZero = data.find((row) => Number(row.time) > 0);
+        if (firstNonZero) {
+        const tauValue = Number(firstNonZero.time);
+        if (!isNaN(tauValue)) setTau(tauValue);
+        }
+    }, [data]);
+    */
 
     return (
         <Dialog
@@ -143,12 +155,14 @@ const HmodModal = ({
                             <MenuItem value={3}>Dual Annealing</MenuItem>
 
                             <MenuItem value={4}>ADAM</MenuItem>
-
-                            <MenuItem value={5} disabled={disableMethod5}>
-                                {disableMethod5
-                                    ? "ADAM + ODEint (Disabled: ny > nx)"
-                                    : "ADAM + ODEint"}
+                            {/*
+                            <MenuItem
+                                value={5}
+                                disabled={disableMethod5}
+                            >
+                                {disableMethod5 ? "ADAM + ODEint (Disabled: ny > nx)" : "ADAM + ODEint"}
                             </MenuItem>
+                            */}
                         </TextField>
                         <Tooltip
                             title='Trust Region Reflective: Suitable for large-scale nonlinear least-squares problems. Trust-Region Constrained or L-BFGS-B: Suitable for constrained optimization problems. Simulated Annealing: Probabilistic technique for approximating the global optimum. ADAM: Optimization algorithm that computes adaptive learning rates for each parameter.'
@@ -164,6 +178,7 @@ const HmodModal = ({
                             label='Niter'
                             type='number'
                             value={niter}
+                            inputProps={{ min: 1 }}
                             onChange={(e) => setNiter(Number(e.target.value))}
                             helperText='Number of integrations'
                         />

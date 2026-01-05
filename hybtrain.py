@@ -862,7 +862,7 @@ def resfun_indirect_jac(ann, w, istrain, projhyb, file, method=1, mask_type=None
 
     valid_idx = ~np.isnan(sresall) & ~np.isinf(sresall)
     sresall = sresall[valid_idx]
-    # sjacall = sjacall[valid_idx, :]
+    sjacall = sjacall[valid_idx, :]
 
     if method == 1 or method == 4 or method == 6:
 

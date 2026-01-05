@@ -38,14 +38,14 @@ trained_weights = None
 # temp_dir = "Backend/Files/CHO"
 
 # Chassagnole
-# file1_path = "Backend/Files/Chassagnole/Chass1.hmod"
-# file2_path = "Backend/Files/Chassagnole/combined_chass_50.csv"
-# temp_dir = "Backend/Files/Chassagnole"
+file1_path = "Backend/Files/Chassagnole/Chass1.hmod"
+file2_path = "Backend/Files/Chassagnole/combined_chass_50.csv"
+temp_dir = "Backend/Files/Chassagnole"
 
 # ParkAndRamirez
-file1_path = "Backend/Files/ParkAndRamirez/parkramstandard.hmod"
-file2_path = "Backend/Files/ParkAndRamirez/PARK_COMBINED_PM_PT_S_X.csv"
-temp_dir = "Backend/Files/ParkAndRamirez"
+#file1_path = "Backend/Files/ParkAndRamirez/parkramstandard.hmod"
+#file2_path = "Backend/Files/ParkAndRamirez/PARK_COMBINED_PM_PT_S_X.csv"
+#temp_dir = "Backend/Files/ParkAndRamirez"
 
 # RUN Manual Hold-Out Cross Validation:
 '''
@@ -76,13 +76,13 @@ Crossval = "1"
 
 # RUN K-Fold Cross Validation
 
-test_batches = [13, 14, 15]
+test_batches = [1, 5]
 train_batches = []
 val_batches = []
 
 mode = "3"
-Kfolds = 2
-nensemble = 2
+Kfolds = 1
+nensemble = 1
 split_ratio = 0.80
 Crossval = "1"
 

@@ -50,7 +50,7 @@ running_threads = {}
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins=[
-    "https://www.hybpy.com", "https://hybpy.com", "http://localhost:3000"
+    "https://www.hybpy.com", "https://hybpy.com", "http://localhost:3000", "http://localhost:4000"
 ])
 
 CORS(app, origins="*", supports_credentials=True)

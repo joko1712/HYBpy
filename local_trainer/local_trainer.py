@@ -40,7 +40,7 @@ from hybdata import hybdata
 
 
 app = Flask(__name__)
-CORS(app, resources={r"/train": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 def download_to_file(url, suffix=""):

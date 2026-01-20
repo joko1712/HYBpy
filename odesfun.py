@@ -161,7 +161,6 @@ def odesfun(ann, t, state, jac, hess, w, ucontrol, projhyb, fstate, anninp, anni
     cache = projhyb_cache[run_id]
 
     if jac is None and hess is None:
-        print("YOOOOO")
         NValues = {**values, **state}
         if 'FSTATE_FUNC' not in projhyb['mlm']:
             fstate_expr_list = fstate_func(projhyb, NValues)

@@ -327,4 +327,6 @@ def zip_dir(src_dir):
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=4000)
+    host, port = "127.0.0.1", 4000
+    print(f"[READY] Local trainer starting on http://{host}:{port} (pid={os.getpid()})")
+    app.run(host=host, port=port)

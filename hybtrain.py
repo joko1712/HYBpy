@@ -1426,7 +1426,7 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
         mask_type = "train"
         w = weights
 
-    # LOAD THE WEIGHTS into the ann
+        # LOAD THE WEIGHTS into the ann
         ann.set_weights(w)
 
         # ires = 11
@@ -1551,8 +1551,8 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                     label="Predicted", color='red', linewidth=1)
 
             plt.xlabel('Time')
-            plt.ylabel('Value')
-            ax.set_title(f"{species_id}")
+            plt.ylabel('Concentration')
+            ax.set_title(f"{species_id}", fontweight='bold')
             plt.legend()
 
             os.makedirs(plots_dir, exist_ok=True)
@@ -1563,20 +1563,38 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
 
     else:
         is_single_model = (projhyb.get("kfolds", 1) == 1 and len(weights) == 1)
+        use_val = not is_single_model
 
         overall_metrics = {
             'mse_train': [],
             'mse_test': [],
             'r2_train': [],
-            'r2_test': []
+            'r2_test': [],
+            'mse_val': [],
+            'r2_val': []
+        }
+
+        species_metrics_raw = {
+            projhyb["species"][str(i + 1)]["id"]: {
+                'mse_train': [], 'mse_test': [],
+                'r2_train': [], 'r2_test': [],
+                'mse_val': [],  'r2_val': []
+            }
+            for i in range(projhyb["nspecies"])
         }
 
         ensemble_predictions = {}
         pvodata = {
             projhyb["species"][str(
-                i+1)]["id"]: {'train': {}, 'val': {}, 'test': {}}
+                i + 1)]["id"]: {'train': {}, 'val': {}, 'test': {}}
             for i in range(projhyb["nspecies"])
         }
+
+        def safe_mse(y, yhat):
+            return mean_squared_error(y, yhat) if y.size > 0 else None
+
+        def safe_r2(y, yhat):
+            return r2_score(y, yhat) if y.size > 1 else None
 
         for k, w in enumerate(weights):
             clean_w = np.array(w, dtype=np.float32)
@@ -1587,8 +1605,8 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
             nt = ns + projhyb["ncompartment"]
             nw = projhyb["mlm"]["nw"]
 
-            isres = [i for i in range(1, ns + 1)
-                     if projhyb["species"][str(i)]["isres"] == 1]
+            isres = [i for i in range(
+                1, ns + 1) if projhyb["species"][str(i)]["isres"] == 1]
             isresY = [i - 1 for i in isres]
             nres = len(isres)
 
@@ -1597,11 +1615,13 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                 if isinstance(file[i], dict)
                 and file[i]["istrain"][k] == 1
             ]
-            val_batches = [
+
+            val_batches = ([] if not use_val else [
                 i for i in file
                 if isinstance(file[i], dict)
                 and file[i]["istrain"][k] == 2
-            ]
+            ])
+
             test_batches = [
                 i for i in file
                 if isinstance(file[i], dict)
@@ -1613,15 +1633,15 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                     continue
 
                 tb = file[l]["time"]
-                state = np.array(file[l]["y"][0])[0:ns+1]
+                state = np.array(file[l]["y"][0])[0:ns + 1]
                 Sw = np.zeros((nt, nw))
 
                 for i_step in range(1, file[l]["np"]):
                     statedict = dict(
-                        list(file[l]["key_value_array"][i_step-1].items())[ns:])
+                        list(file[l]["key_value_array"][i_step - 1].items())[ns:])
                     _, state, Sw, hess = hybodesolver(
                         ann, odesfun, control_function, projhyb["fun_event"],
-                        tb[i_step-1], tb[i_step],
+                        tb[i_step - 1], tb[i_step],
                         state, statedict, None, None,
                         np.array(w), file[l], projhyb
                     )
@@ -1631,7 +1651,7 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                     dictState[l][i_step] = state
 
             for i in range(projhyb["nspecies"]):
-                species_id = projhyb["species"][str(i+1)]["id"]
+                species_id = projhyb["species"][str(i + 1)]["id"]
 
                 for batch in test_batches:
                     for t_idx in range(1, file[batch]["np"]):
@@ -1640,8 +1660,10 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                             predicted_value = float(
                                 dictState[batch][t_idx - 1][i])
                         except Exception as e:
-                            print(f"[Warning] Could not cast prediction to float "
-                                  f"at batch {batch}, t={t_idx}, species={i+1}: {e}")
+                            print(
+                                f"[Warning] Could not cast prediction to float "
+                                f"at batch {batch}, t={t_idx}, species={i + 1}: {e}"
+                            )
                             continue
 
                         if species_id not in ensemble_predictions:
@@ -1664,15 +1686,16 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                             d[key] = {'y': obs_y, 'preds': []}
                         d[key]['preds'].append(pred_y)
 
-                for batch in val_batches:
-                    for t_idx in range(1, file[batch]["np"]):
-                        key = (batch, t_idx)
-                        obs_y = float(file[batch]["y"][t_idx - 1][i])
-                        pred_y = float(dictState[batch][t_idx - 1][i])
-                        d = pvodata[species_id]['val']
-                        if key not in d:
-                            d[key] = {'y': obs_y, 'preds': []}
-                        d[key]['preds'].append(pred_y)
+                if use_val:
+                    for batch in val_batches:
+                        for t_idx in range(1, file[batch]["np"]):
+                            key = (batch, t_idx)
+                            obs_y = float(file[batch]["y"][t_idx - 1][i])
+                            pred_y = float(dictState[batch][t_idx - 1][i])
+                            d = pvodata[species_id]['val']
+                            if key not in d:
+                                d[key] = {'y': obs_y, 'preds': []}
+                            d[key]['preds'].append(pred_y)
 
                 for batch in test_batches:
                     for t_idx in range(1, file[batch]["np"]):
@@ -1684,41 +1707,86 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                             d[key] = {'y': obs_y, 'preds': []}
                         d[key]['preds'].append(pred_y)
 
-                actual_train, actual_test = [], []
-                predicted_train, predicted_test = [], []
-                err = []
+                actual_train, predicted_train = [], []
+                actual_val, predicted_val = [], []
+                actual_test, predicted_test = [], []
 
-                for batch in (train_batches + val_batches):
+                for batch in train_batches:
                     for t_idx in range(1, file[batch]["np"]):
                         actual_train.append(file[batch]["y"][t_idx - 1][i])
                         predicted_train.append(dictState[batch][t_idx - 1][i])
+
+                if use_val:
+                    for batch in val_batches:
+                        for t_idx in range(1, file[batch]["np"]):
+                            actual_val.append(file[batch]["y"][t_idx - 1][i])
+                            predicted_val.append(
+                                dictState[batch][t_idx - 1][i])
 
                 for batch in test_batches:
                     for t_idx in range(1, file[batch]["np"]):
                         actual_test.append(file[batch]["y"][t_idx - 1][i])
                         predicted_test.append(dictState[batch][t_idx - 1][i])
-                        err.append(file[batch]["sy"][t_idx - 1][i])
 
-                actual_train = np.array(actual_train)
-                predicted_train = np.array(predicted_train)
-                actual_test = np.array(actual_test)
-                predicted_test = np.array(predicted_test)
-                err = np.array(err)
+                actual_train = np.array(actual_train, dtype=float)
+                predicted_train = np.array(predicted_train, dtype=float)
+                actual_test = np.array(actual_test, dtype=float)
+                predicted_test = np.array(predicted_test, dtype=float)
 
-                if (actual_train.shape != predicted_train.shape or
-                        actual_test.shape != predicted_test.shape):
-                    print(f"[Ensemble {k}] Shape mismatch for species {i+1}")
+                if use_val:
+                    actual_val = np.array(actual_val, dtype=float)
+                    predicted_val = np.array(predicted_val, dtype=float)
+
+                if actual_train.shape != predicted_train.shape:
+                    print(
+                        f"[Ensemble {k}] Train shape mismatch for species {i + 1}")
+                    continue
+                if actual_test.shape != predicted_test.shape:
+                    print(
+                        f"[Ensemble {k}] Test shape mismatch for species {i + 1}")
+                    continue
+                if use_val and (actual_val.shape != predicted_val.shape):
+                    print(
+                        f"[Ensemble {k}] Val shape mismatch for species {i + 1}")
                     continue
 
-                mse_train = mean_squared_error(actual_train, predicted_train)
-                mse_test = mean_squared_error(actual_test, predicted_test)
-                r2_train = r2_score(actual_train, predicted_train)
-                r2_test = r2_score(actual_test, predicted_test)
+                mse_train = safe_mse(actual_train, predicted_train)
+                r2_train = safe_r2(actual_train, predicted_train)
 
-                overall_metrics["mse_train"].append(mse_train)
-                overall_metrics["mse_test"].append(mse_test)
-                overall_metrics["r2_train"].append(r2_train)
-                overall_metrics["r2_test"].append(r2_test)
+                mse_test = safe_mse(actual_test, predicted_test)
+                r2_test = safe_r2(actual_test, predicted_test)
+
+                mse_val = r2_val = None
+                if use_val:
+                    mse_val = safe_mse(actual_val, predicted_val)
+                    r2_val = safe_r2(actual_val, predicted_val)
+
+                if mse_train is not None:
+                    overall_metrics["mse_train"].append(mse_train)
+                    species_metrics_raw[species_id]["mse_train"].append(
+                        mse_train)
+                if r2_train is not None:
+                    overall_metrics["r2_train"].append(r2_train)
+                    species_metrics_raw[species_id]["r2_train"].append(
+                        r2_train)
+
+                if mse_test is not None:
+                    overall_metrics["mse_test"].append(mse_test)
+                    species_metrics_raw[species_id]["mse_test"].append(
+                        mse_test)
+                if r2_test is not None:
+                    overall_metrics["r2_test"].append(r2_test)
+                    species_metrics_raw[species_id]["r2_test"].append(r2_test)
+
+                if use_val:
+                    if mse_val is not None:
+                        overall_metrics["mse_val"].append(mse_val)
+                        species_metrics_raw[species_id]["mse_val"].append(
+                            mse_val)
+                    if r2_val is not None:
+                        overall_metrics["r2_val"].append(r2_val)
+                        species_metrics_raw[species_id]["r2_val"].append(
+                            r2_val)
 
         plots_dir = projhyb.get('plots_dir') or os.path.join(
             temp_dir, 'plots', user_id, projhyb.get('run_id', 'local')
@@ -1726,7 +1794,7 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
         os.makedirs(plots_dir, exist_ok=True)
 
         for i in range(projhyb["nspecies"]):
-            species_id = projhyb["species"][str(i+1)]["id"]
+            species_id = projhyb["species"][str(i + 1)]["id"]
 
             if species_id not in ensemble_predictions or not ensemble_predictions[species_id]:
                 continue
@@ -1734,31 +1802,36 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
             batch = list(ensemble_predictions[species_id].keys())[0]
             x = file[batch]["time"][:-1]
 
-            y_true, y_mean, y_ci = [], [], []
+            y_true, y_mean, y_ci, err_for_plot = [], [], [], []
             for t_idx in sorted(ensemble_predictions[species_id][batch].keys()):
                 preds = np.array(
-                    ensemble_predictions[species_id][batch][t_idx])
-                mean_pred = np.mean(preds)
-                std_pred = np.std(preds, ddof=1)
-                n_preds = len(preds)
+                    ensemble_predictions[species_id][batch][t_idx], dtype=float)
+                mean_pred = float(np.mean(preds))
+                std_pred = float(np.std(preds, ddof=1)
+                                 ) if preds.size > 1 else 0.0
+                n_preds = int(preds.size)
+
                 t_score_val = t_dist.ppf(
-                    1 - 0.025, df=n_preds - 1
-                ) if n_preds > 1 else 2.0
-                ci = t_score_val * std_pred / np.sqrt(float(n_preds))
+                    1 - 0.025, df=n_preds - 1) if n_preds > 1 else 2.0
+                ci = t_score_val * std_pred / \
+                    np.sqrt(float(n_preds)) if n_preds > 0 else 0.0
 
                 y_mean.append(mean_pred)
                 y_ci.append(ci)
                 y_true.append(file[batch]["y"][t_idx][i])
+                err_for_plot.append(file[batch]["sy"][t_idx][i])
 
-            y_mean = np.array(y_mean)
-            y_ci = np.array(y_ci)
-            y_true = np.array(y_true)
+            y_mean = np.array(y_mean, dtype=float)
+            y_ci = np.array(y_ci, dtype=float)
+            y_true = np.array(y_true, dtype=float)
+            err_for_plot = np.array(err_for_plot, dtype=float)
+
             lower_bound = np.clip(y_mean - y_ci, 0, None)
             upper_bound = y_mean + y_ci
 
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.errorbar(
-                x, y_true, err[:len(x)], fmt='o',
+                x, y_true, err_for_plot[:len(x)], fmt='o',
                 linewidth=1, capsize=6,
                 label="Observed data", color='green', alpha=0.5
             )
@@ -1772,8 +1845,8 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                 color='red'
             )
             ax.set_xlabel('Time')
-            ax.set_ylabel('Value')
-            ax.set_title(f"{species_id}")
+            ax.set_ylabel('Concentration')
+            ax.set_title(f"{species_id}", fontweight='bold')
             ax.legend()
             ax.grid(True, linestyle='--', alpha=0.3)
             plt.savefig(os.path.join(
@@ -1784,46 +1857,44 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
             val_obs, val_pred = [], []
             test_obs, test_pred = [], []
 
-            for (batch, t_idx), rec in pvodata[species_id]['train'].items():
+            for (batch_, t_idx), rec in pvodata[species_id]['train'].items():
                 train_obs.append(rec['y'])
                 train_pred.append(np.mean(rec['preds']))
 
-            for (batch, t_idx), rec in pvodata[species_id]['val'].items():
-                val_obs.append(rec['y'])
-                val_pred.append(np.mean(rec['preds']))
+            if use_val:
+                for (batch_, t_idx), rec in pvodata[species_id]['val'].items():
+                    val_obs.append(rec['y'])
+                    val_pred.append(np.mean(rec['preds']))
 
-            for (batch, t_idx), rec in pvodata[species_id]['test'].items():
+            for (batch_, t_idx), rec in pvodata[species_id]['test'].items():
                 test_obs.append(rec['y'])
                 test_pred.append(np.mean(rec['preds']))
 
-            train_obs = np.array(train_obs)
-            train_pred = np.array(train_pred)
-            val_obs = np.array(val_obs)
-            val_pred = np.array(val_pred)
-            test_obs = np.array(test_obs)
-            test_pred = np.array(test_pred)
+            train_obs = np.array(train_obs, dtype=float)
+            train_pred = np.array(train_pred, dtype=float)
+            val_obs = np.array(val_obs, dtype=float)
+            val_pred = np.array(val_pred, dtype=float)
+            test_obs = np.array(test_obs, dtype=float)
+            test_pred = np.array(test_pred, dtype=float)
 
             fig, ax = plt.subplots(figsize=(10, 6))
 
             if train_obs.size > 0:
                 ax.scatter(train_obs, train_pred, color='blue',
                            label='Train', alpha=0.5)
-            if val_obs.size > 0:
+            if use_val and val_obs.size > 0:
                 ax.scatter(val_obs, val_pred, color='orange',
                            label='Validation', alpha=0.5)
             if test_obs.size > 0:
                 ax.scatter(test_obs, test_pred, color='red',
                            label='Test', alpha=0.5)
 
-            if (train_obs.size + train_pred.size +
-                val_obs.size + val_pred.size +
-                    test_obs.size + test_pred.size) > 0:
+            parts = [train_obs, train_pred, test_obs, test_pred]
+            if use_val:
+                parts += [val_obs, val_pred]
 
-                all_vals = np.concatenate([
-                    train_obs, train_pred,
-                    val_obs, val_pred,
-                    test_obs, test_pred
-                ])
+            if sum(p.size for p in parts) > 0:
+                all_vals = np.concatenate(parts)
             else:
                 all_vals = np.array([0.0, 1.0])
 
@@ -1837,11 +1908,10 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
 
             ax.plot(x_line, x_line, '-', color='black',
                     alpha=0.8, label='Ideal (1:1)')
-
-            ax.plot(x_line, 1.05 * x_line, '--', color='gray',
-                    alpha=0.6, label='+5%')
-            ax.plot(x_line, 0.95 * x_line, '--', color='gray',
-                    alpha=0.6, label='-5%')
+            ax.plot(x_line, 1.05 * x_line, '--',
+                    color='gray', alpha=0.6, label='+5%')
+            ax.plot(x_line, 0.95 * x_line, '--',
+                    color='gray', alpha=0.6, label='-5%')
 
             ax.set_xlim(min_val - pad, max_val + pad)
             ax.set_ylim(min_val - pad, max_val + pad)
@@ -1858,29 +1928,27 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                 plots_dir, f'ParatyPlot_{species_id}.png'), dpi=300)
             plt.close(fig)
 
-        all_train_obs_norm = []
-        all_train_pred_norm = []
-        all_val_obs_norm = []
-        all_val_pred_norm = []
-        all_test_obs_norm = []
-        all_test_pred_norm = []
+        all_train_obs_norm, all_train_pred_norm = [], []
+        all_val_obs_norm, all_val_pred_norm = [], []
+        all_test_obs_norm, all_test_pred_norm = [], []
 
         for i in range(projhyb["nspecies"]):
-            species_id = projhyb["species"][str(i+1)]["id"]
+            species_id = projhyb["species"][str(i + 1)]["id"]
 
             train_obs, train_pred = [], []
             val_obs,   val_pred = [], []
             test_obs,  test_pred = [], []
 
-            for (batch, t_idx), rec in pvodata[species_id]['train'].items():
+            for (_, _), rec in pvodata[species_id]['train'].items():
                 train_obs.append(rec['y'])
                 train_pred.append(np.mean(rec['preds']))
 
-            for (batch, t_idx), rec in pvodata[species_id]['val'].items():
-                val_obs.append(rec['y'])
-                val_pred.append(np.mean(rec['preds']))
+            if use_val:
+                for (_, _), rec in pvodata[species_id]['val'].items():
+                    val_obs.append(rec['y'])
+                    val_pred.append(np.mean(rec['preds']))
 
-            for (batch, t_idx), rec in pvodata[species_id]['test'].items():
+            for (_, _), rec in pvodata[species_id]['test'].items():
                 test_obs.append(rec['y'])
                 test_pred.append(np.mean(rec['preds']))
 
@@ -1894,41 +1962,45 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
             if (train_obs.size + val_obs.size + test_obs.size) == 0:
                 continue
 
-            obs_all = np.concatenate([
-                arr for arr in [train_obs, val_obs, test_obs] if arr.size > 0
-            ])
+            obs_all = np.concatenate(
+                [arr for arr in [train_obs, val_obs, test_obs] if arr.size > 0])
             obs_min = float(obs_all.min())
             obs_max = float(obs_all.max())
 
             if obs_max == obs_min:
                 train_obs_norm = np.full_like(train_obs, 0.5)
-                val_obs_norm = np.full_like(val_obs, 0.5)
                 test_obs_norm = np.full_like(test_obs, 0.5)
-
                 train_pred_norm = np.full_like(train_pred, 0.5)
-                val_pred_norm = np.full_like(val_pred, 0.5)
                 test_pred_norm = np.full_like(test_pred, 0.5)
+
+                if use_val:
+                    val_obs_norm = np.full_like(val_obs, 0.5)
+                    val_pred_norm = np.full_like(val_pred, 0.5)
+                else:
+                    val_obs_norm = val_pred_norm = np.array([], dtype=float)
             else:
                 rng = obs_max - obs_min
-
                 train_obs_norm = (train_obs - obs_min) / \
                     rng if train_obs.size > 0 else train_obs
-                val_obs_norm = (val_obs - obs_min) / \
-                    rng if val_obs.size > 0 else val_obs
                 test_obs_norm = (test_obs - obs_min) / \
                     rng if test_obs.size > 0 else test_obs
-
                 train_pred_norm = (train_pred - obs_min) / \
                     rng if train_pred.size > 0 else train_pred
-                val_pred_norm = (val_pred - obs_min) / \
-                    rng if val_pred.size > 0 else val_pred
                 test_pred_norm = (test_pred - obs_min) / \
                     rng if test_pred.size > 0 else test_pred
+
+                if use_val:
+                    val_obs_norm = (val_obs - obs_min) / \
+                        rng if val_obs.size > 0 else val_obs
+                    val_pred_norm = (val_pred - obs_min) / \
+                        rng if val_pred.size > 0 else val_pred
+                else:
+                    val_obs_norm = val_pred_norm = np.array([], dtype=float)
 
             if train_obs_norm.size > 0:
                 all_train_obs_norm.append(train_obs_norm)
                 all_train_pred_norm.append(train_pred_norm)
-            if val_obs_norm.size > 0:
+            if use_val and val_obs_norm.size > 0:
                 all_val_obs_norm.append(val_obs_norm)
                 all_val_pred_norm.append(val_pred_norm)
             if test_obs_norm.size > 0:
@@ -1954,7 +2026,7 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
             if all_train_obs_norm.size > 0:
                 ax.scatter(all_train_obs_norm, all_train_pred_norm,
                            alpha=0.4, label='Train', color='blue', s=15)
-            if all_val_obs_norm.size > 0:
+            if use_val and all_val_obs_norm.size > 0:
                 ax.scatter(all_val_obs_norm, all_val_pred_norm,
                            alpha=0.4, label='Validation', color='orange', s=15)
             if all_test_obs_norm.size > 0:
@@ -1964,7 +2036,6 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
             x_line = np.linspace(0.0, 1.0, 200)
             ax.plot(x_line, x_line, '-', color='black',
                     alpha=0.9, label='Ideal (1:1)')
-
             ax.plot(x_line, 1.05 * x_line, '--',
                     color='gray', alpha=0.6, label='+5%')
             ax.plot(x_line, 0.95 * x_line, '--',
@@ -1972,7 +2043,6 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
 
             ax.set_xlim(-0.05, 1.05)
             ax.set_ylim(-0.05, 1.05)
-
             ax.set_xlabel('Observed (normalized)')
             ax.set_ylabel('Predicted (normalized)')
             ax.set_title('Global Normalized Parity Plot (All Species)')
@@ -1983,17 +2053,43 @@ def teststate(ann, user_id, projhyb, file, weights, temp_dir, simulation, method
                 plots_dir, 'Parity_AllSpecies_Normalized.png'), dpi=300)
             plt.close(fig)
 
-    overall_mse_train = np.mean(overall_metrics['mse_train'])
-    overall_mse_test = np.mean(overall_metrics['mse_test'])
-    overall_r2_train = np.mean(overall_metrics['r2_train'])
-    overall_r2_test = np.mean(overall_metrics['r2_test'])
+    def mean_or_none(lst):
+        return float(np.mean(lst)) if lst else None
 
-    return {
+    overall_mse_train = mean_or_none(overall_metrics['mse_train'])
+    overall_mse_test = mean_or_none(overall_metrics['mse_test'])
+    overall_r2_train = mean_or_none(overall_metrics['r2_train'])
+    overall_r2_test = mean_or_none(overall_metrics['r2_test'])
+
+    species_metrics = {}
+    for sid, m in species_metrics_raw.items():
+        species_metrics[sid] = {
+            'mse_train': mean_or_none(m['mse_train']),
+            'mse_test': mean_or_none(m['mse_test']),
+            'r2_train': mean_or_none(m['r2_train']),
+            'r2_test': mean_or_none(m['r2_test']),
+        }
+        if use_val:
+            species_metrics[sid].update({
+                'mse_val': mean_or_none(m['mse_val']),
+                'r2_val': mean_or_none(m['r2_val']),
+            })
+
+    result = {
         'mse_train': overall_mse_train,
         'mse_test': overall_mse_test,
         'r2_train': overall_r2_train,
-        'r2_test': overall_r2_test
+        'r2_test': overall_r2_test,
+        'species_metrics': species_metrics
     }
+
+    if use_val:
+        result.update({
+            'mse_val': mean_or_none(overall_metrics['mse_val']),
+            'r2_val': mean_or_none(overall_metrics['r2_val']),
+        })
+
+    return result
 
 
 def plot_best_folds_only(train_history, val_history, temp_dir=None, user_id=None, top_k=5):

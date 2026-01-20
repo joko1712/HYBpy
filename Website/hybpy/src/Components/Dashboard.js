@@ -244,6 +244,8 @@ export default function Dashboard() {
                 setRunInProgress(
                     "Training in progress... We will email you when the task is completed."
                 );
+            } else if (data.status === "training in progress locally") {
+                setRunInProgress("Training in progress locally... When done, please reload the page to analyse the data.");
             } else if (data.status === "error") {
                 setRunInProgress("Task failed");
             } else {
@@ -398,7 +400,7 @@ export default function Dashboard() {
                                         flexDirection: "column",
                                     }}>
                                     {runs.length > 0 &&
-                                    runs[0].trained_weights ? (
+                                        runs[0].trained_weights ? (
                                         <>
                                             <Typography
                                                 variant='h4'
@@ -420,7 +422,7 @@ export default function Dashboard() {
                                             )}
                                             {runs.length > 0 &&
                                                 runs[0].status ===
-                                                    "completed" && (
+                                                "completed" && (
                                                     <Button
                                                         variant='contained'
                                                         color='primary'
@@ -466,7 +468,7 @@ export default function Dashboard() {
                                             )}
                                             {runs.length > 0 &&
                                                 runs[0].status ===
-                                                    "completed" && (
+                                                "completed" && (
                                                     <Button
                                                         variant='contained'
                                                         color='primary'
@@ -515,7 +517,7 @@ export default function Dashboard() {
                                                         .filter(
                                                             (url) =>
                                                                 selectedPlots.length ===
-                                                                    0 ||
+                                                                0 ||
                                                                 selectedPlots.includes(
                                                                     url
                                                                 )
@@ -525,7 +527,7 @@ export default function Dashboard() {
                                                                 getFilteredPlotsSimulated().filter(
                                                                     (url) =>
                                                                         selectedPlots.length ===
-                                                                            0 ||
+                                                                        0 ||
                                                                         selectedPlots.includes(
                                                                             url
                                                                         )
@@ -594,7 +596,7 @@ export default function Dashboard() {
                                                         .filter(
                                                             (url) =>
                                                                 selectedPlots.length ===
-                                                                    0 ||
+                                                                0 ||
                                                                 selectedPlots.includes(
                                                                     url
                                                                 )
@@ -604,7 +606,7 @@ export default function Dashboard() {
                                                                 getFilteredPlots().filter(
                                                                     (url) =>
                                                                         selectedPlots.length ===
-                                                                            0 ||
+                                                                        0 ||
                                                                         selectedPlots.includes(
                                                                             url
                                                                         )
@@ -657,12 +659,12 @@ export default function Dashboard() {
                                                 Validation Vs Training Loss
                                             </Typography>
                                             {runs.length > 0 &&
-                                            Array.isArray(runs[0].plots) &&
-                                            runs[0].plots.some((url) =>
-                                                url.includes(
-                                                    "top_5_val_vs_train_folds_"
-                                                )
-                                            ) ? (
+                                                Array.isArray(runs[0].plots) &&
+                                                runs[0].plots.some((url) =>
+                                                    url.includes(
+                                                        "top_5_val_vs_train_folds_"
+                                                    )
+                                                ) ? (
                                                 <img
                                                     src={runs[0].plots.find(
                                                         (url) =>
@@ -703,8 +705,8 @@ export default function Dashboard() {
                                             selected.length === 0
                                                 ? "All Plots"
                                                 : selected
-                                                      .map(getPlotTitle)
-                                                      .join(", ")
+                                                    .map(getPlotTitle)
+                                                    .join(", ")
                                         }>
                                         {(runs[0]?.trained_weights
                                             ? getFilteredPlotsSimulated()

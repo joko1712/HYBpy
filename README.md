@@ -9,9 +9,63 @@ This repository contains the source code for the web-based application available
 
 ### Installing and Running HYBpy Locally
 
-This guide provides a comprehensive, step-by-step process for setting up and running **HYBpy** on your local machine. Following these instructions will ensure a clean and isolated environment for your project.
+You can run HYBpy locally in two ways:
+
+1. **Recommended (no Python setup):** Download a pre-built executable (Windows/macOS).
+2. **Developer setup:** Run from source using venv or Conda.
 
 ---
+# Option A — Windows Executable (Recommended)
+
+### Step A1: Download the executable
+Go to the **Latest Release** on GitHub and download the Windows package:
+
+- `HYBpy-LocalTrainer-windows-x64.zip` (Windows 10/11, 64-bit)
+
+### Step A2: Extract the ZIP
+Extract the `.zip` file to a folder of your choice.
+
+### Step A3: Run the executable
+Double-click the executable (or run from PowerShell):
+
+```powershell
+.\HYBpy_LocalTrainer.exe
+```
+### Step A4: Verify it is running
+After a few seconds the console should say:
+
+```bash
+    [READY] Local trainer starting
+```
+
+# Option B — macOS Executable (Recommended)
+
+### Step B1: Download the executable
+Go to the Latest Release on GitHub and download the macOS package if matches your Mac:
+
+- Apple Silicon (M1/M2/M3/M4): HYBpy-LocalTrainer-macos-arm64.zip
+
+### Step B2: Extract and run
+Extract the `.zip` and run:
+```bash
+chmod +x HYBpy_LocalTrainer
+./HYBpy_LocalTrainer
+```
+
+### Step B3: If macOS blocks the app (Gatekeeper)
+If macOS prevents execution because the binary is not notarized/signed:
+
+- System Settings → Privacy & Security → “Allow Anyway”
+- Then run again, or execute via Terminal.
+
+### Step B4: Verify it is running
+After a few seconds the console should say:
+
+```bash
+    [READY] Local trainer starting
+```
+
+# Option C — Using Python Virtual Environment (venv)
 
 ### Step 1: Obtain the HYBpy Repository
 
@@ -33,7 +87,7 @@ cd HYBpy
 
 ---
 
-## Option A — Using Python Virtual Environment (venv)
+## Option C1 — Using Python Virtual Environment (venv)
 
 ### Step 2: Create a Virtual Environment
 
@@ -103,7 +157,7 @@ deactivate
 
 ---
 
-## Option B — Using Conda Environment
+## Option C2 — Using Conda Environment
 
 ### Step 2: Create a Conda Environment
 
@@ -150,7 +204,7 @@ conda deactivate
 
 ## ⸎ Developed at
 
--   HYBpy is developed and maintaned at UCIBIO - Applied Molecular Biosciences Unit, NOVA School of Science and Technology, Universidade NOVA de Lisboa, 2829-516 Caparica, Portugal
+-   HYBpy is developed and maintained at UCIBIO - Applied Molecular Biosciences Unit, NOVA School of Science and Technology, Universidade NOVA de Lisboa, 2829-516 Caparica, Portugal
 
 _Authors:_ [José Pereira](https://github.com/joko1712), [Rafael Costa](https://github.com/r-costa), José Pinto, Rui Oliveira
 

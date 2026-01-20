@@ -44,6 +44,7 @@ After a few seconds the console should say:
 Go to the Latest Release on GitHub and download the macOS package if matches your Mac:
 
 - Apple Silicon (M1/M2/M3/M4): HYBpy-LocalTrainer-macos-arm64.zip
+- Intel Macs: HYBpy-LocalTrainer-macos-x64.zip 
 
 ### Step B2: Extract and run
 Extract the `.zip` and run:

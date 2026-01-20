@@ -1,6 +1,7 @@
 # HYBpy<sup></sup> <img align="left" src="Website/hybpy/src/Image/hybpy_logo.png" width="50" />
 
 ![Latest Release](https://img.shields.io/github/v/release/joko1712/HYBpy)
+[![DOI](https://img.shields.io/badge/DOI-10.1016%2Fj.dche.2025.100278-blue)](https://doi.org/10.1016/j.dche.2025.100278)
 
 ## Overview
 
@@ -208,6 +209,30 @@ conda deactivate
 -   HYBpy is developed and maintained at UCIBIO - Applied Molecular Biosciences Unit, NOVA School of Science and Technology, Universidade NOVA de Lisboa, 2829-516 Caparica, Portugal
 
 _Authors:_ [José Pereira](https://github.com/joko1712), [Rafael Costa](https://github.com/r-costa), José Pinto, Rui Oliveira
+
+---
+
+## Publication
+
+If you use HYBpy in academic work, please cite:
+
+Pedreira, J., Pinto, J., Gonçalves, D., Barahona, P., Oliveira, R., & Costa, R. S. (2025).
+*HYBpy: A web-based framework for hybrid modeling of biological systems*.
+Digital Chemical Engineering, 17, 100278. https://doi.org/10.1016/j.dche.2025.100278
+
+### BibTeX
+```bibtex
+@article{Pedreira2025HYBpy,
+  title   = {HYBpy: A web-based framework for hybrid modeling of biological systems},
+  author  = {Pedreira, Jos{\'e} and Pinto, Jos{\'e} and Gon{\c{c}}alves, Daniel and Barahona, Pedro and Oliveira, Rui and Costa, Rafael S.},
+  journal = {Digital Chemical Engineering},
+  volume  = {17},
+  pages   = {100278},
+  year    = {2025},
+  month   = {12},
+  doi     = {10.1016/j.dche.2025.100278}
+}
+```
 
 ## License
 

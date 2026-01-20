@@ -147,20 +147,25 @@ function FileUpload() {
     const [selectedHeaders, setSelectedHeaders] = useState([]);
     const [headerModalConfig, setHeaderModalConfig] = useState({
         headers: [],
-        onSave: () => {},
-        handleClose: () => {},
+        onSave: () => { },
+        handleClose: () => { },
     });
     const [mlmModalOpen, setMlmModalOpen] = useState(false);
     const [speciesOptions, setSpeciesOptions] = useState([]);
     const [controlOptions, setControlOptions] = useState([]);
     const [parameterOptions, setParameterOptions] = useState([]);
     const [compartmentOptions, setCompartmentOptions] = useState([]);
+    const [localAvailable, setLocalAvailable] = useState(false);
+    const [runLocation, setRunLocation] = useState("cloud");
 
     const [mlmOptions, setMlmOptions] = useState({});
 
     const [kfolds, setKfolds] = useState(1);
     const [splitRatio, setSplitRatio] = useState(0.66);
     const [nensemble, setNensemble] = useState(1);
+
+    const [userId, setCurrentUserId] = useState(null);
+    const [runId, setCurrentRunId] = useState(null);
 
     const handleMlmModalSave = (options) => {
         setMlmModalOpen(false);
@@ -193,7 +198,6 @@ function FileUpload() {
     const openMlmModal = () => {
         return new Promise((resolve) => {
             const saveMlmHandler = (options) => {
-                console.log("MLM Options in saveMlmHandler: ", options);
                 setMlmOptions(options);
                 resolve(options);
             };
@@ -254,8 +258,6 @@ function FileUpload() {
         openHeaderModal,
         selectedHeaders
     ) => {
-        console.log("Ensuring HMOD sections...");
-        console.log("Content: ", content);
         const regexPrefix = /(\w+)\.nspecies=/g;
         const uniquePrefixes = new Set();
 
@@ -298,9 +300,6 @@ function FileUpload() {
 
         if (headers.length > 0) {
             if (!controlExists) {
-                console.log(
-                    "Control section does not exist, opening header modal..."
-                );
                 if (selectedHeaders.length === 0) {
                     const newSelectedHeaders = await openHeaderModal(headers);
                     setSelectedHeaders(newSelectedHeaders);
@@ -311,39 +310,30 @@ function FileUpload() {
 
         if (selectedHeaders.length > 0 && !controlExists) {
             let controlSection = `% control---------------------------\n`;
-            controlSection += `${
-                uniquePrefixes.values().next().value
-            }.ncontrol=${selectedHeaders.length};\n`;
+            controlSection += `${uniquePrefixes.values().next().value
+                }.ncontrol=${selectedHeaders.length};\n`;
 
             selectedHeaders.forEach((header, index) => {
                 let maxHeaderValue = Math.max(
                     ...batchData.map((row) => row[header])
                 );
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).id= '${header}';\n`;
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).val= 0;\n`;
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).min= 0;\n`;
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).max= ${maxHeaderValue};\n`;
-                controlSection += `${
-                    uniquePrefixes.values().next().value
-                }.control(${index + 1}).constant= 1;\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).id= '${header}';\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).val= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).min= 0;\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).max= ${maxHeaderValue};\n`;
+                controlSection += `${uniquePrefixes.values().next().value
+                    }.control(${index + 1}).constant= 1;\n`;
             });
 
-            controlSection += `${
-                uniquePrefixes.values().next().value
-            }.fun_control=@control_function_${
-                uniquePrefixes.values().next().value
-            };\n`;
-            controlSection += `${
-                uniquePrefixes.values().next().value
-            }.fun_event=[];\n`;
+            controlSection += `${uniquePrefixes.values().next().value
+                }.fun_control=@control_function_${uniquePrefixes.values().next().value
+                };\n`;
+            controlSection += `${uniquePrefixes.values().next().value
+                }.fun_event=[];\n`;
 
             updatedContent += `\n${controlSection}`;
             controlExists = true;
@@ -382,113 +372,82 @@ function FileUpload() {
             const mlmOptions = await openMlmModal();
             if (Object.keys(mlmOptions).length > 0) {
                 let mlmSection = `% % MLM - Machine Learning Model --------------------------------------------\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.id = 'mlpnet';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.nx = ${mlmOptions.nx};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.id = 'mlpnet';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.nx = ${mlmOptions.nx};\n`;
 
                 mlmOptions.xOptions.forEach((x, index) => {
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.x(${index + 1}).val= '${x.val}';\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.x(${index + 1}).min= 0;\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.x(${index + 1}).max= ${Math.max(
-                        ...batchData.map((row) => row[x.val])
-                    )};\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.x(${index + 1}).id = 'anninp${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.x(${index + 1}).val= '${x.val}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.x(${index + 1}).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.x(${index + 1}).max= ${Math.max(
+                            ...batchData.map((row) => row[x.val])
+                        )};\n`;
                 });
 
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.ny = ${mlmOptions.ny};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.ny = ${mlmOptions.ny};\n`;
 
                 mlmOptions.yOptions.forEach((y, index) => {
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.y(${index + 1}).id = '${y.id}';\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.y(${index + 1}).min= 0;\n`;
-                    mlmSection += `${
-                        uniquePrefixes.values().next().value
-                    }.mlm.y(${index + 1}).max= ${Math.max(
-                        ...batchData.map((row) => row[y.id])
-                    )};\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.y(${index + 1}).id = '${y.id}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.y(${index + 1}).val= 'rann${index + 1}';\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.y(${index + 1}).min= 0;\n`;
+                    mlmSection += `${uniquePrefixes.values().next().value
+                        }.mlm.y(${index + 1}).max= ${Math.max(
+                            ...batchData.map((row) => row[y.id])
+                        )};\n`;
                 });
 
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.options={'hidden nodes', [1]};\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.layer=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.symbolic='full-symbolic';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.symbolic='semi-symbolic';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.datasource=3;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.datafun=@${uniquePrefixes.values().next().value};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.options={'hidden nodes', [1]};\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.layer=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.xfun=str2func('autoA_hybmod_anninp');\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mlm.yfun=str2func('autoA_hybmod_rann');\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.symbolic='full-symbolic';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.symbolic='semi-symbolic';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.datasource=3;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.datafun=@${uniquePrefixes.values().next().value};\n`;
 
                 mlmSection += `%training configuration\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.mode=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.method=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.jacobian=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.hessian=0;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.derivativecheck='off';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.niter=400;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.niteroptim=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.nstep=2;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.display='off';\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.bootstrap=0;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.nensemble=1;\n`;
-                mlmSection += `${
-                    uniquePrefixes.values().next().value
-                }.crossval=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.mode=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.method=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.jacobian=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.hessian=0;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.derivativecheck='off';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.niter=400;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.niteroptim=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.nstep=2;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.display='off';\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.bootstrap=0;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.nensemble=1;\n`;
+                mlmSection += `${uniquePrefixes.values().next().value
+                    }.crossval=1;\n`;
 
                 updatedContent += `\n${mlmSection}`;
                 mlmExists = true;
@@ -532,16 +491,6 @@ function FileUpload() {
 
         updatedContent += `\nend`;
 
-        console.log(
-            "Updated Content inside ensureHmodSections: ",
-            updatedContent
-        );
-        console.log(
-            "Config exists: ",
-            configExists,
-            " Control exists: ",
-            controlExists
-        );
         if (controlExists && configExists && mlmExists)
             return { updatedContent, extractedMlmOptions };
     };
@@ -556,7 +505,6 @@ function FileUpload() {
             const reader = new FileReader();
             reader.onload = async function (e) {
                 const content = e.target.result;
-                console.log("File content loaded, ensuring HMOD sections...");
                 const { updatedContent, extractedMlmOptions } =
                     await ensureHmodSections(
                         content,
@@ -568,12 +516,9 @@ function FileUpload() {
                     );
 
                 if (updatedContent) {
-                    console.log("Updated Content: ", updatedContent);
                     setFile1Content(updatedContent);
                 } else {
-                    console.log(
-                        "Updated content not set because ensureHmodSections returned null"
-                    );
+
                 }
 
                 const regexPrefix = /(\w+)\.nspecies=/g;
@@ -668,7 +613,6 @@ function FileUpload() {
                     };
                 });
 
-                console.log("Initial Values: ", initialValues);
                 setInitialValues(initialValues);
                 setHmodOptions(initialValues);
             };
@@ -995,7 +939,6 @@ function FileUpload() {
                             };
                         });
 
-                        console.log("Initial Values: ", initialValues);
                         setHmodOptions(initialValues);
                         setInitialValues(initialValues);
                     };
@@ -1010,7 +953,7 @@ function FileUpload() {
 
     const CustomWidthTooltip = styled(({ className, tooltip, ...props }) => (
         <Tooltip {...props} classes={{ popper: className }} />
-    ))(({}) => ({
+    ))(({ }) => ({
         [`& .${tooltipClasses.tooltip}`]: {
             maxWidth: 200,
         },
@@ -1065,7 +1008,6 @@ function FileUpload() {
             );
 
         if (updatedContent) {
-            console.log("asdasdasdasdasasd: ", updatedContent);
             setFile1Content(updatedContent);
 
             const updatedFile = new Blob([updatedContent], {
@@ -1095,7 +1037,6 @@ function FileUpload() {
         formData.append("val_batches", Array.from(val_batches).join(","));
         formData.append("user_id", auth.currentUser.uid);
 
-        console.log("Form Data: ", hmodOptions);
         formData.append("HiddenNodes", hmodOptions.hiddenNodes);
         formData.append("Layer", hmodOptions.layer);
         formData.append("Tau", hmodOptions.tau);
@@ -1124,7 +1065,7 @@ function FileUpload() {
             formData.append("Ensemble", 1);
         }
 
-        console.log("Form Data: ", formData);
+        formData.append("execution_location", runLocation);
 
         setTrainingModalOpen(true);
 
@@ -1134,10 +1075,78 @@ function FileUpload() {
                 body: formData,
             });
 
+            if (!response.ok) {
+                throw new Error(`Upload failed: ${response.status}`);
+            }
+
             const data = await response.json();
             setBackendResponse(JSON.stringify(data, null, 2));
 
-            checkRunStatus();
+            const runId = data.run_id;
+            const userId = data.user_id;
+
+            setCurrentRunId(runId);
+            setCurrentUserId(userId);
+
+            if (runLocation === "cloud") {
+                checkRunStatus();
+            } else {
+                try {
+                    const {
+                        file1_url,
+                        file2_url,
+                        mode,
+                        train_batches,
+                        test_batches,
+                        val_batches,
+                        Crossval,
+                        Ensemble,
+                        Kfolds,
+                        split_ratio,
+                        trained_weights,
+                        folder_id,
+                    } = data;
+
+                    const localResp = await fetch("http://127.0.0.1:4000/train", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            run_id: runId,
+                            user_id: userId,
+                            backend_url: "https://api.hybpy.com",
+
+                            file1_url,
+                            file2_url,
+                            mode,
+                            train_batches,
+                            test_batches,
+                            val_batches,
+                            Crossval,
+                            Ensemble,
+                            Kfolds,
+                            split_ratio,
+                            trained_weights,
+                            folder_id,
+                        }),
+                    });
+
+
+                    if (!localResp.ok) {
+                        throw new Error(`Local trainer error: ${localResp.status}`);
+                    }
+
+                    const localData = await localResp.json();
+                    console.log("Local trainer response:", localData);
+
+                    checkRunStatus();
+                } catch (err) {
+                    console.error("Could not reach local trainer:", err);
+                    alert(
+                        "Could not reach HYBpy Local Trainer on your machine.\n" +
+                        "Make sure the local trainer app is installed and running."
+                    );
+                }
+            }
         } catch (error) {
             console.error("Error uploading file:", error);
             setBackendResponse(`Error: ${error.message}`);
@@ -1198,8 +1207,40 @@ function FileUpload() {
             }
         };
 
+        const checkLocalTrainer = async () => {
+            try {
+                console.log("Checking local trainer availability...");
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1500);
+
+                const resp = await fetch("http://127.0.0.1:4000/ping", {
+                    method: "GET",
+                    signal: controller.signal,
+                });
+
+                console.log("Local trainer ping response received.");
+                console.log(resp);
+                clearTimeout(timeoutId);
+
+                if (resp.ok) {
+                    setLocalAvailable(true);
+                    console.log("Local trainer is available.");
+                } else {
+                    setLocalAvailable(false);
+                    console.log("Local trainer is not available.");
+                }
+            } catch (err) {
+                console.log("Error pinging local trainer:", err);
+                setLocalAvailable(false);
+            }
+        };
+
         fetchAvailableBatches();
+        checkLocalTrainer();
     }, [selectedFile2, mode]);
+
+
+
 
     const handleTrainBatchSelection = (batch) => {
         setTrainBatches((prevSelectedBatches) => {
@@ -1241,8 +1282,6 @@ function FileUpload() {
         if (mode === "1") {
             return (
                 train_batches.size === 0 ||
-                test_batches.size === 0 ||
-                val_batches.size === 0 ||
                 description === ""
             );
         } else if (mode === "2") {
@@ -1949,6 +1988,55 @@ function FileUpload() {
                                                 )}
                                             </Paper>
                                         </Grid>
+
+                                        <Grid item xs={12}>
+                                            <div style={{ marginTop: 16 }}>
+                                                <Typography variant='subtitle1'>
+                                                    Execution location
+                                                </Typography>
+                                                <label>
+                                                    <input
+                                                        type='radio'
+                                                        value='cloud'
+                                                        checked={
+                                                            runLocation ===
+                                                            "cloud"
+                                                        }
+
+                                                        onChange={(e) =>
+                                                            setRunLocation(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    Run on HYBpy server
+                                                </label>
+                                                <br />
+                                                <label>
+                                                    <input
+                                                        type='radio'
+                                                        value='local'
+                                                        checked={
+                                                            runLocation ===
+                                                            "local"
+                                                        }
+                                                        disabled={!localAvailable}
+                                                        onChange={(e) =>
+                                                            setRunLocation(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    Run on my machine (local
+                                                    trainer)
+                                                </label>
+                                                {!localAvailable && (
+                                                    <small style={{ marginLeft: 8, color: "gray" }}>
+                                                        Local trainer not detected. Start the HYBpy Local Trainer app to enable this option.
+                                                    </small>
+                                                )}
+                                            </div>
+                                        </Grid>
                                         <Grid
                                             item
                                             xs={12}
@@ -2043,7 +2131,7 @@ function FileUpload() {
                                                         }
                                                         helperText={
                                                             splitRatio < 0.1 ||
-                                                            splitRatio > 0.9
+                                                                splitRatio > 0.9
                                                                 ? "Value must be between 0.1 and 0.9"
                                                                 : ""
                                                         }
@@ -2087,6 +2175,55 @@ function FileUpload() {
                                                     )
                                                 )}
                                             </Paper>
+                                        </Grid>
+
+                                        <Grid item xs={12}>
+                                            <div style={{ marginTop: 16 }}>
+                                                <Typography variant='subtitle1'>
+                                                    Execution location
+                                                </Typography>
+                                                <label>
+                                                    <input
+                                                        type='radio'
+                                                        value='cloud'
+                                                        checked={
+                                                            runLocation ===
+                                                            "cloud"
+                                                        }
+
+                                                        onChange={(e) =>
+                                                            setRunLocation(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    Run on HYBpy server
+                                                </label>
+                                                <br />
+                                                <label>
+                                                    <input
+                                                        type='radio'
+                                                        value='local'
+                                                        checked={
+                                                            runLocation ===
+                                                            "local"
+                                                        }
+                                                        disabled={!localAvailable}
+                                                        onChange={(e) =>
+                                                            setRunLocation(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    Run on my machine (local
+                                                    trainer)
+                                                </label>
+                                                {!localAvailable && (
+                                                    <small style={{ marginLeft: 8, color: "gray" }}>
+                                                        Local trainer not detected. Start the HYBpy Local Trainer app to enable this option.
+                                                    </small>
+                                                )}
+                                            </div>
                                         </Grid>
 
                                         <Grid
@@ -2185,7 +2322,7 @@ function FileUpload() {
                                                         }
                                                         helperText={
                                                             splitRatio < 0.1 ||
-                                                            splitRatio > 0.9
+                                                                splitRatio > 0.9
                                                                 ? "Value must be between 0.1 and 0.9"
                                                                 : ""
                                                         }
@@ -2284,6 +2421,55 @@ function FileUpload() {
                                             </Paper>
                                         </Grid>
 
+                                        <Grid item xs={12}>
+                                            <div style={{ marginTop: 16 }}>
+                                                <Typography variant='subtitle1'>
+                                                    Execution location
+                                                </Typography>
+                                                <label>
+                                                    <input
+                                                        type='radio'
+                                                        value='cloud'
+                                                        checked={
+                                                            runLocation ===
+                                                            "cloud"
+                                                        }
+
+                                                        onChange={(e) =>
+                                                            setRunLocation(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    Run on HYBpy server
+                                                </label>
+                                                <br />
+                                                <label>
+                                                    <input
+                                                        type='radio'
+                                                        value='local'
+                                                        checked={
+                                                            runLocation ===
+                                                            "local"
+                                                        }
+                                                        disabled={!localAvailable}
+                                                        onChange={(e) =>
+                                                            setRunLocation(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    Run on my machine (local
+                                                    trainer)
+                                                </label>
+                                                {!localAvailable && (
+                                                    <small style={{ marginLeft: 8, color: "gray" }}>
+                                                        Local trainer not detected. Start the HYBpy Local Trainer app to enable this option.
+                                                    </small>
+                                                )}
+                                            </div>
+                                        </Grid>
+
                                         <Grid
                                             item
                                             xs={12}
@@ -2374,7 +2560,7 @@ function FileUpload() {
                 initialValues={initialValues}
                 setHmodOptions={setHmodOptions}
                 disableMethod5={mlmOptions.ny < mlmOptions.nx}
-                //data={batchData}
+            //data={batchData}
             />
             <TrainingModal
                 open={trainingModalOpen}

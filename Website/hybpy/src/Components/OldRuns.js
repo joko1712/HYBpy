@@ -183,6 +183,7 @@ export default function OldRuns() {
     const [isloading, setIsLoading] = React.useState(false);
 
     const handleOpen = async (run) => {
+        setSelectedPlotIndex(null);
         setSelectedRun(run);
         console.log("Selected Run:", run);
         try {
@@ -197,6 +198,7 @@ export default function OldRuns() {
     const handleClose = () => {
         setOpenModal(false);
         setSelectedPlot(null);
+        setSelectedPlotIndex(null);
     };
 
     const handleDeleteDialogOpen = (run) => {
@@ -215,16 +217,17 @@ export default function OldRuns() {
 
     const handlePrevPlot = () => {
         setSelectedPlotIndex((prevIndex) => {
-            const newIndex =
-                prevIndex > 0 ? prevIndex - 1 : selectedRun.plots.length - 1;
-            return newIndex;
+            const n = sortedPlots.length;
+            if (!n || prevIndex === null) return null;
+            return prevIndex > 0 ? prevIndex - 1 : n - 1;
         });
     };
 
     const handleNextPlot = () => {
         setSelectedPlotIndex((prevIndex) => {
-            const newIndex = (prevIndex + 1) % selectedRun.plots.length;
-            return newIndex;
+            const n = sortedPlots.length;
+            if (!n || prevIndex === null) return null;
+            return (prevIndex + 1) % n;
         });
     };
 
@@ -411,10 +414,45 @@ export default function OldRuns() {
 
     const metricLabels = {
         r2_train: "R² (Train)",
+        r2_val: "R² (Validation)",
         r2_test: "R² (Test)",
         mse_train: "WMSE (Train)",
+        mse_val: "WMSE (Validation)",
         mse_test: "WMSE (Test)",
     };
+
+
+    const orderedMetricKeys = [
+        "r2_train",
+        "r2_val",
+        "r2_test",
+        "mse_train",
+        "mse_val",
+        "mse_test",
+    ];
+
+    const formatMetricValue = (value) => {
+        if (typeof value === "number" && Number.isFinite(value)) return value.toFixed(5);
+        return value ?? "N/A";
+    };
+
+    const getSortedPlots = React.useCallback((plots = []) => {
+        const priority = (url = "") => {
+            const lower = url.toLowerCase();
+            if (lower.includes("top_")) return 0;
+            if (lower.includes("plot_") && !lower.includes("paraty")) return 1;
+            if (lower.includes("paratyplot_")) return 2;
+            if (lower.includes("paraty_all")) return 3;
+            return 4;
+        };
+
+        return [...plots].sort((a, b) => priority(a) - priority(b));
+    }, []);
+
+    const sortedPlots = React.useMemo(() => {
+        return getSortedPlots(selectedRun?.plots || []);
+    }, [selectedRun, getSortedPlots]);
+
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -531,19 +569,16 @@ export default function OldRuns() {
                                                 )}
                                                 <ListItemText
                                                     primary={`Title: ${run.description}`}
-                                                    secondary={`HMOD:${
-                                                        run.file1_name
-                                                    } - CSV:${
-                                                        run.file2_name
-                                                    } - Mode:${mode} - CreatedAt:${run.createdAt
-                                                        .toDate()
-                                                        .toLocaleString()} -  FinishedAt: ${
-                                                        run.finishedAt
-                                                            ? run.finishedAt
-                                                                  .toDate()
-                                                                  .toLocaleString()
-                                                            : "Not finished"
-                                                    }`}
+                                                    secondary={`HMOD:${run.file1_name
+                                                        } - CSV:${run.file2_name
+                                                        } - Mode:${mode} - CreatedAt:${run.createdAt
+                                                            .toDate()
+                                                            .toLocaleString()} -  FinishedAt: ${run.finishedAt
+                                                                ? run.finishedAt
+                                                                    .toDate()
+                                                                    .toLocaleString()
+                                                                : "Not finished"
+                                                        }`}
                                                 />
                                                 <IconButton
                                                     sx={{ color: red[500] }}
@@ -612,83 +647,19 @@ export default function OldRuns() {
 
                                                     {/* Display Plots */}
                                                     <div>
-                                                        {selectedRun.plots &&
-                                                            [
-                                                                ...selectedRun.plots,
-                                                            ]
-                                                                .sort(
-                                                                    (a, b) => {
-                                                                        const priority =
-                                                                            (
-                                                                                url
-                                                                            ) => {
-                                                                                const lower =
-                                                                                    url.toLowerCase();
-                                                                                if (
-                                                                                    lower.includes(
-                                                                                        "top_"
-                                                                                    )
-                                                                                )
-                                                                                    return 0;
-                                                                                if (
-                                                                                    lower.includes(
-                                                                                        "plot_"
-                                                                                    ) &&
-                                                                                    !lower.includes(
-                                                                                        "paraty"
-                                                                                    )
-                                                                                )
-                                                                                    return 1;
-                                                                                if (
-                                                                                    lower.includes(
-                                                                                        "paratyplot_"
-                                                                                    )
-                                                                                )
-                                                                                    return 2;
-                                                                                if (
-                                                                                    lower.includes(
-                                                                                        "paraty_all"
-                                                                                    )
-                                                                                )
-                                                                                    return 3;
-                                                                                return 4;
-                                                                            };
-                                                                        return (
-                                                                            priority(
-                                                                                a
-                                                                            ) -
-                                                                            priority(
-                                                                                b
-                                                                            )
-                                                                        );
-                                                                    }
-                                                                )
-                                                                .map(
-                                                                    (
-                                                                        plotUrl,
-                                                                        index
-                                                                    ) => (
-                                                                        <img
-                                                                            key={
-                                                                                index
-                                                                            }
-                                                                            src={
-                                                                                plotUrl
-                                                                            }
-                                                                            alt={`Plot ${index}`}
-                                                                            style={{
-                                                                                width: "30%",
-                                                                                marginBottom: 10,
-                                                                                cursor: "pointer",
-                                                                            }}
-                                                                            onClick={() =>
-                                                                                handlePlotClick(
-                                                                                    index
-                                                                                )
-                                                                            }
-                                                                        />
-                                                                    )
-                                                                )}
+                                                        {sortedPlots.map((plotUrl, index) => (
+                                                            <img
+                                                                key={index}
+                                                                src={plotUrl}
+                                                                alt={`Plot ${index}`}
+                                                                style={{
+                                                                    width: "30%",
+                                                                    marginBottom: 10,
+                                                                    cursor: "pointer",
+                                                                }}
+                                                                onClick={() => handlePlotClick(index)}
+                                                            />
+                                                        ))}
                                                     </div>
 
                                                     {selectedRun.response_data ? (
@@ -717,73 +688,124 @@ export default function OldRuns() {
                                                                             </TableCell>
                                                                         </TableRow>
 
-                                                                        {selectedRun
-                                                                            .response_data
-                                                                            .metrics ? (
-                                                                            [
-                                                                                "r2_train",
-                                                                                "r2_test",
-                                                                                "mse_train",
-                                                                                "mse_test",
-                                                                            ].map(
-                                                                                (
-                                                                                    key
-                                                                                ) => {
-                                                                                    const value =
-                                                                                        selectedRun
-                                                                                            .response_data
-                                                                                            .metrics[
-                                                                                            key
-                                                                                        ];
-                                                                                    if (
-                                                                                        value ===
-                                                                                        undefined
-                                                                                    )
-                                                                                        return null;
-                                                                                    return (
-                                                                                        <TableRow
-                                                                                            key={
-                                                                                                key
-                                                                                            }>
-                                                                                            <TableCell
-                                                                                                component='th'
-                                                                                                scope='row'>
-                                                                                                {metricLabels[
-                                                                                                    key
-                                                                                                ] ??
-                                                                                                    key}
-                                                                                            </TableCell>
-                                                                                            <TableCell>
-                                                                                                {typeof value ===
-                                                                                                "number"
-                                                                                                    ? value.toFixed(
-                                                                                                          5
-                                                                                                      )
-                                                                                                    : value}
+                                                                        {(() => {
+                                                                            const metrics = selectedRun?.response_data?.metrics;
+
+                                                                            if (!metrics) {
+                                                                                return (
+                                                                                    <TableRow>
+                                                                                        <TableCell colSpan={2}>
+                                                                                            <Typography variant='body2' color='textSecondary'>
+                                                                                                No metrics available for this run.
+                                                                                            </Typography>
+                                                                                        </TableCell>
+                                                                                    </TableRow>
+                                                                                );
+                                                                            }
+
+                                                                            const speciesMetrics =
+                                                                                metrics.species_metrics || selectedRun?.response_data?.species_metrics || null;
+
+                                                                            const showVal =
+                                                                                metrics.mse_val !== undefined ||
+                                                                                metrics.r2_val !== undefined ||
+                                                                                (speciesMetrics &&
+                                                                                    Object.values(speciesMetrics).some(
+                                                                                        (m) => m?.mse_val !== undefined || m?.r2_val !== undefined
+                                                                                    ));
+
+                                                                            const metricKeysToShow = orderedMetricKeys.filter(
+                                                                                (k) => metrics[k] !== undefined && metrics[k] !== null
+                                                                            );
+
+                                                                            return (
+                                                                                <>
+                                                                                    {metricKeysToShow.length > 0 ? (
+                                                                                        metricKeysToShow.map((key) => (
+                                                                                            <TableRow key={key}>
+                                                                                                <TableCell component='th' scope='row'>
+                                                                                                    {metricLabels[key] ?? key}
+                                                                                                </TableCell>
+                                                                                                <TableCell>{formatMetricValue(metrics[key])}</TableCell>
+                                                                                            </TableRow>
+                                                                                        ))
+                                                                                    ) : (
+                                                                                        <TableRow>
+                                                                                            <TableCell colSpan={2}>
+                                                                                                <Typography variant='body2' color='textSecondary'>
+                                                                                                    No overall metrics available for this run.
+                                                                                                </Typography>
                                                                                             </TableCell>
                                                                                         </TableRow>
-                                                                                    );
-                                                                                }
-                                                                            )
-                                                                        ) : (
-                                                                            <TableRow>
-                                                                                <TableCell
-                                                                                    colSpan={
-                                                                                        2
-                                                                                    }>
-                                                                                    <Typography
-                                                                                        variant='body2'
-                                                                                        color='textSecondary'>
-                                                                                        No
-                                                                                        metrics
-                                                                                        available
-                                                                                        for
-                                                                                        this
-                                                                                        run.
-                                                                                    </Typography>
-                                                                                </TableCell>
-                                                                            </TableRow>
-                                                                        )}
+                                                                                    )}
+
+                                                                                    {speciesMetrics && Object.keys(speciesMetrics).length > 0 && (
+                                                                                        <>
+                                                                                            <TableRow>
+                                                                                                <TableCell colSpan={2} sx={{ backgroundColor: "#f5f5f5" }}>
+                                                                                                    <Typography variant='h6'>Per-Species Metrics</Typography>
+                                                                                                </TableCell>
+                                                                                            </TableRow>
+
+                                                                                            <TableRow>
+                                                                                                <TableCell colSpan={2} sx={{ p: 0 }}>
+                                                                                                    <Table size='small' aria-label='per-species-metrics'>
+                                                                                                        <TableHead>
+                                                                                                            <TableRow>
+                                                                                                                <TableCell><strong>Species</strong></TableCell>
+                                                                                                                <TableCell align='right'><strong>R² Train</strong></TableCell>
+                                                                                                                {showVal && (
+                                                                                                                    <TableCell align='right'><strong>R² Val</strong></TableCell>
+                                                                                                                )}
+                                                                                                                <TableCell align='right'><strong>R² Test</strong></TableCell>
+                                                                                                                <TableCell align='right'><strong>WMSE Train</strong></TableCell>
+                                                                                                                {showVal && (
+                                                                                                                    <TableCell align='right'><strong>WMSE Val</strong></TableCell>
+                                                                                                                )}
+                                                                                                                <TableCell align='right'><strong>WMSE Test</strong></TableCell>
+                                                                                                            </TableRow>
+                                                                                                        </TableHead>
+
+                                                                                                        <TableBody>
+                                                                                                            {Object.entries(speciesMetrics)
+                                                                                                                .sort(([a], [b]) => a.localeCompare(b))
+                                                                                                                .map(([speciesId, sm]) => (
+                                                                                                                    <TableRow key={speciesId}>
+                                                                                                                        <TableCell>{speciesId}</TableCell>
+                                                                                                                        <TableCell align='right'>
+                                                                                                                            {formatMetricValue(sm?.r2_train)}
+                                                                                                                        </TableCell>
+                                                                                                                        {showVal && (
+                                                                                                                            <TableCell align='right'>
+                                                                                                                                {formatMetricValue(sm?.r2_val)}
+                                                                                                                            </TableCell>
+                                                                                                                        )}
+                                                                                                                        <TableCell align='right'>
+                                                                                                                            {formatMetricValue(sm?.r2_test)}
+                                                                                                                        </TableCell>
+                                                                                                                        <TableCell align='right'>
+                                                                                                                            {formatMetricValue(sm?.mse_train)}
+                                                                                                                        </TableCell>
+                                                                                                                        {showVal && (
+                                                                                                                            <TableCell align='right'>
+                                                                                                                                {formatMetricValue(sm?.mse_val)}
+                                                                                                                            </TableCell>
+                                                                                                                        )}
+                                                                                                                        <TableCell align='right'>
+                                                                                                                            {formatMetricValue(sm?.mse_test)}
+                                                                                                                        </TableCell>
+                                                                                                                    </TableRow>
+                                                                                                                ))}
+                                                                                                        </TableBody>
+                                                                                                    </Table>
+                                                                                                </TableCell>
+                                                                                            </TableRow>
+                                                                                        </>
+                                                                                    )}
+                                                                                </>
+                                                                            );
+                                                                        })()}
+
                                                                         <TableRow>
                                                                             <TableCell
                                                                                 component='th'
@@ -867,8 +889,8 @@ export default function OldRuns() {
                                                                             <TableCell>
                                                                                 {selectedRun.createdAt
                                                                                     ? selectedRun.createdAt
-                                                                                          .toDate()
-                                                                                          .toLocaleString()
+                                                                                        .toDate()
+                                                                                        .toLocaleString()
                                                                                     : "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
@@ -884,8 +906,8 @@ export default function OldRuns() {
                                                                             <TableCell>
                                                                                 {selectedRun.finishedAt
                                                                                     ? selectedRun.finishedAt
-                                                                                          .toDate()
-                                                                                          .toLocaleString()
+                                                                                        .toDate()
+                                                                                        .toLocaleString()
                                                                                     : "Not Finished"}
                                                                             </TableCell>
                                                                         </TableRow>
@@ -899,11 +921,11 @@ export default function OldRuns() {
                                                                             </TableCell>
                                                                             <TableCell>
                                                                                 {selectedRun.createdAt &&
-                                                                                selectedRun.finishedAt
+                                                                                    selectedRun.finishedAt
                                                                                     ? calculateDuration(
-                                                                                          selectedRun.createdAt,
-                                                                                          selectedRun.finishedAt
-                                                                                      )
+                                                                                        selectedRun.createdAt,
+                                                                                        selectedRun.finishedAt
+                                                                                    )
                                                                                     : "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
@@ -937,10 +959,10 @@ export default function OldRuns() {
                                                                                     selectedRun.Inputs
                                                                                 )
                                                                                     ? selectedRun.Inputs.join(
-                                                                                          ", "
-                                                                                      )
+                                                                                        ", "
+                                                                                    )
                                                                                     : selectedRun.Inputs ??
-                                                                                      "N/A"}
+                                                                                    "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
 
@@ -955,10 +977,10 @@ export default function OldRuns() {
                                                                                     selectedRun.Outputs
                                                                                 )
                                                                                     ? selectedRun.Outputs.join(
-                                                                                          ", "
-                                                                                      )
+                                                                                        ", "
+                                                                                    )
                                                                                     : selectedRun.Outputs ??
-                                                                                      "N/A"}
+                                                                                    "N/A"}
                                                                             </TableCell>
                                                                         </TableRow>
 
@@ -972,7 +994,7 @@ export default function OldRuns() {
                                                                                     const value =
                                                                                         selectedRun
                                                                                             .MachineLearning[
-                                                                                            key
+                                                                                        key
                                                                                         ];
                                                                                     if (
                                                                                         value ===
@@ -1120,11 +1142,7 @@ export default function OldRuns() {
                                                         <ArrowBackIcon />
                                                     </IconButton>
                                                     <img
-                                                        src={
-                                                            selectedRun.plots[
-                                                                selectedPlotIndex
-                                                            ]
-                                                        }
+                                                        src={sortedPlots[selectedPlotIndex]}
                                                         alt={`Plot ${selectedPlotIndex}`}
                                                         style={{
                                                             maxWidth: "100%",

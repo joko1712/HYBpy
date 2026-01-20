@@ -55,7 +55,7 @@ chmod +x HYBpy_LocalTrainer
 ### Step B3: If macOS blocks the app (Gatekeeper)
 If macOS prevents execution because the binary is not notarized/signed:
 
-- System Settings → Privacy & Security → “Allow Anyway”
+- System Settings → Privacy & Security → "HYBpy_LocalTrainer" was blocked to protect your Mac. → “Open Anyway”
 - Then run again, or execute via Terminal.
 
 ### Step B4: Verify it is running

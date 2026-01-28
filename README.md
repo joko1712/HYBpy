@@ -45,6 +45,10 @@ After a few seconds the console should say:
 
 After you see this message, you can open your web browser and go to `https://www.hybpy.com` to access the HYBpy interface.
 
+Before starting the training, ensure that you select "Run on my machine (local trainer)" in the "Execution location", so that the local HYBpy server is used.
+
+![Execution location](images/Select_execution_location.png)
+
 # Option B — macOS Executable (Recommended)
 
 ### Step B1: Download the executable
@@ -77,6 +81,10 @@ After a few seconds the console should say:
 ![Console log](images/HYBpy_local_ready.png)
 
 After you see this message, you can open your web browser and go to `https://www.hybpy.com` to access the HYBpy interface.
+
+Before starting the training, ensure that you select "Run on my machine (local trainer)" in the "Execution location", so that the local HYBpy server is used.
+
+![Execution location](images/Select_execution_location.png)
 
 # Option C — Using Python Virtual Environment (venv)
 

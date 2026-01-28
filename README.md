@@ -16,56 +16,67 @@ You can run HYBpy locally in two ways:
 2. **Developer setup:** Run from source using venv or Conda.
 
 ---
+
 # Option A — Windows Executable (Recommended)
 
 ### Step A1: Download the executable
+
 Go to the **Latest Release** on GitHub and download the Windows package:
 
 - `HYBpy-LocalTrainer-windows-x64.zip` (Windows 10/11, 64-bit)
 
 ### Step A2: Extract the ZIP
+
 Extract the `.zip` file to a folder of your choice.
 
 ### Step A3: Run the executable
+
 Double-click the executable (or run from PowerShell):
 
 ```powershell
 .\HYBpy_LocalTrainer.exe
 ```
+
 ### Step A4: Verify it is running
+
 After a few seconds the console should say:
 
-```bash
-    [READY] Local trainer starting
-```
+![Console log](images/HYBpy_local_ready.png)
+
+After you see this message, you can open your web browser and go to `https://www.hybpy.com` to access the HYBpy interface.
 
 # Option B — macOS Executable (Recommended)
 
 ### Step B1: Download the executable
+
 Go to the Latest Release on GitHub and download the macOS package if matches your Mac:
 
 - Apple Silicon (M1/M2/M3/M4): HYBpy-LocalTrainer-macos-arm64.zip
-- Intel Macs: HYBpy-LocalTrainer-macos-x64.zip 
+- Intel Macs: HYBpy-LocalTrainer-macos-x64.zip
 
 ### Step B2: Extract and run
+
 Extract the `.zip` and run:
+
 ```bash
 chmod +x HYBpy_LocalTrainer
 ./HYBpy_LocalTrainer
 ```
 
 ### Step B3: If macOS blocks the app (Gatekeeper)
+
 If macOS prevents execution because the binary is not notarized/signed:
 
 - System Settings → Privacy & Security → "HYBpy_LocalTrainer" was blocked to protect your Mac. → “Open Anyway”
 - Then run again, or execute via Terminal.
 
 ### Step B4: Verify it is running
+
 After a few seconds the console should say:
 
-```bash
-    [READY] Local trainer starting
-```
+![Console log](images/HYBpy_local_ready.png)
+
+After you see this message, you can open your web browser and go to `https://www.hybpy.com` to access the HYBpy interface.
 
 # Option C — Using Python Virtual Environment (venv)
 
@@ -73,13 +84,13 @@ After a few seconds the console should say:
 
 First, you need to get the HYBpy code onto your computer. There are two primary methods for doing this:
 
--   **Using Git:** Clone the repository directly from GitHub using the command line. This is the recommended method as it makes it easier to update the code in the future.
+- **Using Git:** Clone the repository directly from GitHub using the command line. This is the recommended method as it makes it easier to update the code in the future.
 
     ```bash
     git clone https://github.com/joko1712/HYBpy.git
     ```
 
--   **Downloading a ZIP file:** Alternatively, you can download the repository as a compressed file from the GitHub page. Navigate to `github.com/joko1712/HYBpy` and click on the "Code" button, then select "Download ZIP."
+- **Downloading a ZIP file:** Alternatively, you can download the repository as a compressed file from the GitHub page. Navigate to `github.com/joko1712/HYBpy` and click on the "Code" button, then select "Download ZIP."
 
 Once you have the code, use your terminal or command prompt to navigate into the project's root directory.
 
@@ -107,13 +118,13 @@ python -m venv HYBpyEnv
 
 Before installing any packages, you must **activate** the virtual environment. The commands differ slightly based on your operating system:
 
--   **Windows:**
+- **Windows:**
 
     ```bash
     HYBpyEnv\Scripts\activate
     ```
 
--   **macOS / Linux:**
+- **macOS / Linux:**
 
     ```bash
     source HYBpyEnv/bin/activate
@@ -206,7 +217,7 @@ conda deactivate
 
 ## ⸎ Developed at
 
--   HYBpy is developed and maintained at UCIBIO - Applied Molecular Biosciences Unit, NOVA School of Science and Technology, Universidade NOVA de Lisboa, 2829-516 Caparica, Portugal
+- HYBpy is developed and maintained at UCIBIO - Applied Molecular Biosciences Unit, NOVA School of Science and Technology, Universidade NOVA de Lisboa, 2829-516 Caparica, Portugal
 
 _Authors:_ [José Pereira](https://github.com/joko1712), [Rafael Costa](https://github.com/r-costa), José Pinto, Rui Oliveira
 
@@ -217,10 +228,11 @@ _Authors:_ [José Pereira](https://github.com/joko1712), [Rafael Costa](https://
 If you use HYBpy in academic work, please cite:
 
 Pedreira, J., Pinto, J., Gonçalves, D., Barahona, P., Oliveira, R., & Costa, R. S. (2025).
-*HYBpy: A web-based framework for hybrid modeling of biological systems*.
+_HYBpy: A web-based framework for hybrid modeling of biological systems_.
 Digital Chemical Engineering, 17, 100278. https://doi.org/10.1016/j.dche.2025.100278
 
 ### BibTeX
+
 ```bibtex
 @article{Pedreira2025HYBpy,
   title   = {HYBpy: A web-based framework for hybrid modeling of biological systems},

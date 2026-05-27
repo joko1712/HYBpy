@@ -1,0 +1,10 @@
+title: "HYBpy — Hybrid Modeling Framework"
+author:
+    - José Pedreira
+    - Rafael Costa
+date: "2025"
+geometry: margin=2.5cm
+fontsize: 11pt
+header-includes:
+    - \usepackage{graphicx}
+    - \usepackage{hyperref}

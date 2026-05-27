@@ -35,22 +35,22 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase-config";
 import logo from "../Image/HYBpyINVIS_logo.png";
-import step1 from "../Image/Guide Print/Step1.png";
-import step2 from "../Image/Guide Print/Step2.png";
-import step3 from "../Image/Guide Print/Step3.png";
-import step4 from "../Image/Guide Print/Step4.png";
-import step41 from "../Image/Guide Print/Step4.1.png";
-import step42 from "../Image/Guide Print/Step4.2.png";
-import step5 from "../Image/Guide Print/Step5.png";
-import step51 from "../Image/Guide Print/Step5.1.png";
-import step61 from "../Image/Guide Print/Step6.1.png";
-import step62 from "../Image/Guide Print/Step6.2.png";
-import step7 from "../Image/Guide Print/Step7.png";
-import step3a from "../Image/Guide Print/Step3a.png";
-import step4a from "../Image/Guide Print/Step4a.png";
-import step4b from "../Image/Guide Print/Step4b.png";
-import step41b from "../Image/Guide Print/Step4.1b.png";
-import step42b from "../Image/Guide Print/Step4.2b.png";
+import step1 from "../Image/Guide_Print/Step1.png";
+import step2 from "../Image/Guide_Print/Step2.png";
+import step3 from "../Image/Guide_Print/Step3.png";
+import step4 from "../Image/Guide_Print/Step4.png";
+import step41 from "../Image/Guide_Print/Step4.1.png";
+import step42 from "../Image/Guide_Print/Step4.2.png";
+import step5 from "../Image/Guide_Print/Step5.png";
+import step51 from "../Image/Guide_Print/Step5.1.png";
+import step61 from "../Image/Guide_Print/Step6.1.png";
+import step62 from "../Image/Guide_Print/Step6.2.png";
+import step7 from "../Image/Guide_Print/Step7.png";
+import step3a from "../Image/Guide_Print/Step3a.png";
+import step4a from "../Image/Guide_Print/Step4a.png";
+import step4b from "../Image/Guide_Print/Step4b.png";
+import step41b from "../Image/Guide_Print/Step4.1b.png";
+import step42b from "../Image/Guide_Print/Step4.2b.png";
 
 const drawerWidth = 200;
 

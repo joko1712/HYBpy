@@ -33,19 +33,19 @@ trained_weights = None
 # temp_dir = "Backend/Files/Workshop/CellGrowthModel3"
 
 # CHO
-# file1_path = "Backend/Files/CHO/CHOsimplenew.hmod"
-# file2_path = "Backend/Files/CHO/CHOdata.csv"
-# temp_dir = "Backend/Files/CHO"
+file1_path = "Backend/Files/CHO/CHOsimplenew.hmod"
+file2_path = "Backend/Files/CHO/CHOdata.csv"
+temp_dir = "Backend/Files/CHO"
 
 # Chassagnole
-file1_path = "Backend/Files/Chassagnole/Chass1.hmod"
-file2_path = "Backend/Files/Chassagnole/combined_chass_50.csv"
-temp_dir = "Backend/Files/Chassagnole"
+# file1_path = "Backend/Files/Chassagnole/Chass1.hmod"
+# file2_path = "Backend/Files/Chassagnole/combined_chass_50.csv"
+# temp_dir = "Backend/Files/Chassagnole"
 
 # ParkAndRamirez
-#file1_path = "Backend/Files/ParkAndRamirez/parkramstandard.hmod"
-#file2_path = "Backend/Files/ParkAndRamirez/PARK_COMBINED_PM_PT_S_X.csv"
-#temp_dir = "Backend/Files/ParkAndRamirez"
+# file1_path = "Backend/Files/ParkAndRamirez/parkramstandard.hmod"
+# file2_path = "Backend/Files/ParkAndRamirez/PARK_COMBINED_PM_PT_S_X.csv"
+# temp_dir = "Backend/Files/ParkAndRamirez"
 
 # RUN Manual Hold-Out Cross Validation:
 '''
